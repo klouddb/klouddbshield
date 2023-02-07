@@ -54,27 +54,11 @@ $ go build -o ./ciscollector ./cmd/ciscollector
 $ ./ciscollector -r
 ```
 
-## Help box
+## Contributing 
 
-```bash
-$ ./collector -h
-Usage of ./ciscollector:
-  -r    Run
-  -version
-        Print version
-```
+We welcome PRs and Issue Reports
 
-cisconfig.toml at path /etc/mysqlcollector/cisconfig.toml
+## Help 
 
-```toml
-[database]
-host="localhost" 
-port="3306" 
-user="mysqluser" 
-password="mysqlpassword" 
-maxIdleConn = 2
-maxOpenConn = 2
+Please reach us at support@klouddb.io
 
-[app]
-debug = false
-```
