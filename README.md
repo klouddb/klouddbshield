@@ -44,7 +44,7 @@ Overall Score - 18/45 - 40.00%
 mysqlsecreport.json file generated
 ```
 
-## How to run locally ?
+## How to run locally(without installing a package) ?
 
 Install and run locally the server
 
