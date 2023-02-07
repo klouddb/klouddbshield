@@ -26,7 +26,7 @@ $ rpm -i <ciscollector file>.rpm
 
 # debian based OS
 $ dpkg -i <ciscollector file>.deb
-$ ciscollector
+
 Usage of ciscollector:
   -r    Run
   -version
