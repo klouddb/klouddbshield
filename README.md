@@ -1,0 +1,82 @@
+# CIS Collector
+
+[![GitHub Release][release-img]][release]
+
+<!-- [![Go Report Card][report-card-img]][report-card]
+
+[![Build Status](https://github.com/klouddb/klouddbshield/workflows/Build/badge.svg?branch=main)](https://github.com/klouddb/klouddbshield/actions) -->
+
+[release-img]: https://img.shields.io/github/release/klouddb/klouddbshield.svg?logo=github
+[release]: https://github.com/klouddb/klouddbshield/releases
+[report-card-img]: https://goreportcard.com/badge/github.com/klouddb/klouddbshield
+[report-card]: https://goreportcard.com/report/github.com/klouddb/klouddbshield
+
+## Installation
+
+##### How to run this tool on my server ?
+
+You can directly download the package from [releases](https://github.com/klouddb/klouddbshield/releases) section of repo and install the package (for example - rpm for centos and deb package for Ubuntu etc..)
+
+Once you install the package , you need to edit the sample config file located at /etc/mysqlcollector(sample config below). You can skip username and password in config file (if you dont want to store the credentials in config file, it will prompt for those during runtime)
+
+```bash
+# centos based OS
+$ rpm -i <ciscollector file>.rpm
+# If above command is not working, use rpm -U <ciscollector file>.rpm for force install
+$ ciscollector
+test.json file generated
+
+# debian based OS
+$ dpkg -i <ciscollector file>.rpm
+$ ciscollector
+Usage of ciscollector:
+  -r    Run
+  -version
+        Print version
+$ ciscollector -r
+Section 1  - Operating system          - 1/6  - 16.67%
+Section 2  - Installation and Planning - 4/10 - 40.00%
+Section 3  - File Permissions          - 2/9  - 22.22%
+Section 4  - General                   - 5/7  - 71.43%
+Section 6  - Auditing and Logging      - 2/3  - 66.67%
+Section 7  - Authentication            - 4/6  - 66.67%
+Section 8  - Network                   - 0/2  - 0.00%
+Section 9  - Replication               - 0/2  - 0.00%
+Overall Score - 18/45 - 40.00%
+mysqlsecreport.json file generated
+```
+
+## How to run locally ?
+
+Install and run locally the server
+
+```bash
+$ go build -o ./ciscollector ./cmd/ciscollector
+# Edit cisconfig.toml at path /etc/mysqlcollector/cisconfig.toml 
+$ ./ciscollector -r
+```
+
+## Help box
+
+```bash
+$ ./collector -h
+Usage of ./ciscollector:
+  -r    Run
+  -version
+        Print version
+```
+
+cisconfig.toml at path /etc/mysqlcollector/cisconfig.toml
+
+```toml
+[database]
+host="localhost" 
+port="3306" 
+user="mysqluser" 
+password="mysqlpassword" 
+maxIdleConn = 2
+maxOpenConn = 2
+
+[app]
+debug = false
+```

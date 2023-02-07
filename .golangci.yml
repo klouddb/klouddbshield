@@ -1,0 +1,41 @@
+# golangci-lint configuration used for CI
+run:
+  tests: true
+  timeout: 10m
+  skip-files:
+    - ".*\\.pb\\.go"
+  skip-dirs-use-default: true
+
+linters-settings:
+  revive:
+    ignore-generated-header: false
+    severity: warning
+    confidence: 0.8
+    rules:
+      - name: unreachable-code
+      - name: errorf
+      - name: range
+      - name: superfluous-else
+      - name: var-declaration
+
+linters:
+  disable-all: true
+  enable:
+    - misspell
+    - gofmt
+    - staticcheck
+    - gosec
+    - gocritic
+    - vet
+    - revive
+    - deadcode
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - structcheck
+    - typecheck
+    - varcheck
+    # Extras
+    - gofmt
+    - goimports

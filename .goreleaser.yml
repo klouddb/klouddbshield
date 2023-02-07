@@ -1,0 +1,37 @@
+builds:
+  - main: ./cmd/ciscollector
+    binary: ciscollector
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+project_name: ciscollector
+release:
+  prerelease: auto
+
+universal_binaries:
+  - replace: true
+
+checksum:
+  name_template: 'checksums.txt'
+nfpms:
+  -
+    file_name_template: "ciscollector_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    vendor: Klouddb
+    package_name: ciscollector
+    homepage: https://github.com/klouddb/collector
+    maintainer: Klouddb <klouddb@gmail.com>
+    description: CIS Collecotr
+    license: BSD 3-Clause
+    formats:
+      - deb
+      - rpm
+    contents:
+      # Basic file that applies to all packagers
+      - src: config_example.toml
+        dst: /etc/mysqlcollector/cisconfig.toml
+        type: config
