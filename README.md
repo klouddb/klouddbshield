@@ -15,19 +15,17 @@
 
 ##### How to run this tool on my server ?
 
+Please read our detailed blog post https://klouddb.io/releasing-first-version-of-klouddb-shield-mysql-cis-benchmarks/
+
 You can directly download the package from [releases](https://github.com/klouddb/klouddbshield/releases) section of repo and install the package (for example - rpm for centos and deb package for Ubuntu etc..)
 
-Once you install the package , you need to edit the sample config file located at /etc/mysqlcollector(sample config below). You can skip username and password in config file (if you dont want to store the credentials in config file, it will prompt for those during runtime)
 
 ```bash
 # centos based OS
 $ rpm -i <ciscollector file>.rpm
-# If above command is not working, use rpm -U <ciscollector file>.rpm for force install
-$ ciscollector
-test.json file generated
 
 # debian based OS
-$ dpkg -i <ciscollector file>.rpm
+$ dpkg -i <ciscollector file>.deb
 $ ciscollector
 Usage of ciscollector:
   -r    Run
