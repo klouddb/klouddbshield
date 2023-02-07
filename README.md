@@ -17,7 +17,7 @@
 
 !! Please read our detailed blog post https://klouddb.io/releasing-first-version-of-klouddb-shield-mysql-cis-benchmarks/ before using this tool !!
 
-You can directly download the package from [releases](https://github.com/klouddb/klouddbshield/releases) section of repo and install the package (for example - rpm for centos and deb package for Ubuntu etc..)
+You can directly download the package from [releases](https://github.com/klouddb/klouddbshield/releases) section of repo and install the package (for example - rpm for centos and deb package for Ubuntu etc..) . You also need to edit config file after installing the package(see above mentioned blog post for detailed walkthrough)
 
 
 ```bash
