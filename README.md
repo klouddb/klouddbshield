@@ -23,10 +23,10 @@ You can directly download the package from [releases](https://github.com/klouddb
 
 
 ```bash
-# centos based OS
+# Centos
 $ rpm -i <ciscollector file>.rpm
 
-# debian based OS
+# Debian
 $ dpkg -i <ciscollector file>.deb
 
 Usage of ciscollector:
