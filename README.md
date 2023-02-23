@@ -62,5 +62,5 @@ We welcome PRs and Issue Reports
 
 ## Help 
 
-Please reach us at support@klouddb.io
+Please reach us at support@klouddb.io 
 
