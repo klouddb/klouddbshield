@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/klouddb/klouddbshield/mysql/model"
+	"github.com/klouddb/klouddbshield/model"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
 
@@ -20,7 +20,9 @@ func CheckRequireSecureTransport(store *sql.DB, ctx context.Context) (*model.Res
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	requireSecureTransport := ""
 	for _, obj := range data {
@@ -45,7 +47,9 @@ func CheckRequireSecureTransport(store *sql.DB, ctx context.Context) (*model.Res
 
 	data, err = utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	haveOpenSSL := ""
 	haveSSL := ""
@@ -81,7 +85,9 @@ func CheckMaxConnLimits(store *sql.DB, ctx context.Context) (*model.Result, erro
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	maxConnections := ""
 	maxUserConnections := ""
@@ -113,7 +119,9 @@ func CheckMaxConnLimits(store *sql.DB, ctx context.Context) (*model.Result, erro
 
 	data, err = utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 
 	for _, obj := range data {

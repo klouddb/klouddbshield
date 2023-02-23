@@ -1,4 +1,4 @@
-package internal
+package mysql
 
 import (
 	"context"
@@ -8,12 +8,12 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/klouddb/klouddbshield/model"
 	auditinglogging "github.com/klouddb/klouddbshield/mysql/auditingLogging"
 	"github.com/klouddb/klouddbshield/mysql/authentication"
 	"github.com/klouddb/klouddbshield/mysql/filepermissions"
 	"github.com/klouddb/klouddbshield/mysql/general"
 	"github.com/klouddb/klouddbshield/mysql/installation"
-	"github.com/klouddb/klouddbshield/mysql/model"
 	"github.com/klouddb/klouddbshield/mysql/network"
 	"github.com/klouddb/klouddbshield/mysql/oslevelconfig"
 	"github.com/klouddb/klouddbshield/mysql/replication"

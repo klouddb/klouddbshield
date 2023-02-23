@@ -19,3 +19,7 @@ type CustomError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
+type Status struct {
+	Pass int
+	Fail int
+}

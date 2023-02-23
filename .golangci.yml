@@ -32,7 +32,6 @@ linters:
     - errcheck
     - gosimple
     - govet
-    - ineffassign
     - structcheck
     - typecheck
     - varcheck

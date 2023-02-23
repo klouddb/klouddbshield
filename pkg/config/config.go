@@ -10,20 +10,31 @@ import (
 )
 
 type Config struct {
-	Database Database `toml:"database"`
+	MySQL *MySQL `toml:"mysql"`
+	// Postgres Postgres `toml:"postgres"`
 	// API      API                 `toml:"api"`
 	App App `toml:"app"`
 }
 
-type Database struct {
-	Host        string `toml:"host"`
-	Port        string `toml:"port"`
-	User        string `toml:"user"`
-	Password    string `toml:"password"`
-	DBName      string `toml:"dbname"`
-	SSLmode     string `toml:"sslmode"`
-	MaxIdleConn int    `toml:"maxIdleConn"`
-	MaxOpenConn int    `toml:"maxOpenConn"`
+type Postgres struct {
+	Host     string `toml:"host"`
+	Port     string `toml:"port"`
+	User     string `toml:"user"`
+	Password string `toml:"password"`
+	DBName   string `toml:"dbname"`
+	// SSLmode     string `toml:"sslmode"`
+	MaxIdleConn int `toml:"maxIdleConn"`
+	MaxOpenConn int `toml:"maxOpenConn"`
+}
+type MySQL struct {
+	Host     string `toml:"host"`
+	Port     string `toml:"port"`
+	User     string `toml:"user"`
+	Password string `toml:"password"`
+	// DBName      string `toml:"dbname"`
+	// SSLmode     string `toml:"sslmode"`
+	MaxIdleConn int `toml:"maxIdleConn"`
+	MaxOpenConn int `toml:"maxOpenConn"`
 }
 
 // type API struct {
@@ -38,7 +49,9 @@ type App struct {
 	// CollectorCron string `toml:"collectorCron"`
 	// ControlCron   string `toml:"controlCron"`
 	// ReplicaCron   string `toml:"replicaCron"`
-	Run bool
+	Run         bool
+	RunPostgres bool
+	RunMySql    bool
 }
 
 var CONF *Config
@@ -49,7 +62,11 @@ func NewConfig() (*Config, error) {
 	// var verbose bool
 	var version bool
 	var run bool
+	// var runPostgres bool
+	var runMySql bool
 	flag.BoolVar(&run, "r", run, "Run")
+	flag.BoolVar(&runMySql, "run-mysql", runMySql, "Run MySQL")
+	// flag.BoolVar(&runPostgres, "run-postgres", runPostgres, "Run Postgres")
 	// flag.BoolVar(&verbose, "v", verbose, "Verbose")
 	flag.BoolVar(&version, "version", version, "Print version")
 
@@ -59,7 +76,7 @@ func NewConfig() (*Config, error) {
 		log.Debug().Str("version", Version).Send()
 		os.Exit(0)
 	}
-	if !run {
+	if !(run || runMySql) {
 		flag.Usage()
 		os.Exit(0)
 	}
@@ -77,6 +94,8 @@ func NewConfig() (*Config, error) {
 		return nil, fmt.Errorf("fatal error config file: %w", err)
 	}
 	c.App.Run = run
+	c.App.RunMySql = runMySql
+	// c.App.RunPostgres = runPostgres
 	err = v.Unmarshal(c)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal: %w", err)
@@ -88,15 +107,18 @@ func NewConfig() (*Config, error) {
 			return nil, fmt.Errorf("getting hostname: %w", err)
 		}
 	}
-	// log.Printf("%+v", c.Database)
-	if c.Database.User == "" {
-		fmt.Printf("Enter Your DB User: ")
-		fmt.Scanln(&c.Database.User)
+	if c.MySQL == nil {
+		return nil, fmt.Errorf("In older version we used [database] label and in current version we are changing it to [mysql] and kindly update your cisconfig file(/etc/mysqlcollector/cisconfig.toml) - See sample entry in readme ")
 
 	}
-	if c.Database.Password == "" {
-		fmt.Printf("Enter Your DB Password for %s: ", c.Database.User)
-		fmt.Scanln(&c.Database.Password)
+	if c.MySQL.User == "" {
+		fmt.Printf("Enter Your DB User: ")
+		fmt.Scanln(&c.MySQL.User)
+
+	}
+	if c.MySQL.Password == "" {
+		fmt.Printf("Enter Your DB Password for %s: ", c.MySQL.User)
+		fmt.Scanln(&c.MySQL.Password)
 	}
 	CONF = c
 	return c, nil
@@ -105,7 +127,9 @@ func NewConfig() (*Config, error) {
 func MustNewConfig() *Config {
 	config, err := NewConfig()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Can't create config")
+		fmt.Println("Can't create config")
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	return config

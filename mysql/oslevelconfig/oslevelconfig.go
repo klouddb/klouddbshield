@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/klouddb/klouddbshield/mysql/model"
+	"github.com/klouddb/klouddbshield/model"
 	cons "github.com/klouddb/klouddbshield/pkg/const"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
@@ -26,7 +26,9 @@ func IsDBOnNPS(store *sql.DB, ctx context.Context) (*model.Result, error) {
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	datadirVal := ""
 	for _, obj := range data {
@@ -69,7 +71,7 @@ func LeastPrivileged(store *sql.DB, ctx context.Context) (*model.Result, error) 
 	if err != nil || errStr != "" {
 		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
 		result.Status = "Fail"
-		return result, err
+		return result, nil
 	}
 
 	if outStr != "" {
@@ -91,7 +93,7 @@ func CheckCommandHistory(store *sql.DB, ctx context.Context) (*model.Result, err
 	if err != nil || errStr != "" {
 		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
 		result.Status = "Fail"
-		return result, err
+		return result, nil
 	}
 
 	if outStr != "" {
@@ -106,7 +108,7 @@ func CheckCommandHistory(store *sql.DB, ctx context.Context) (*model.Result, err
 	if err != nil || errStr != "" {
 		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
 		result.Status = "Fail"
-		return result, err
+		return result, nil
 	}
 	if outStr != "" {
 		result.Status = "Fail"
@@ -136,7 +138,7 @@ func CheckMYSQLPWD(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	if err != nil || errStr != "" || outStr != "" {
 		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
 		result.Status = "Fail"
-		return result, err
+		return result, nil
 	}
 
 	return result, nil
@@ -154,7 +156,7 @@ func CheckInteractiveLogin(store *sql.DB, ctx context.Context) (*model.Result, e
 	if err != nil || errStr != "" {
 		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
 		result.Status = "Fail"
-		return result, err
+		return result, nil
 	}
 
 	if outStr == "" {

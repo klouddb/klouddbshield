@@ -30,3 +30,4 @@ dist
 config.toml
 /ciscollector
 # End of https://www.toptal.com/developers/gitignore/api/go
+.DS_Store

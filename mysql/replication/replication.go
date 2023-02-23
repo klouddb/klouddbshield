@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/klouddb/klouddbshield/mysql/model"
+	"github.com/klouddb/klouddbshield/model"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
 
@@ -19,7 +19,9 @@ func CheckSOURCESSL(store *sql.DB, ctx context.Context) (*model.Result, error) {
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
@@ -55,7 +57,9 @@ func CheckMasterInfoRepo(store *sql.DB, ctx context.Context) (*model.Result, err
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))

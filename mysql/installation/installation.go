@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/klouddb/klouddbshield/mysql/model"
+	"github.com/klouddb/klouddbshield/model"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
 
@@ -23,7 +23,9 @@ func CheckPointInTimeRec(store *sql.DB, ctx context.Context) (*model.Result, err
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
@@ -61,7 +63,9 @@ func CheckBinaryRelayLogs(store *sql.DB, ctx context.Context) (*model.Result, er
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	if len(data) == 0 {
 		result.Status = "Fail"
@@ -97,7 +101,9 @@ func CheckDefaultPassLt(store *sql.DB, ctx context.Context) (*model.Result, erro
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// if len(data) == 0 {
 	// 	result.Status = "Fail"
@@ -135,7 +141,9 @@ func CheckResetPassLt(store *sql.DB, ctx context.Context) (*model.Result, error)
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// if len(data) == 0 {
 	// 	result.Status = "Fail"
@@ -177,7 +185,9 @@ func CheckCurrentPassLt(store *sql.DB, ctx context.Context) (*model.Result, erro
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// if len(data) == 0 {
 	// 	result.Status = "Fail"
@@ -213,7 +223,9 @@ func CheckBlockEncryp(store *sql.DB, ctx context.Context) (*model.Result, error)
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// if len(data) == 0 {
 	// 	result.Status = "Fail"
@@ -251,7 +263,9 @@ func CheckBindAddr(store *sql.DB, ctx context.Context) (*model.Result, error) {
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	if len(data) == 0 {
 		result.Status = "Fail"
@@ -274,7 +288,9 @@ func CheckTLS(store *sql.DB, ctx context.Context) (*model.Result, error) {
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	tlsVersion := ""
 	for _, obj := range data {
@@ -297,7 +313,9 @@ func CheckTLS(store *sql.DB, ctx context.Context) (*model.Result, error) {
 
 	data, err = utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	sslVersion := ""
 	for _, obj := range data {
@@ -331,7 +349,9 @@ func CheckClientCert(store *sql.DB, ctx context.Context) (*model.Result, error) 
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	result.FailReason = data
 	// if len(data) == 0 {
@@ -368,7 +388,9 @@ func CheckSSLTLS(store *sql.DB, ctx context.Context) (*model.Result, error) {
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// if len(data) == 0 {
 	// 	result.Status = "Fail"

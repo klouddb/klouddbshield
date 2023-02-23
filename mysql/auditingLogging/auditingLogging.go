@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/klouddb/klouddbshield/mysql/model"
+	"github.com/klouddb/klouddbshield/model"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
 
@@ -20,7 +20,9 @@ func CheckLogError(store *sql.DB, ctx context.Context) (*model.Result, error) {
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
@@ -56,7 +58,9 @@ func CheckLogFiles(store *sql.DB, ctx context.Context) (*model.Result, error) {
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
@@ -93,7 +97,9 @@ func CheckLogErrorVerbosity(store *sql.DB, ctx context.Context) (*model.Result, 
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))

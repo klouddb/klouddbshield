@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/klouddb/klouddbshield/mysql/model"
+	"github.com/klouddb/klouddbshield/model"
 	cons "github.com/klouddb/klouddbshield/pkg/const"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
@@ -23,7 +23,9 @@ func CheckTestDBOnServer(store *sql.DB, ctx context.Context) (*model.Result, err
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	if len(data) == 0 {
 		result.Status = "Pass"
@@ -83,7 +85,9 @@ func CheckPrefixMySqld(store *sql.DB, ctx context.Context) (*model.Result, error
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// if err != nil {
@@ -124,7 +128,9 @@ func CheckSymbolicLink(store *sql.DB, ctx context.Context) (*model.Result, error
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// if err != nil {
@@ -172,11 +178,15 @@ func CheckDaemonMemcached(store *sql.DB, ctx context.Context) (*model.Result, er
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	if len(data) == 0 {
 		result.Status = "Pass"
@@ -198,22 +208,24 @@ func ChecksecureFilePriv(store *sql.DB, ctx context.Context) (*model.Result, err
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
-	haveSymlink := ""
+	secureFilePriv := ""
 	for _, obj := range data {
 		if obj["Variable_name"] == "secure_file_priv" {
-			haveSymlink = fmt.Sprint(obj["Value"])
+			secureFilePriv = fmt.Sprint(obj["Value"])
 			break
 		}
 	}
-	if haveSymlink == "NULL" {
+	if secureFilePriv == "NULL" {
 		result.Status = "Pass"
 	} else {
 		result.Status = "Fail"
-		result.FailReason = "Value of have_symlink is" + haveSymlink
+		result.FailReason = "Value of secure_file_priv is" + secureFilePriv
 	}
 	// log.Print(result)
 	return result, nil
@@ -229,7 +241,9 @@ func CheckSQLMode(store *sql.DB, ctx context.Context) (*model.Result, error) {
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return nil, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))

@@ -7,10 +7,9 @@ import (
 	"os"
 	"time"
 
-	internal "github.com/klouddb/klouddbshield/mysql"
+	"github.com/klouddb/klouddbshield/mysql"
 	"github.com/klouddb/klouddbshield/pkg/config"
-
-	mysql "github.com/klouddb/klouddbshield/pkg/mysql"
+	"github.com/klouddb/klouddbshield/pkg/mysqldb"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -31,15 +30,24 @@ func main() {
 
 	// Program context
 	ctx := context.Background()
+	if cnf.App.Run {
+		runMySql(ctx, cnf)
+	}
+	if cnf.App.RunMySql {
+		runMySql(ctx, cnf)
+	}
 
-	// for _, database := range cnf.Database {
+}
+
+func runMySql(ctx context.Context, cnf *config.Config) {
+	// for _, mySQL := range cnf.MySQL {
 	// Open Postgres store connection and ping it
-	database := cnf.Database
-	store, _, err := mysql.Open(database)
+	mysqlDatabase := cnf.MySQL
+	mysqlStore, _, err := mysqldb.Open(*mysqlDatabase)
 	if err != nil {
 		return
 	}
-	listOfResults := internal.PerformAllChecks(store, ctx)
+	listOfResults := mysql.PerformAllChecks(mysqlStore, ctx)
 	jsonData, err := json.MarshalIndent(listOfResults, "", "  ")
 	if err != nil {
 		return

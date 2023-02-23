@@ -1,6 +1,9 @@
 package utils
 
-import "database/sql"
+import (
+	"database/sql"
+	"os"
+)
 
 func GetJSON(store *sql.DB, sqlString string) ([]map[string]interface{}, error) {
 	stmt, err := store.Prepare(sqlString)
@@ -56,4 +59,12 @@ func GetJSON(store *sql.DB, sqlString string) ([]map[string]interface{}, error) 
 
 	// return string(jsonData), nil
 	return tableData, nil
+}
+
+// function to check if file exists
+func DoesFileExist(fileName string) bool {
+	_, error := os.Stat(fileName)
+
+	// check if error is "file not exists"
+	return !os.IsNotExist(error)
 }

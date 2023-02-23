@@ -1,4 +1,4 @@
-package postgres
+package mysqldb
 
 import (
 	"database/sql"
@@ -16,7 +16,7 @@ import (
 
 // var re = regexp.MustCompile(`(?m)(?:host=)([^\s]+)`)
 
-func Open(conf config.Database) (*sql.DB, string, error) {
+func Open(conf config.MySQL) (*sql.DB, string, error) {
 	url := fmt.Sprintf("%s:%s@tcp(%s:%s)/", conf.User, conf.Password, conf.Host, conf.Port)
 	// db, err := sql.Open("mysql", `root:mysql111@tcp(localhost:3306)/mysql`)
 	//	log.Print(url)

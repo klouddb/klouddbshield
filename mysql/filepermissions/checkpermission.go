@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 
-	"github.com/klouddb/klouddbshield/mysql/model"
+	"github.com/klouddb/klouddbshield/model"
 	cons "github.com/klouddb/klouddbshield/pkg/const"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
@@ -22,7 +23,9 @@ func CheckDataDirPerm(store *sql.DB, ctx context.Context) (*model.Result, error)
 	}
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return result, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
@@ -44,7 +47,7 @@ func CheckDataDirPerm(store *sql.DB, ctx context.Context) (*model.Result, error)
 	if err != nil || errStr != "" {
 		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
 		result.Status = "Fail"
-		return result, err
+		return result, nil
 	}
 
 	if outStr == "" {
@@ -71,7 +74,9 @@ func CheckLogBinBasenamePerm(store *sql.DB, ctx context.Context) (*model.Result,
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return result, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
@@ -83,31 +88,80 @@ func CheckLogBinBasenamePerm(store *sql.DB, ctx context.Context) (*model.Result,
 		}
 	}
 
-	cmd := "ls -l | egrep '^-(?![r|w]{2}-[r|w]{2}----.*mysql\\s*mysql).*" + logBinBasename + ".*$'"
-	// log.Print(cmd)
+	cmd := "sudo ls -l " + logBinBasename + ".*" + ` | egrep  '^-[r|w]{2}-[r|w]{2}----\s*.*$' | wc -l`
 	outStr, errStr, err := utils.ExecBash(cmd)
-	if outStr == "" && errStr == "" && strings.Contains(err.Error(), "exit status 1") {
-		result.Status = "Pass"
+	if err != nil || errStr != "" {
+		if err != nil {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+		} else {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, "", errStr)
+		}
+		result.Status = "Fail"
 		return result, nil
 	}
-	if err != nil || errStr != "" {
-		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+	if outStr == "" && errStr == "" && strings.Contains(err.Error(), "exit status 1") {
 		result.Status = "Fail"
-		return result, err
+		return result, nil
+	}
+	outStr = TrimOutput(outStr)
+
+	var logBinCount1 int64
+	if outStr != "" {
+		logBinCount1, err = strconv.ParseInt(outStr, 10, 64)
+		if err != nil {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+			result.Status = "Fail"
+			return result, nil
+		}
 	}
 
-	if outStr != "" {
+	cmd = "sudo ls -l " + logBinBasename + ".* | wc -l"
+	outStr, errStr, err = utils.ExecBash(cmd)
+	if err != nil || errStr != "" {
+		if err != nil {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+		} else {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, "", errStr)
+		}
+		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
 		result.Status = "Fail"
-		result.FailReason = "Datadir is " + logBinBasename
-	} else {
-		result.Status = "Pass"
+		return result, nil
 	}
+	if outStr == "" && errStr == "" && strings.Contains(err.Error(), "exit status 1") {
+		result.Status = "Fail"
+		return result, nil
+	}
+	outStr = TrimOutput(outStr)
+
+	var logBinCount2 int64
+	if outStr != "" {
+		logBinCount2, err = strconv.ParseInt(outStr, 10, 64)
+		if err != nil {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+			result.Status = "Fail"
+			return result, nil
+		}
+	}
+	if logBinCount1 != logBinCount2 {
+		result.FailReason = fmt.Sprintf("logbincont1 count %d is not equal to logbincont2 %d", logBinCount1, logBinCount2)
+		result.Status = "Fail"
+		return result, nil
+	}
+	result.Status = "Pass"
+	return result, nil
+
+	// if outStr != "" {
+	// 	result.Status = "Fail"
+	// 	result.FailReason = "Datadir is " + logBinBasename
+	// } else {
+	// 	result.Status = "Pass"
+	// }
 	// o.OSLevelResults = append(o.OSLevelResults, result)
 	// app := "df"
 	// args := []string{"-h", datadirVal}
 	// outStr, _, err := Exec(app, args...)
 	// log.Print(result)
-	return result, nil
+	// return result, nil
 }
 
 // 3.3Ensure 'log_error' Has Appropriate Permissions
@@ -120,7 +174,9 @@ func CheckLogErrorPerm(store *sql.DB, ctx context.Context) (*model.Result, error
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return result, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
@@ -159,11 +215,33 @@ func CheckSlowQueryLogPerm(store *sql.DB, ctx context.Context) (*model.Result, e
 		Control:     "3.4",
 		Description: "Ensure 'slow_query_log' Has Appropriate Permissions",
 	}
-	query := `show variables like 'slow_query_log_file';`
-
+	query := `show variables like 'slow_query_log';`
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return result, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
+	}
+	slowQueryLogPresent := ""
+	for _, obj := range data {
+		if obj["Variable_name"] == "slow_query_log" {
+			slowQueryLogPresent = fmt.Sprint(obj["Value"])
+			break
+		}
+	}
+	if strings.ToLower(slowQueryLogPresent) == "off" {
+		result.Status = "Pass"
+		// result.FailReason = "Slow query log is turned off, Please remove old slowlog files."
+		return result, nil
+	}
+
+	query = `show variables like 'slow_query_log_file';`
+
+	data, err = utils.GetJSON(store, query)
+	if err != nil {
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	slowQueryLog := ""
 	for _, obj := range data {
@@ -173,17 +251,16 @@ func CheckSlowQueryLogPerm(store *sql.DB, ctx context.Context) (*model.Result, e
 		}
 	}
 
-	cmd := "ls -l | egrep \"^-(?![r|w]{2}-[r|w]{2}----.*mysql\\s*mysql).*" + slowQueryLog + ".*$\""
+	cmd := "sudo ls -l " + slowQueryLog + ` | egrep '^-[r|w]{2}-[r|w]{2}----\s*.*$'`
 	outStr, errStr, err := utils.ExecBash(cmd)
-	if outStr == "" && errStr == "" && strings.Contains(err.Error(), "exit status 1") {
-		result.Status = "Pass"
-	} else if err != nil || errStr != "" {
+	if err != nil || errStr != "" {
 		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
 		result.Status = "Fail"
 	}
-	if outStr != "" {
+	if outStr == "" && errStr == "" && strings.Contains(err.Error(), "exit status 1") {
 		result.Status = "Fail"
-		result.FailReason = "Datadir is " + slowQueryLog
+	} else if outStr != "" {
+		result.Status = "Pass"
 	}
 	return result, nil
 }
@@ -198,7 +275,9 @@ func CheckRelayLogBasenamePerm(store *sql.DB, ctx context.Context) (*model.Resul
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return result, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	relayLogBasename := ""
 	for _, obj := range data {
@@ -208,27 +287,88 @@ func CheckRelayLogBasenamePerm(store *sql.DB, ctx context.Context) (*model.Resul
 		}
 	}
 
-	cmd := "ls -l | egrep \"^-(?![r|w]{2}-[r|w]{2}----.*mysql\\s*mysql).*" + relayLogBasename + ".*$\""
-
+	cmd := "sudo ls -l " + relayLogBasename + ".* | wc -l"
 	outStr, errStr, err := utils.ExecBash(cmd)
-	if outStr == "" && errStr == "" && strings.Contains(err.Error(), "exit status 1") {
+	if err != nil || errStr != "" {
+		if err != nil {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+		} else {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, "", errStr)
+		}
+		if strings.Contains(errStr, "No such file or directory") {
+			result.Status = "Pass"
+			return result, nil
+		}
+		result.Status = "Fail"
+		return result, nil
+	}
+	if outStr == "" && errStr == "" && err != nil && strings.Contains(err.Error(), "exit status 1") {
+		result.Status = "Fail"
+		return result, nil
+	}
+	outStr = TrimOutput(outStr)
+
+	var relayCount int64
+	if outStr != "" {
+		relayCount, err = strconv.ParseInt(outStr, 10, 64)
+		if err != nil {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+			result.Status = "Fail"
+			return result, nil
+		}
+	}
+
+	if relayCount == 0 {
 		result.Status = "Pass"
 		return result, nil
 	}
-	if err != nil || errStr != "" {
-		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
-		result.Status = "Fail"
-		return result, err
-	}
 
-	if outStr != "" {
-		result.Status = "Fail"
-		result.FailReason = "Datadir is " + relayLogBasename
-	} else {
+	if relayCount > 0 {
+		cmd := "sudo ls " + relayLogBasename + ".*"
+		// cmd := "sudo ls -l " + logBinBasename + ".*" + ` | egrep  '^-[r|w]{2}-[r|w]{2}----\s*.*$' | wc -l`
+		outStr, errStr, err := utils.ExecBash(cmd)
+		if err != nil || errStr != "" {
+			if err != nil {
+				result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+			} else {
+				result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, "", errStr)
+			}
+			result.Status = "Fail"
+			return result, nil
+		}
+		if outStr == "" && errStr == "" && err != nil && strings.Contains(err.Error(), "exit status 1") {
+			result.Status = "Fail"
+			return result, nil
+		}
+		arrayofFiles := strings.Split(outStr, "\n")
+
+		for _, file := range arrayofFiles {
+			if TrimOutput(file) == "" {
+				continue
+			}
+			cmd := "sudo ls -l " + file + ` | egrep '^-[r|w]{2}-[r|w]{2}----\s*.*$'`
+			outStr, errStr, err := utils.ExecBash(cmd)
+			if err != nil || errStr != "" {
+				if err != nil {
+					result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+				} else {
+					result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, "", errStr)
+				}
+				result.Status = "Fail"
+				return result, nil
+			}
+			if outStr == "" && errStr == "" && err != nil && strings.Contains(err.Error(), "exit status 1") {
+				result.Status = "Fail"
+				return result, nil
+			}
+		}
+
 		result.Status = "Pass"
-	}
+		return result, nil
 
+	}
 	return result, nil
+
 }
 
 // 3.6Ensure 'general_log_file' Has Appropriate Permissions
@@ -237,21 +377,56 @@ func CheckGeneralLogFilePerm(store *sql.DB, ctx context.Context) (*model.Result,
 		Control:     "3.6",
 		Description: "Ensure 'general_log_file' Has Appropriate Permissions",
 	}
-	query := `show variables like 'general_log_file';`
+	query := `select @@general_log, @@general_log_file;`
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return result, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
+	var generalLog int64
+	generalLogStr := ""
+	ok := false
 	generalLogFile := ""
 	for _, obj := range data {
-		if obj["Variable_name"] == "general_log_file" {
-			generalLogFile = fmt.Sprint(obj["Value"])
-			break
+		generalLogFile, ok = obj["@@general_log_file"].(string)
+		if !ok {
+			generalLogFile = ""
+		}
+
+		generalLog, ok = obj["@@general_log"].(int64)
+		if !ok {
+			generalLogStr, ok = obj["@@general_log"].(string)
+			if !ok {
+				generalLog = 0
+			}
+			if strings.ToLower(generalLogStr) == "off" {
+				generalLog = 0
+			} else if strings.ToLower(generalLogStr) == "on" {
+				generalLog = 1
+			}
+			generalLog, err = strconv.ParseInt(generalLogStr, 10, 64)
+			if err != nil {
+				generalLog = 0
+			}
 		}
 	}
 
-	cmd := "sudo ls -l " + generalLogFile + " grep '^-rw-------.*mysql.*mysql'"
+	if generalLog == 0 {
+		if utils.DoesFileExist(generalLogFile) {
+			result.FailReason = fmt.Sprintf("Old general log files exist , Please remove %s", generalLogFile)
+			result.Status = "Fail"
+			return result, nil
+		} else {
+			// result.FailReason = "General log is not enabled"
+			result.Status = "Pass"
+			return result, nil
+		}
+	}
+	// set global general_log=0
+
+	cmd := "sudo ls -l " + generalLogFile + `| egrep '^-[r|w]{2}-[r|w]{2}----\s*.*$'`
 
 	outStr, errStr, err := utils.ExecBash(cmd)
 
@@ -260,9 +435,9 @@ func CheckGeneralLogFilePerm(store *sql.DB, ctx context.Context) (*model.Result,
 		result.Status = "Fail"
 		return result, nil
 	}
-	if outStr != "" {
+	if outStr == "" {
 		result.Status = "Fail"
-		result.FailReason = "general_log_file is " + generalLogFile + " with output " + outStr
+		result.FailReason = "general_log_file is " + generalLogFile + " review the permissions"
 	} else {
 		result.Status = "Pass"
 	}
@@ -273,6 +448,22 @@ func CheckGeneralLogFilePerm(store *sql.DB, ctx context.Context) (*model.Result,
 	// log.Print(result)
 	return result, nil
 }
+func IsCertType(fileName string) bool {
+	certFiles := [9]string{"pem", "crt", "ca-bundle", "p7b", "p7s", "der", "cer", "pfx", "p12"}
+
+	for _, crtType := range certFiles {
+		if strings.HasSuffix(fileName, crtType) {
+			return true
+		}
+	}
+	return false
+}
+
+func TrimOutput(outStr string) string {
+	outStr = strings.Trim(outStr, "\n")
+	outStr = strings.Trim(outStr, " ")
+	return outStr
+}
 
 // 3.7Ensure SSL Key Files Have Appropriate Permissions
 func CheckSSLKeyFilePerm(store *sql.DB, ctx context.Context) (*model.Result, error) {
@@ -280,26 +471,34 @@ func CheckSSLKeyFilePerm(store *sql.DB, ctx context.Context) (*model.Result, err
 		Control:     "3.7",
 		Description: "Ensure SSL Key Files Have Appropriate Permissions",
 	}
-	query := `show variables where variable_name = 'ssl_key';`
+	// query := `show variables where variable_name = 'ssl_key';`
+	query := ` SELECT * FROM performance_schema.global_variables  WHERE REGEXP_LIKE(VARIABLE_NAME,'^.*ssl_(ca|capath|cert|crl|crlpath|key)$') AND VARIABLE_VALUE <> '';`
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return result, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
-	SSLKey := ""
+
+	// certFiles = make(map[string]interface{})
+
+	// SSLKey := ""
+	certFiles := []string{}
 	for _, obj := range data {
-		if obj["Variable_name"] == "ssl_key" {
-			SSLKey = fmt.Sprint(obj["Value"])
-			break
-		}
+		certFiles = append(certFiles, fmt.Sprint(obj["VARIABLE_VALUE"]))
 	}
+	// log.Println("files are ", certFiles)
+
 	query = `show global variables like '%datadir%';`
 
 	data, err = utils.GetJSON(store, query)
 	if err != nil {
-		return result, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
@@ -311,21 +510,47 @@ func CheckSSLKeyFilePerm(store *sql.DB, ctx context.Context) (*model.Result, err
 		}
 	}
 
-	cmd := "sudo ls -l " + datadir + SSLKey + " | egrep '^-r--------[ \t]*.[ \t]*mysql[ \t]*mysql.*$'"
+	// ls -l <ssl_file> | egrep "^-(?!r-{8}.*mysql\s*mysql).*$"
 
-	outStr, errStr, err := utils.ExecBash(cmd)
+	// log.Println("data dir is", datadir)
 
-	if (err != nil && !strings.Contains(err.Error(), "exit status 1")) || errStr != "" {
-		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
-		result.Status = "Fail"
-		return result, nil
+	for _, certFile := range certFiles {
+		cmd := "sudo ls -l " + datadir + certFile + " | egrep '^-r--------'"
+
+		outStr, errStr, err := utils.ExecBash(cmd)
+		if (err != nil && !strings.Contains(err.Error(), "exit status 1")) || errStr != "" {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+			result.Status = "Fail"
+			return result, nil
+		}
+		if outStr == "" {
+			result.Status = "Fail"
+			result.FailReason = "cert file  " + datadir + certFile + " doesn't have correct permissions"
+			return result, nil
+		}
+		// log.Println("outstr is empty")
 	}
-	if outStr != "" {
-		result.Status = "Fail"
-		result.FailReason = "ssl_key is " + SSLKey
-	} else {
-		result.Status = "Pass"
+
+	for _, certFile := range certFiles {
+		cmd := "sudo ls -l " + datadir + certFile + " | awk '{print $3 ,$4}'"
+
+		outStr, errStr, err := utils.ExecBash(cmd)
+		if (err != nil && !strings.Contains(err.Error(), "exit status 1")) || errStr != "" {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+			result.Status = "Fail"
+			return result, nil
+		}
+
+		outStr = TrimOutput(outStr)
+		if outStr != "mysql mysql" {
+			result.Status = "Fail"
+			result.FailReason = "cert file not present in correct group " + datadir + certFile
+			return result, nil
+		}
 	}
+
+	result.Status = "Pass"
+
 	// log.Print(result)
 	return result, nil
 }
@@ -340,7 +565,9 @@ func CheckPluginDirPerm(store *sql.DB, ctx context.Context) (*model.Result, erro
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return result, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
@@ -352,7 +579,7 @@ func CheckPluginDirPerm(store *sql.DB, ctx context.Context) (*model.Result, erro
 		}
 	}
 
-	cmd := "ls -l " + pluginDir + " | grep \"dr-xr-x---\\|dr-xr-xr--\" | grep \"plugin\""
+	cmd := "sudo ls -ld " + pluginDir + " | grep \"dr-xr-x---\\|dr-xr-xr--\" | grep \"plugin\""
 
 	outStr, errStr, err := utils.ExecBash(cmd)
 
@@ -381,17 +608,20 @@ func CheckAuditLogFilePerm(store *sql.DB, ctx context.Context) (*model.Result, e
 
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
-		return result, err
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
 	}
 	// jsonData, err := json.Marshal(data)
 	// log.Print(string(jsonData))
 	auditLogFile := ""
 	if len(data) == 0 {
-		result.Status = "bypass"
+		result.Status = "Fail"
 		result.FailReason = "Unable to fetch audit_log_file from mysql database"
 		// log.Print(result)
 		return result, nil
 	}
+
 	for _, obj := range data {
 		if obj["Variable_name"] == "audit_log_file" {
 			auditLogFile = fmt.Sprint(obj["Value"])
@@ -399,19 +629,27 @@ func CheckAuditLogFilePerm(store *sql.DB, ctx context.Context) (*model.Result, e
 		}
 	}
 
-	cmd := "ls -l " + auditLogFile + " | egrep \"^-([rw-]{2}-){2}---[ \t]*[0-9][ \t]*mysql[\t]*mysql.*$\""
-	outStr, errStr, err := utils.ExecBash(cmd)
-
-	if err != nil || errStr != "" {
-		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
-		result.Status = "Fail"
-		return result, nil
-	}
-	if outStr == "" {
-		result.Status = "Fail"
-		result.FailReason = "audit_log_file is " + auditLogFile
-	} else {
+	if len(auditLogFile) > 0 {
 		result.Status = "Pass"
+	} else {
+		result.Status = "Fail"
+		result.FailReason = "Audit log file is empty"
 	}
 	return result, nil
+
+	// cmd := "ls -l " + auditLogFile + " | egrep \"^-([rw-]{2}-){2}---[ \t]*[0-9][ \t]*mysql[\t]*mysql.*$\""
+	// outStr, errStr, err := utils.ExecBash(cmd)
+
+	// if err != nil || errStr != "" {
+	// 	result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+	// 	result.Status = "Fail"
+	// 	return result, nil
+	// }
+	// if outStr == "" {
+	// 	result.Status = "Fail"
+	// 	result.FailReason = "audit_log_file is " + auditLogFile
+	// } else {
+	// 	result.Status = "Pass"
+	// }
+	// return result, nil
 }
