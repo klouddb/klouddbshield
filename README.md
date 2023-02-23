@@ -57,6 +57,7 @@ $ ./ciscollector -r
 ```
 
 ## Sample config file
+
 ```
 [mysql]
 host="localhost"
