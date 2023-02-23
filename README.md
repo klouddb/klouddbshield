@@ -17,7 +17,7 @@
 
 !! Please read our detailed blog post https://klouddb.io/releasing-first-version-of-klouddb-shield-mysql-cis-benchmarks/ before using this tool !!
 
-NOTE - Currently it only works for MySQL 8 ; For some linux commands you might need root/sudo access 
+NOTE - It works for both MySQL 8 and MySQL 5.7 (Some controls might not be applicable in 5.7) ; For some linux commands you might need root/sudo access 
 
 You can directly download the package from [releases](https://github.com/klouddb/klouddbshield/releases) section of repo and install the package (for example - rpm for centos and deb package for Ubuntu etc..) . You also need to edit config file after installing the package(see above mentioned blog post for detailed walkthrough)
 
@@ -56,6 +56,21 @@ $ go build -o ./ciscollector ./cmd/ciscollector
 $ ./ciscollector -r
 ```
 
+## Sample config file
+```
+[mysql]
+host="localhost"
+port="3306"
+# user="root"
+# password="mysql111"
+maxIdleConn = 2
+maxOpenConn = 2
+
+
+[app]
+debug = true
+
+```
 ## Contributing 
 
 We welcome PRs and Issue Reports
