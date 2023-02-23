@@ -58,6 +58,7 @@ $ ./ciscollector -r
 
 ## [Sample config file](https://github.com/klouddb/klouddbshield/blob/main/config_example.toml)
 
+NOTE - In old version you will have label in config file as "[database]" instead of "[mysql]"
 ```
 [mysql]
 host="localhost"
