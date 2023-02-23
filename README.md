@@ -56,7 +56,7 @@ $ go build -o ./ciscollector ./cmd/ciscollector
 $ ./ciscollector -r
 ```
 
-## Sample config file
+## [Sample config file](https://github.com/klouddb/klouddbshield/blob/main/config_example.toml)
 
 ```
 [mysql]
