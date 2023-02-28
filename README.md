@@ -19,7 +19,7 @@ Postgres - Please read https://klouddb.io/cis-benchmarks-for-postgres-klouddbshi
 
 MySQL -  Please read https://klouddb.io/releasing-first-version-of-klouddb-shield-mysql-cis-benchmarks/ 
 
-NOTE - It works for both MySQL 8 and MySQL 5.7 (Some controls might not be applicable in 5.7) ; For some linux commands you might need root/sudo access 
+NOTE -  For some linux commands you might need root/sudo access 
 
 You can directly download the package from [releases](https://github.com/klouddb/klouddbshield/releases) section of repo and install the package (for example - rpm for centos and deb package for Ubuntu etc..) . You also need to edit config file after installing the package(see above mentioned blog post for detailed walkthrough)
 
