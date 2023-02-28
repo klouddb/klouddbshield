@@ -13,7 +13,7 @@
 
 ## Installation
 
-##### How to run this tool on my server ?
+## How to run this tool on my server ?
 
 Postgres - Please read https://klouddb.io/cis-benchmarks-for-postgres-klouddbshield-1-1/
 
