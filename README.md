@@ -52,11 +52,11 @@ Install and run locally the server
 
 ```bash
 $ go build -o ./ciscollector ./cmd/ciscollector
-# Edit cisconfig.toml at path /etc/mysqlcollector/cisconfig.toml 
+# Edit kshieldconfig.toml at path /etc/klouddbshield/kshieldconfig.toml 
 $ ./ciscollector -r
 ```
 
-## [Sample config file](https://github.com/klouddb/klouddbshield/blob/main/config_example.toml)
+## [Sample config file](https://github.com/klouddb/klouddbshield/blob/main/kshieldconfig_example.toml)
 
 NOTE - In old version you will have label in config file as "[database]" instead of "[mysql]"
 ```
@@ -68,6 +68,14 @@ port="3306"
 maxIdleConn = 2
 maxOpenConn = 2
 
+[postgres]
+host="localhost" 
+port="5432" 
+user="postgres"
+dbname="postgres"
+password="postgres" 
+maxIdleConn = 2
+maxOpenConn = 2
 
 [app]
 debug = true

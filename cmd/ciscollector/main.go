@@ -10,6 +10,8 @@ import (
 	"github.com/klouddb/klouddbshield/mysql"
 	"github.com/klouddb/klouddbshield/pkg/config"
 	"github.com/klouddb/klouddbshield/pkg/mysqldb"
+	"github.com/klouddb/klouddbshield/pkg/postgresdb"
+	"github.com/klouddb/klouddbshield/postgres"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -30,13 +32,12 @@ func main() {
 
 	// Program context
 	ctx := context.Background()
-	if cnf.App.Run {
-		runMySql(ctx, cnf)
-	}
 	if cnf.App.RunMySql {
 		runMySql(ctx, cnf)
 	}
-
+	if cnf.App.RunPostgres {
+		runPostgres(ctx, cnf)
+	}
 }
 
 func runMySql(ctx context.Context, cnf *config.Config) {
@@ -59,4 +60,22 @@ func runMySql(ctx context.Context, cnf *config.Config) {
 	}
 	fmt.Println("mysqlsecreport.json file generated")
 	// }
+}
+func runPostgres(ctx context.Context, cnf *config.Config) {
+	postgresDatabase := cnf.Postgres
+	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
+	if err != nil {
+		return
+	}
+	listOfResults := postgres.PerformAllChecks(postgresStore, ctx)
+	jsonData, err := json.MarshalIndent(listOfResults, "", "  ")
+	if err != nil {
+		return
+	}
+	err = os.WriteFile("postgressecreport.json", jsonData, 0600)
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to generate postgressecreport.json file: " + err.Error())
+		fmt.Println("**********listOfResults*************\n", string(jsonData))
+	}
+	fmt.Println("postgressecreport.json file generated")
 }

@@ -3,4 +3,4 @@ release:
 build:
 	go build -o ./ciscollector ./cmd/ciscollector
 run: 
-	go build -o ./ciscollector ./cmd/ciscollector && ./ciscollector
+	go build -o ./ciscollector ./cmd/ciscollector && ./ciscollector -r
