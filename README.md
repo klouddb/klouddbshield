@@ -15,7 +15,9 @@
 
 ##### How to run this tool on my server ?
 
-!! Please read our detailed blog post https://klouddb.io/releasing-first-version-of-klouddb-shield-mysql-cis-benchmarks/ before using this tool !!
+Postgres - Please read https://klouddb.io/cis-benchmarks-for-postgres-klouddbshield-1-1/
+
+MySQL -  Please read https://klouddb.io/releasing-first-version-of-klouddb-shield-mysql-cis-benchmarks/ 
 
 NOTE - It works for both MySQL 8 and MySQL 5.7 (Some controls might not be applicable in 5.7) ; For some linux commands you might need root/sudo access 
 
