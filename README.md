@@ -44,7 +44,7 @@ Section 7  - Authentication            - 4/6  - 66.67%
 Section 8  - Network                   - 0/2  - 0.00%
 Section 9  - Replication               - 0/2  - 0.00%
 Overall Score - 18/45 - 40.00%
-mysqlsecreport.json file generated
+secreport.json file generated
 ```
 
 ## How to run locally(without installing a package) ?
