@@ -14,9 +14,9 @@
 
 ## How to run this tool on my server ?
 
-Postgres - Please read https://klouddb.io/cis-benchmarks-for-postgres-klouddbshield-1-1/
+Postgres  -   Please read https://klouddb.io/cis-benchmarks-for-postgres-klouddbshield-1-1/
 
-MySQL -  Please read https://klouddb.io/releasing-first-version-of-klouddb-shield-mysql-cis-benchmarks/ 
+MySQL     -   Please read https://klouddb.io/releasing-first-version-of-klouddb-shield-mysql-cis-benchmarks/ 
 
 NOTE -  For some linux commands you might need root/sudo access 
 
