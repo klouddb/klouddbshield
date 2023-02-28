@@ -22,7 +22,7 @@ Currently we check for about 32 controls(Postgres) and we plan to add more check
 
 NOTE -  For some linux commands you might need root/sudo access 
 
-You can directly download the package from [releases](https://github.com/klouddb/klouddbshield/releases) section of repo and install the package (for example - rpm for centos and deb package for Ubuntu etc..) . You also need to edit config file after installing the package(see above mentioned blog post for detailed walkthrough)
+You can directly download the package from releases section of repo and install the package (for example - rpm for centos and deb package for Ubuntu etc..) . You also need to edit config file after installing the package(see above mentioned blog post for detailed walkthrough)
 
 
 ```bash
