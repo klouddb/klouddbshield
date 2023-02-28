@@ -11,7 +11,6 @@
 [report-card-img]: https://goreportcard.com/badge/github.com/klouddb/klouddbshield
 [report-card]: https://goreportcard.com/report/github.com/klouddb/klouddbshield
 
-## Installation
 
 ## How to run this tool on my server ?
 
