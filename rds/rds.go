@@ -54,8 +54,9 @@ func NewRdsCommand() (rdsCommand *RdsCommand, err error) {
 		var arrayOfDataBases []string
 		err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfDataBases)
 		if err != nil {
-			log.Fatalln("Unmarshalling issue happened"+commonTroubleSuggestion, cmdOutput.StdOut, cmdOutput.StdErr, err)
-			return
+
+			fmt.Println("Unmarshalling issue happened"+commonTroubleSuggestion, cmdOutput.StdOut, cmdOutput.StdErr, err)
+			os.Exit(1)
 		}
 		if len(arrayOfDataBases) == 0 {
 			err = errors.New("no rds databases exist")

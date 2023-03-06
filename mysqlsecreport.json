@@ -1,0 +1,265 @@
+[
+  {
+    "FailReason": "Datadir is /usr/local/mysql/data/",
+    "Status": "Fail",
+    "Description": "Check Databases for Non-System Partitions",
+    "Control": "1.1"
+  },
+  {
+    "FailReason": "cmd: ps -ef | egrep \"^mysql.*$\" \nreturns nothing",
+    "Status": "Fail",
+    "Description": "Use Dedicated Least Privileged Account for MySQL Daemon/Service",
+    "Control": "1.2"
+  },
+  {
+    "FailReason": "cmd: find /root -name \".mysql_history\" \ncmderr: exit status 1 \nouterr: find: /root: No such file or directory\n",
+    "Status": "Fail",
+    "Description": "Disable MySQL Command History ",
+    "Control": "1.3"
+  },
+  {
+    "FailReason": "cmd: grep MYSQL_PWD /proc/*/environ \ncmderr: exit status 2 \nouterr: grep: /proc/*/environ: No such file or directory\n",
+    "Status": "Fail",
+    "Description": "Verify That the MYSQL_PWD Environment Variable is Not in Use",
+    "Control": "1.4"
+  },
+  {
+    "FailReason": "cmd: getent passwd mysql | egrep \"^.*[\\/bin\\/false|\\/sbin\\/nologin]$\" \ncmderr: exit status 1 \nouterr: bash: getent: command not found\n",
+    "Status": "Fail",
+    "Description": "Ensure Interactive Login is Disabled",
+    "Control": "1.5"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Verify That 'MYSQL_PWD' is Not Set in Users' Profiles",
+    "Control": "1.6"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Point-in-Time Recovery",
+    "Control": "2.1.5"
+  },
+  {
+    "FailReason": "Value of binlog_encryption is OFF",
+    "Status": "Fail",
+    "Description": "Ensure Binary and Relay Logs are Encrypted",
+    "Control": "2.2.1"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure 'password_lifetime' is Less Than or Equal to '365'",
+    "Control": "2.7"
+  },
+  {
+    "FailReason": "Value of password_history is 0 and password_reuse_interval is 0",
+    "Status": "Fail",
+    "Description": "Ensure Password Resets Require Strong Passwords",
+    "Control": "2.8"
+  },
+  {
+    "FailReason": "Value of password_require_current is OFF",
+    "Status": "Fail",
+    "Description": "Require Current Password for Password Reset",
+    "Control": "2.9"
+  },
+  {
+    "FailReason": "Value of block_encryption_mode is aes-128-ecb",
+    "Status": "Fail",
+    "Description": "Ensure AES Encryption Mode for AES_ENCRYPT/AES_DECRYPT is Configured Correctly",
+    "Control": "2.12"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure MySQL is Bound to an IP Address",
+    "Control": "2.14"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Limit Accepted Transport Layer Security (TLS) Versions",
+    "Control": "2.15"
+  },
+  {
+    "FailReason": [
+      {
+        "host": "localhost",
+        "ssl_type": "",
+        "user": "mysql"
+      },
+      {
+        "host": "localhost",
+        "ssl_type": "",
+        "user": "root"
+      }
+    ],
+    "Status": "Fail",
+    "Description": "Require Client-Side Certificates (X.509)",
+    "Control": "2.16"
+  },
+  {
+    "FailReason": "Value of sslCipher is \nValue of tls_ciphersuites is ",
+    "Status": "Fail",
+    "Description": "Ensure Only Approved Ciphers are Used",
+    "Control": "2.17"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure 'datadir' Has Appropriate Permissions",
+    "Control": "3.1"
+  },
+  {
+    "FailReason": "cmd: sudo ls -l /usr/local/mysql/data/binlog.* | egrep  '^-[r|w]{2}-[r|w]{2}----\\s*.*$' | wc -l \ncmderr:  \nouterr: ls: /usr/local/mysql/data/binlog.*: No such file or directory\n",
+    "Status": "Fail",
+    "Description": "Ensure 'log_bin_basename' Files Have Appropriate Permissions",
+    "Control": "3.2"
+  },
+  {
+    "FailReason": "Expected some output for below command:\nsudo ls -l /usr/local/mysql/data/mysqld.local.err | grep '^-rw-------.*mysql.*mysql.*$'",
+    "Status": "Fail",
+    "Description": "Ensure 'log_error' Has Appropriate Permissions",
+    "Control": "3.3"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure 'slow_query_log' Has Appropriate Permissions",
+    "Control": "3.4"
+  },
+  {
+    "FailReason": "cmd: sudo ls -l /usr/local/mysql/data/Rahuls-MacBook-Pro-2-relay-bin.* | wc -l \ncmderr:  \nouterr: ls: /usr/local/mysql/data/Rahuls-MacBook-Pro-2-relay-bin.*: No such file or directory\n",
+    "Status": "Pass",
+    "Description": "Ensure 'relay_log_basename' Files Have Appropriate Permissions",
+    "Control": "3.5"
+  },
+  {
+    "FailReason": "Old general log files exist , Please remove /usr/local/mysql/data/Rahuls-MacBook-Pro-2.log",
+    "Status": "Fail",
+    "Description": "Ensure 'general_log_file' Has Appropriate Permissions",
+    "Control": "3.6"
+  },
+  {
+    "FailReason": "cert file  /usr/local/mysql/data/ca.pem doesn't have correct permissions",
+    "Status": "Fail",
+    "Description": "Ensure SSL Key Files Have Appropriate Permissions",
+    "Control": "3.7"
+  },
+  {
+    "FailReason": "Expected some output for below command:\nsudo ls -ld /usr/local/mysql/lib/plugin/ | grep \"dr-xr-x---\\|dr-xr-xr--\" | grep \"plugin\"",
+    "Status": "Fail",
+    "Description": "Ensure Plugin Directory Has Appropriate Permissions",
+    "Control": "3.8"
+  },
+  {
+    "FailReason": "Unable to fetch audit_log_file from mysql database",
+    "Status": "Fail",
+    "Description": "Ensure 'audit_log_file' Has Appropriate Permissions",
+    "Control": "3.9"
+  },
+  {
+    "FailReason": "Got unexpected value 'world' for SCHEMA_NAME",
+    "Status": "Fail",
+    "Description": "Ensure Example or Test Databases are Not Installed on Production Servers",
+    "Control": "4.2"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure 'allow-suspicious-udfs' is Set to 'OFF'",
+    "Control": "4.3"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure 'mysqld' is Not Started With '--skip-grant-tables'",
+    "Control": "4.5"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure Symbolic Links are Disabled",
+    "Control": "4.6"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure the 'daemon_memcached' Plugin is Disabled",
+    "Control": "4.7"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure the 'secure_file_priv' is Configured Correctly",
+    "Control": "4.8"
+  },
+  {
+    "FailReason": "Value of sql_mode is:\nONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+    "Status": "Fail",
+    "Description": "Ensure 'sql_mode' Contains 'STRICT_ALL_TABLES'",
+    "Control": "4.9"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure 'log_error' is configured correctly",
+    "Control": "6.1"
+  },
+  {
+    "FailReason": "Value of @@global.log_bin_basename is /usr/local/mysql/data/binlog",
+    "Status": "Fail",
+    "Description": "Ensure Log Files are Stored on a Non-System Partition",
+    "Control": "6.2"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure 'log_error_verbosity' is Set to '2'",
+    "Control": "6.3"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure default_authentication_plugin is Set to a Secure Option",
+    "Control": "7.1"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure Passwords are Set for All MySQL Accounts",
+    "Control": "7.3"
+  },
+  {
+    "FailReason": "Value of default_password_lifetime is 0",
+    "Status": "Fail",
+    "Description": "Set 'default_password_lifetime' to Require a Yearly Password Change",
+    "Control": "7.4"
+  },
+  {
+    "FailReason": "No Password Complexity Policies",
+    "Status": "Fail",
+    "Description": "Ensure Password Complexity Policies are in Place",
+    "Control": "7.5"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure No Users Have Wildcard Hostnames",
+    "Control": "7.6"
+  },
+  {
+    "Status": "Pass",
+    "Description": "Ensure No Anonymous Accounts Exist",
+    "Control": "7.7"
+  },
+  {
+    "FailReason": "Value of @@require_secure_transport is empty",
+    "Status": "Fail",
+    "Description": "Ensure 'require_secure_transport' is Set to 'ON' and/or 'have_ssl' is Set to 'YES'",
+    "Control": "8.1"
+  },
+  {
+    "FailReason": "Value of max_connections is 151 and value of max_user_connections is 0",
+    "Status": "Fail",
+    "Description": "Set Maximum Connection Limits for Server and per User",
+    "Control": "8.3"
+  },
+  {
+    "FailReason": "No output for the query, expected ssl_verify_server_cert from mysql.slave_master_info",
+    "Status": "Fail",
+    "Description": "Ensure 'SOURCE_SSL_VERIFY_SERVER_CERT' is Set to 'YES' or '1'",
+    "Control": "9.2"
+  },
+  {
+    "FailReason": "No output for the query, expected ssl_verify_server_cert from mysql.slave_master_info",
+    "Status": "Fail",
+    "Description": "Ensure 'master_info_repository' is Set to 'TABLE'",
+    "Control": "9.3"
+  }
+]

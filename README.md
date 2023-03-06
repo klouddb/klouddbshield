@@ -61,7 +61,7 @@ $ ./ciscollector -r
 ```
 ## RDS Checks
 
-Make sure you have properly configured your AWS-CLI with a valid Access Key and Region or declare AWS variables properly. NOTE - You need to run this tool from bastion host or from some place where you have access to your RDS instances(It only needs basic aws rds describe priivs and sns read privs ). You dont need to populate /etc/klouddbshield/kshieldconfig.toml config file for RDS checks
+Make sure you have properly configured your AWS-CLI with a valid Access Key and Region or declare AWS variables properly. NOTE - You need to run this tool from bastion host or from some place where you have access to your RDS instances(It only needs basic aws rds describe priivs and sns read privs )
 ```
 export AWS_ACCESS_KEY_ID="ASXXXXXXX"
 export AWS_SECRET_ACCESS_KEY="XXXXXXXXX"

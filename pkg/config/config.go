@@ -100,26 +100,28 @@ func NewConfig() (*Config, error) {
 	v.AddConfigPath(".")
 	v.AddConfigPath("/etc/klouddbshield")
 
-	err := v.ReadInConfig()
-	if err != nil {
-		return nil, fmt.Errorf("fatal error config file: %w", err)
-	}
 	c.App.Run = run
 	c.App.RunMySql = runMySql
 	c.App.RunPostgres = runPostgres
 	c.App.RunRds = runRds
-	err = v.Unmarshal(c)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshal: %w", err)
+	if !runRds {
+		err := v.ReadInConfig()
+		if err != nil {
+			return nil, fmt.Errorf("fatal error config file: %w", err)
+		}
+		err = v.Unmarshal(c)
+		if err != nil {
+			return nil, fmt.Errorf("unmarshal: %w", err)
+		}
 	}
-
+	var err error
 	if c.App.Hostname == "" {
 		c.App.Hostname, err = os.Hostname()
 		if err != nil {
 			return nil, fmt.Errorf("getting hostname: %w", err)
 		}
 	}
-	if c.MySQL == nil && c.Postgres == nil {
+	if c.MySQL == nil && c.Postgres == nil && !runRds {
 		return nil, fmt.Errorf("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
 	}
 	if c.MySQL == nil && runMySql {
