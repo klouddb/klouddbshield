@@ -66,6 +66,7 @@ Make sure you have properly configured your AWS-CLI with a valid Access Key and 
 export AWS_ACCESS_KEY_ID="ASXXXXXXX"
 export AWS_SECRET_ACCESS_KEY="XXXXXXXXX"
 export AWS_SESSION_TOKEN="XXXXXXXXX"
+export AWS_REGION="XXXXXXXXX"
 ```
 
 ## [Sample config file](https://github.com/klouddb/klouddbshield/blob/main/kshieldconfig_example.toml)
