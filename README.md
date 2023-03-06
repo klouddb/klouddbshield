@@ -59,6 +59,14 @@ $ go build -o ./ciscollector ./cmd/ciscollector
 # Edit kshieldconfig.toml at path /etc/klouddbshield/kshieldconfig.toml 
 $ ./ciscollector -r
 ```
+## RDS Checks
+
+Make sure you have properly configured your AWS-CLI with a valid Access Key and Region or declare AWS variables properly
+```
+export AWS_ACCESS_KEY_ID="ASXXXXXXX"
+export AWS_SECRET_ACCESS_KEY="XXXXXXXXX"
+export AWS_SESSION_TOKEN="XXXXXXXXX"
+```
 
 ## [Sample config file](https://github.com/klouddb/klouddbshield/blob/main/kshieldconfig_example.toml)
 Below is sample file - If you are checking for postgres comment out the mysql section or if you are only checking mysql part , comment out the postgres part. Location of the config file is /etc/klouddbshield
