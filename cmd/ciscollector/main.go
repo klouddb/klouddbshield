@@ -12,6 +12,7 @@ import (
 	"github.com/klouddb/klouddbshield/pkg/mysqldb"
 	"github.com/klouddb/klouddbshield/pkg/postgresdb"
 	"github.com/klouddb/klouddbshield/postgres"
+	"github.com/klouddb/klouddbshield/rds"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -37,6 +38,9 @@ func main() {
 	}
 	if cnf.App.RunPostgres {
 		runPostgres(ctx, cnf)
+	}
+	if cnf.App.RunRds {
+		runRDS(ctx, cnf)
 	}
 }
 
@@ -78,4 +82,21 @@ func runPostgres(ctx context.Context, cnf *config.Config) {
 		fmt.Println("**********listOfResults*************\n", string(jsonData))
 	}
 	fmt.Println("postgressecreport.json file generated")
+}
+
+func runRDS(ctx context.Context, cnf *config.Config) {
+	fmt.Println("running RDS ")
+	listOfResults := rds.PerformAllChecks(ctx)
+
+	jsonData, err := json.MarshalIndent(listOfResults, "", "  ")
+	if err != nil {
+		fmt.Println("error marshaling list of results", err)
+		return
+	}
+	err = os.WriteFile("rdssecreport.json", jsonData, 0600)
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to generate rdssecreport.json file: " + err.Error())
+		fmt.Println("**********listOfResults*************\n", string(jsonData))
+	}
+	fmt.Println("rdssecreport.json file generated")
 }

@@ -43,6 +43,7 @@ type App struct {
 	Run         bool
 	RunPostgres bool
 	RunMySql    bool
+	RunRds      bool
 }
 
 var CONF *Config
@@ -55,9 +56,11 @@ func NewConfig() (*Config, error) {
 	var run bool
 	var runPostgres bool
 	var runMySql bool
+	var runRds bool
 	flag.BoolVar(&run, "r", run, "Run")
 	flag.BoolVar(&runMySql, "run-mysql", runMySql, "Run MySQL")
 	flag.BoolVar(&runPostgres, "run-postgres", runPostgres, "Run Postgres")
+	flag.BoolVar(&runRds, "run-rds", runRds, "Run AWS RDS")
 	// flag.BoolVar(&verbose, "v", verbose, "Verbose")
 	flag.BoolVar(&version, "version", version, "Print version")
 
@@ -67,13 +70,13 @@ func NewConfig() (*Config, error) {
 		log.Debug().Str("version", Version).Send()
 		os.Exit(0)
 	}
-	if !(run || runMySql || runPostgres) {
+	if !(run || runMySql || runPostgres || runRds) {
 		flag.Usage()
 		os.Exit(0)
 	}
 	if run {
-		fmt.Println("1.Postgres\n2.MySQL")
-		fmt.Printf("Enter your choice to execute(1/2):")
+		fmt.Println("1.Postgres\n2.MySQL\n3.AWS RDS")
+		fmt.Printf("Enter your choice to execute(1/2/3):")
 		choice := 0
 		fmt.Scanln(&choice)
 		switch choice {
@@ -81,6 +84,8 @@ func NewConfig() (*Config, error) {
 			runPostgres = true
 		case 2:
 			runMySql = true
+		case 3:
+			runRds = true
 		default:
 			fmt.Println("Invalid Choice, Please Try Again.")
 			os.Exit(1)
@@ -102,6 +107,7 @@ func NewConfig() (*Config, error) {
 	c.App.Run = run
 	c.App.RunMySql = runMySql
 	c.App.RunPostgres = runPostgres
+	c.App.RunRds = runRds
 	err = v.Unmarshal(c)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal: %w", err)
