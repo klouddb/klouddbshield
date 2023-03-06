@@ -1,10 +1,9 @@
 # KloudDB_Shield
 
 [![GitHub Release][release-img]][release]
+[![Go Report Card][report-card-img]][report-card]
 
-<!-- [![Go Report Card][report-card-img]][report-card]
-
-[![Build Status](https://github.com/klouddb/klouddbshield/workflows/Build/badge.svg?branch=main)](https://github.com/klouddb/klouddbshield/actions) -->
+<!-- [![Build Status](https://github.com/klouddb/klouddbshield/workflows/Build/badge.svg?branch=main)](https://github.com/klouddb/klouddbshield/actions) -->
 
 [release-img]: https://img.shields.io/github/release/klouddb/klouddbshield.svg?logo=github
 [release]: https://github.com/klouddb/klouddbshield/releases
