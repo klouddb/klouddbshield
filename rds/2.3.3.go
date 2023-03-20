@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"sync"
+	"time"
 
 	"github.com/klouddb/klouddbshield/model"
 )
 
-// Execute232 executed 2.3.2
+// Execute233 executed 2.3.3
 func Execute233(ctx context.Context) (result *model.Result) {
 	defer func() {
 		if result == nil {
@@ -19,48 +22,62 @@ func Execute233(ctx context.Context) (result *model.Result) {
 		result = fixFailReason(result)
 	}()
 
-	result, cmdOutput, err := ExecRdsCommand(ctx, "aws rds describe-db-instances  --query 'DBInstances[*].DBInstanceIdentifier'")
+	result, dbMap, err := GetDBMap(ctx)
 	if err != nil {
-		result.Status = "Fail"
-		result.FailReason = fmt.Errorf("error executing command %s", err)
+		return result
+	}
+	printer := NewTablePrinter()
+	mutex := &sync.Mutex{}
+	gp := NewGoPool(ctx)
+
+	log.Printf("\n Executing 2.3.3 You have %d instances in this region - This scan might take sometime .. Rough estimate is %f", len(dbMap), float64(len(dbMap))*(timeToRunAWSCommand.Seconds()))
+
+	var listOfResult []*model.Result
+	for dbName := range dbMap {
+		gp.AddJob("ExecutePerDB", ExecutePerDB, GetPublicAccessStatusOfDB, dbName, printer, &listOfResult, mutex)
+	}
+	// wait for all go routines to be done
+	gp.WaitGroup().Wait()
+	gp.ShutDown(true, time.Second)
+
+	for _, result := range listOfResult {
+		if result.Status == Fail {
+			result.FailReason = printer.Print()
+			return result
+		}
+	}
+	result.Status = Pass
+	return result
+
+}
+
+func GetPublicAccessStatusOfDB(ctx context.Context, dbName string, printer *tablePrinter) *model.Result {
+	result, cmdOutput, err := ExecRdsCommand(ctx, fmt.Sprintf(`aws rds describe-db-instances --db-instance-identifier  "%s" --query 'DBInstances[*].PubliclyAccessible'`, dbName))
+	if err != nil {
+		result.Status = Fail
+		printer.AddInstance(dbName, "Fail", fmt.Errorf("error executing command %s", err).Error())
 		return result
 	}
 
-	var arrayOfDataBases []string
-	err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfDataBases)
+	var arrayOfBooleans []bool
+	err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfBooleans)
 	if err != nil {
-		result.Status = "Fail"
-		result.FailReason = fmt.Errorf("error un marshalling %s", err)
-		return
+		result.Status = Fail
+		printer.AddInstance(dbName, "Fail", fmt.Errorf("error un marshalling %s", err).Error())
+		return result
 	}
-
-	for _, dbName := range arrayOfDataBases {
-		result, cmdOutput, err = ExecRdsCommand(ctx, fmt.Sprintf(`aws rds describe-db-instances --db-instance-identifier  "%s" --query 'DBInstances[*].PubliclyAccessible'`, dbName))
-		if err != nil {
-			result.Status = "Fail"
-			result.FailReason = fmt.Errorf("error executing command %s", err)
-			return result
-		}
-
-		var arrayOfBooleans []bool
-		err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfBooleans)
-		if err != nil {
-			result.Status = "Fail"
-			result.FailReason = fmt.Errorf("error un marshalling %s", err)
-			return
-		}
-		if len(arrayOfBooleans) != 1 {
-			result.Status = "Fail"
-			result.FailReason = fmt.Errorf("the len of the databases to verify is not correct")
-			return
-		}
-		if arrayOfBooleans[0] {
-			result.Status = "Fail"
-			result.FailReason = fmt.Errorf("public access is enabled for database data base %s ", dbName)
-			return
-		}
+	if len(arrayOfBooleans) != 1 {
+		result.Status = Fail
+		printer.AddInstance(dbName, "Fail", fmt.Errorf("the len of the databases to verify is not correct").Error())
+		return result
 	}
-	result.Status = "Pass"
+	if arrayOfBooleans[0] {
+		result.Status = Fail
+		printer.AddInstance(dbName, "Fail", fmt.Sprintf("%t", arrayOfBooleans[0]))
+		return result
+	} else {
+		result.Status = Pass
+		printer.AddInstance(dbName, "Pass", fmt.Sprintf("%t", arrayOfBooleans[0]))
+	}
 	return result
-
 }

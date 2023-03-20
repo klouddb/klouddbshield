@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/klouddb/klouddbshield/model"
 )
+
+type Execute func(context.Context) *model.Result
 
 func fixFailReason(result *model.Result) *model.Result {
 	if result == nil {
@@ -22,32 +26,61 @@ func fixFailReason(result *model.Result) *model.Result {
 }
 
 func PerformAllChecks(ctx context.Context) []*model.Result {
+
+	listOfExecuteFuncs := [...]Execute{
+		Execute231,
+		Execute232,
+		Execute233,
+		Execute350,
+		Execute380,
+		Execute420,
+		Execute430,
+		Execute440,
+	}
+	mutex := &sync.Mutex{}
+
+	gp := NewGoPool(context.Background())
+	fn := func(ctx context.Context, args ...interface{}) error {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			if len(args) != 3 {
+				log.Println("number of arguments passed is not 3")
+				return nil
+			}
+			executeFunc, ok := args[0].(Execute)
+			if !ok {
+				log.Println("first argument cant be parsed to execute func")
+				return nil
+			}
+			listOfResult, ok := args[1].(*[]*model.Result)
+			if !ok {
+				log.Println("first argument cant be parsed to array of results")
+				return nil
+			}
+			lock, ok := args[2].(*sync.Mutex)
+			if !ok {
+				log.Println("first argument cant be parsed to mutex")
+				return nil
+			}
+			// start := time.Now()
+			result := executeFunc(ctx)
+			lock.Lock()
+			*listOfResult = append(*listOfResult, result)
+			lock.Unlock()
+			// timeTaken := time.Since(start)
+			// log.Println("time taken to execute", fmt.Sprintf("%T", executeFunc), "is", timeTaken)
+			return nil
+		}
+	}
 	var listOfResult []*model.Result
-
-	// 2.3.1
-	result := Execute231(ctx)
-	listOfResult = append(listOfResult, result)
-
-	result = Execute232(ctx)
-	listOfResult = append(listOfResult, result)
-
-	result = Execute233(ctx)
-	listOfResult = append(listOfResult, result)
-
-	result = Execute350(ctx)
-	listOfResult = append(listOfResult, result)
-
-	result = Execute380(ctx)
-	listOfResult = append(listOfResult, result)
-
-	result = Execute420(ctx)
-	listOfResult = append(listOfResult, result)
-
-	result = Execute430(ctx)
-	listOfResult = append(listOfResult, result)
-
-	result = Execute440(ctx)
-	listOfResult = append(listOfResult, result)
+	for _, execFunc := range listOfExecuteFuncs {
+		gp.AddJob("ExecFunc", fn, execFunc, &listOfResult, mutex)
+	}
+	// wait for all go routines to be done
+	gp.WaitGroup().Wait()
+	gp.ShutDown(true, time.Second)
 
 	CalculateScore(listOfResult)
 	return listOfResult
@@ -67,7 +100,7 @@ func CalculateScore(listOfResult []*model.Result) map[int]*model.Status {
 			continue
 		}
 		if strings.HasPrefix(result.Control, "1") {
-			if result.Status == "Pass" {
+			if result.Status == Pass {
 				score[1].Pass += 1
 				score[0].Pass += 1
 			} else {
@@ -76,7 +109,7 @@ func CalculateScore(listOfResult []*model.Result) map[int]*model.Status {
 			}
 		}
 		if strings.HasPrefix(result.Control, "2") {
-			if result.Status == "Pass" {
+			if result.Status == Pass {
 				score[2].Pass += 1
 				score[0].Pass += 1
 			} else {
@@ -85,7 +118,7 @@ func CalculateScore(listOfResult []*model.Result) map[int]*model.Status {
 			}
 		}
 		if strings.HasPrefix(result.Control, "3") {
-			if result.Status == "Pass" {
+			if result.Status == Pass {
 				score[3].Pass += 1
 				score[0].Pass += 1
 			} else {
@@ -94,7 +127,7 @@ func CalculateScore(listOfResult []*model.Result) map[int]*model.Status {
 			}
 		}
 		if strings.HasPrefix(result.Control, "4") {
-			if result.Status == "Pass" {
+			if result.Status == Pass {
 				score[4].Pass += 1
 				score[0].Pass += 1
 			} else {

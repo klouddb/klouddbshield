@@ -4,10 +4,13 @@ import "database/sql"
 
 type Result struct {
 	FailReason  interface{} `json:"FailReason,omitempty"`
-	Procedure   string      `json:",omitempty"`
 	Status      string
-	Description string
+	Description string `json:"-"`
 	Control     string
+	Title       string
+	Rationale   string `json:"-"`
+	References  string `json:"-"`
+	Procedure   string `json:"-"`
 }
 type Config struct {
 	store      *sql.DB

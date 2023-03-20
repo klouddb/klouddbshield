@@ -5,8 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 	"time"
 
+	"github.com/jedib0t/go-pretty/text"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/klouddb/klouddbshield/htmlreport"
 	"github.com/klouddb/klouddbshield/mysql"
 	"github.com/klouddb/klouddbshield/pkg/config"
 	"github.com/klouddb/klouddbshield/pkg/mysqldb"
@@ -33,6 +38,10 @@ func main() {
 
 	// Program context
 	ctx := context.Background()
+	if cnf.App.VerbosePostgres {
+		runPostgresByControl(ctx, cnf)
+		return
+	}
 	if cnf.App.RunMySql {
 		runMySql(ctx, cnf)
 	}
@@ -42,8 +51,63 @@ func main() {
 	if cnf.App.RunRds {
 		runRDS(ctx, cnf)
 	}
-}
 
+}
+func runPostgresByControl(ctx context.Context, cnf *config.Config) {
+	postgresDatabase := cnf.Postgres
+	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
+	if err != nil {
+		return
+	}
+	result := postgres.CheckByControl(postgresStore, ctx, cnf.App.Control)
+	if result == nil {
+		os.Exit(1)
+	}
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	if result.Status == "Pass" {
+		t.AppendSeparator()
+		color := text.FgGreen
+		t.AppendRow(table.Row{"Status", color.Sprintf("%s", result.Status)})
+
+	} else {
+		t.AppendSeparator()
+		color := text.FgRed
+		t.AppendRow(table.Row{"Status", color.Sprintf("%s", result.Status)})
+		t.AppendSeparator()
+		switch ty := result.FailReason.(type) {
+
+		case string:
+			t.AppendRow(table.Row{"Fail Reason", result.FailReason})
+		case []map[string]interface{}:
+			failReason := ""
+			for _, n := range ty {
+				for key, value := range n {
+					failReason += fmt.Sprintf("%s:%v, ", key, value)
+				}
+				failReason += "\n"
+
+			}
+			t.AppendRow(table.Row{"Fail Reason", failReason})
+		default:
+			var r = reflect.TypeOf(t)
+			fmt.Printf("Other:%v\n", r)
+		}
+
+	}
+	t.AppendSeparator()
+	t.AppendRow(table.Row{"Rationale", result.Rationale})
+	t.AppendSeparator()
+	t.AppendRow(table.Row{"Title", result.Title})
+	t.AppendSeparator()
+	t.AppendRow(table.Row{"Procedure", result.Procedure})
+	t.AppendSeparator()
+	t.AppendRow(table.Row{"Control", result.Control})
+	t.AppendSeparator()
+	t.AppendRow(table.Row{"References", result.References})
+	t.SetStyle(table.StyleLight)
+	t.Render()
+}
 func runMySql(ctx context.Context, cnf *config.Config) {
 	// for _, mySQL := range cnf.MySQL {
 	// Open Postgres store connection and ping it
@@ -82,10 +146,19 @@ func runPostgres(ctx context.Context, cnf *config.Config) {
 		fmt.Println("**********listOfResults*************\n", string(jsonData))
 	}
 	fmt.Println("postgressecreport.json file generated")
+	data := htmlreport.GenerateHTMLReport(listOfResults, "Postgres")
+	htmldata := []byte(data)
+	err = os.WriteFile("postgressecreport.html", htmldata, 0600)
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to generate postgressecreport.html file: " + err.Error())
+		fmt.Println("**********listOfResults*************\n", data)
+	}
+	fmt.Println("postgressecreport.html file generated")
 }
 
 func runRDS(ctx context.Context, cnf *config.Config) {
 	fmt.Println("running RDS ")
+	rds.Validate()
 	listOfResults := rds.PerformAllChecks(ctx)
 
 	jsonData, err := json.MarshalIndent(listOfResults, "", "  ")
@@ -93,7 +166,11 @@ func runRDS(ctx context.Context, cnf *config.Config) {
 		fmt.Println("error marshaling list of results", err)
 		return
 	}
-	err = os.WriteFile("rdssecreport.json", jsonData, 0600)
+
+	output := strings.ReplaceAll(string(jsonData), `\n`, "\n")
+
+	// write output data to file
+	err = os.WriteFile("rdssecreport.json", []byte(output), 0600)
 	if err != nil {
 		log.Error().Err(err).Msg("Unable to generate rdssecreport.json file: " + err.Error())
 		fmt.Println("**********listOfResults*************\n", string(jsonData))

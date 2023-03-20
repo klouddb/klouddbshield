@@ -2,7 +2,9 @@ package utils
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
+	"reflect"
 )
 
 func GetJSON(store *sql.DB, sqlString string) ([]map[string]interface{}, error) {
@@ -67,4 +69,25 @@ func DoesFileExist(fileName string) bool {
 
 	// check if error is "file not exists"
 	return !os.IsNotExist(error)
+}
+func GetFailReasonInString(failReason interface{}) string {
+	switch ty := failReason.(type) {
+
+	case string:
+		return failReason.(string)
+	case []map[string]interface{}:
+		result := ""
+		for _, n := range ty {
+			for key, value := range n {
+				result += fmt.Sprintf("%s:%v, ", key, value)
+			}
+			result += "\n"
+
+		}
+		return result
+	default:
+		var r = reflect.TypeOf(failReason)
+		return fmt.Sprintf("Other:%v\n", r)
+	}
+
 }

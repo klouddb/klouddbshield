@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"sync"
+	"time"
 
 	"github.com/klouddb/klouddbshield/model"
 )
@@ -19,48 +22,60 @@ func Execute232(ctx context.Context) (result *model.Result) {
 		result = fixFailReason(result)
 	}()
 
-	result, cmdOutput, err := ExecRdsCommand(ctx, "aws rds describe-db-instances  --query 'DBInstances[*].DBInstanceIdentifier'")
+	result, dbMap, err := GetDBMap(ctx)
 	if err != nil {
-		result.Status = "Fail"
-		result.FailReason = fmt.Errorf("error executing command %s", err)
 		return result
 	}
+	printer := NewTablePrinter()
+	mutex := &sync.Mutex{}
+	gp := NewGoPool(ctx)
 
-	var arrayOfDataBases []string
-	err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfDataBases)
-	if err != nil {
-		result.Status = "Fail"
-		result.FailReason = fmt.Errorf("error un marshalling %s", err)
-		return
+	log.Printf("\n Executing 2.3.2 You have %d instances in this region - This scan might take sometime .. Rough estimate is %f", len(dbMap), float64(len(dbMap))*(timeToRunAWSCommand.Seconds()))
+
+	var listOfResult []*model.Result
+	for dbName := range dbMap {
+		gp.AddJob("ExecutePerDB", ExecutePerDB, GetAutoMinorVersionOfDB, dbName, printer, &listOfResult, mutex)
 	}
+	// wait for all go routines to be done
+	gp.WaitGroup().Wait()
+	gp.ShutDown(true, time.Second)
 
-	for _, dbName := range arrayOfDataBases {
-		result, cmdOutput, err = ExecRdsCommand(ctx, fmt.Sprintf(`aws rds describe-db-instances --db-instance-identifier  "%s" --query 'DBInstances[*].AutoMinorVersionUpgrade'`, dbName))
-		if err != nil {
-			result.Status = "Fail"
-			result.FailReason = fmt.Errorf("error executing command %s", err)
+	for _, result := range listOfResult {
+		if result.Status == Fail {
+			result.FailReason = printer.Print()
 			return result
 		}
-
-		var arrayOfBooleans []bool
-		err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfBooleans)
-		if err != nil {
-			result.Status = "Fail"
-			result.FailReason = fmt.Errorf("error un marshalling %s", err)
-			return
-		}
-		if len(arrayOfBooleans) != 1 {
-			result.Status = "Fail"
-			result.FailReason = fmt.Errorf("the len of the databases to verify is not correct")
-			return
-		}
-		if !arrayOfBooleans[0] {
-			result.Status = "Fail"
-			result.FailReason = fmt.Errorf("auto minor version upgrade is not enabled for instance %s", dbName)
-			return
-		}
 	}
-	result.Status = "Pass"
+	result.Status = Pass
 	return result
 
+}
+
+func GetAutoMinorVersionOfDB(ctx context.Context, dbName string, printer *tablePrinter) *model.Result {
+	result, cmdOutput, err := ExecRdsCommand(ctx, fmt.Sprintf(`aws rds describe-db-instances --db-instance-identifier  "%s" --query 'DBInstances[*].AutoMinorVersionUpgrade'`, dbName))
+	if err != nil {
+		result.Status = Fail
+		printer.AddInstance(dbName, "Fail", fmt.Errorf("error executing command %s", err).Error())
+	}
+
+	var arrayOfBooleans []bool
+	err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfBooleans)
+	if err != nil {
+		result.Status = Fail
+
+		printer.AddInstance(dbName, "Fail", fmt.Errorf("error un marshalling %s", err).Error())
+	}
+	if len(arrayOfBooleans) != 1 {
+		result.Status = Fail
+
+		printer.AddInstance(dbName, "Fail", fmt.Errorf("the len of the databases to verify is not correct").Error())
+	}
+	if !arrayOfBooleans[0] {
+		result.Status = Fail
+		result.FailReason = fmt.Errorf("auto minor version upgrade is not enabled for instance %s", dbName)
+		printer.AddInstance(dbName, "Fail", fmt.Sprintf("%t", arrayOfBooleans[0]))
+	} else {
+		printer.AddInstance(dbName, "Pass", fmt.Sprintf("%t", arrayOfBooleans[0]))
+	}
+	return result
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/klouddb/klouddbshield/model"
 )
@@ -32,27 +34,41 @@ type SNSSubscriptions struct {
 	} `json:"Subscriptions"`
 }
 
-func GetDBMap(ctx context.Context) (result *model.Result, dbMap map[string]bool, err error) {
+var dbMap map[string]bool
+var timeToRunAWSCommand time.Duration
+
+func init() {
+	dbMap = make(map[string]bool)
+}
+
+func GetDBMap(ctx context.Context) (*model.Result, map[string]bool, error) {
+	if len(dbMap) > 0 {
+		return &model.Result{Status: Pass}, dbMap, nil
+	}
+	start := time.Now()
+
 	result, cmdOutput, err := ExecRdsCommand(ctx, "aws rds describe-db-instances --query 'DBInstances[*].DBInstanceIdentifier'")
 	if err != nil {
-		result.Status = "Fail"
+		result.Status = Fail
 		result.FailReason = fmt.Errorf("error executing command %s", err)
-		return result, nil, err
+		return result, dbMap, err
 	}
 
 	var arrayOfDataBases []string
 	err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfDataBases)
 	if err != nil {
-		result.Status = "Fail"
+		result.Status = Fail
 		result.FailReason = fmt.Errorf("error un marshalling %s", err)
-		return
+		return result, dbMap, err
 	}
 
-	numOfDataBases := len(arrayOfDataBases)
-	dbMap = make(map[string]bool, numOfDataBases)
 	for _, dbName := range arrayOfDataBases {
 		dbMap[dbName] = false
 	}
+
+	// Code to measure
+	timeToRunAWSCommand = time.Since(start)
+	log.Printf("\nthe average time taken to run aws command is %f seconds. Depending on this the over all time for running checks would be impacted", timeToRunAWSCommand.Seconds())
 	return result, dbMap, nil
 
 }
@@ -75,7 +91,7 @@ func Execute420(ctx context.Context) (result *model.Result) {
 
 	result, cmdOutput, err := ExecRdsCommand(ctx, "aws rds describe-event-subscriptions")
 	if err != nil {
-		result.Status = "Fail"
+		result.Status = Fail
 		result.FailReason = fmt.Errorf("error executing command %s", err)
 		return result
 	}
@@ -83,13 +99,13 @@ func Execute420(ctx context.Context) (result *model.Result) {
 	var arrayOfSnsRdsEvents SnsRdsEvents
 	err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfSnsRdsEvents)
 	if err != nil {
-		result.Status = "Fail"
+		result.Status = Fail
 		result.FailReason = fmt.Errorf("error un marshalling cmdOutput.StdOut: %s, error :%s", cmdOutput.StdOut, err)
 		return
 	}
 
 	if len(arrayOfSnsRdsEvents.EventSubscriptionsList) == 0 {
-		result.Status = "Fail"
+		result.Status = Fail
 		result.FailReason = fmt.Errorf("no event subscription list present for databases")
 		return
 	}
@@ -106,7 +122,7 @@ func Execute420(ctx context.Context) (result *model.Result) {
 	// check if we got subscription for all databases or not
 	for dbName, isSubscribed := range dbSubMap {
 		if !isSubscribed {
-			result.Status = "Fail"
+			result.Status = Fail
 			result.FailReason = fmt.Errorf("no subscription found for %s", dbName)
 			return
 		}
@@ -117,7 +133,7 @@ func Execute420(ctx context.Context) (result *model.Result) {
 		// this step2 is not required
 		// result, cmdOutput, err = ExecRdsCommand(ctx, fmt.Sprintf(`aws sns get-topic-attributes --topic-arn %s`, sub.SnsTopicArn))
 		// if err != nil {
-		// 	result.Status = "Fail"
+		// 	result.Status = Fail
 		// 	result.FailReason = fmt.Errorf("error getting sns topic attributes %s", err)
 		// 	return result
 		// }
@@ -125,19 +141,19 @@ func Execute420(ctx context.Context) (result *model.Result) {
 		// var arrayOfRecords []interface{}
 		// err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfRecords)
 		// if err != nil {
-		// 	result.Status = "Fail"
+		// 	result.Status = Fail
 		// 	result.FailReason = fmt.Errorf("error un marshalling %s", err)
 		// 	return
 		// }
 		// if len(arrayOfRecords) == 0 {
-		// 	result.Status = "Fail"
+		// 	result.Status = Fail
 		// 	result.FailReason = fmt.Errorf("the len of the databases storage encrypted to verify is not correct")
 		// 	return
 		// }
 
 		result, cmdOutput, err = ExecRdsCommand(ctx, fmt.Sprintf(`aws sns list-subscriptions-by-topic --topic-arn %s`, sub.SnsTopicArn))
 		if err != nil {
-			result.Status = "Fail"
+			result.Status = Fail
 			result.FailReason = fmt.Errorf("error executing command %s", err)
 			return result
 		}
@@ -145,26 +161,26 @@ func Execute420(ctx context.Context) (result *model.Result) {
 		var arrayOfSNSSubscriptions SNSSubscriptions
 		err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfSNSSubscriptions)
 		if err != nil {
-			result.Status = "Fail"
+			result.Status = Fail
 			result.FailReason = fmt.Errorf("error un marshalling %s", err)
 			return
 		}
 		if len(arrayOfSNSSubscriptions.Subscriptions) == 0 {
-			result.Status = "Fail"
+			result.Status = Fail
 			result.FailReason = fmt.Errorf("the len of the databases storage encrypted to verify is not correct")
 			return
 		}
 
 		for _, snsSub := range arrayOfSNSSubscriptions.Subscriptions {
 			if snsSub.SubscriptionArn == "PendingConfirmation" {
-				result.Status = "Fail"
+				result.Status = Fail
 				result.FailReason = fmt.Errorf("the subscription for the arn %s is pending", sub.SnsTopicArn)
 				return
 			}
 		}
 
 	}
-	result.Status = "Pass"
+	result.Status = Pass
 	return result
 
 }

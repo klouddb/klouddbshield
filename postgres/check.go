@@ -19,9 +19,9 @@ import (
 func PerformAllChecks(store *sql.DB, ctx context.Context) []*model.Result {
 	var listOfResult []*model.Result
 	listOfChecks := []func(*sql.DB, context.Context) (*model.Result, error){
-		installation.CheckSystemdServiceFiles,
-		installation.CheckDataCluster,
-		permissions.CheckSystemdServiceFiles,
+		installation.CheckSystemdServiceFiles, // 1.2
+		installation.CheckDataCluster,         // 1.3
+		permissions.CheckSystemdServiceFiles,  // 2.1
 		lma.CheckLogDest,
 		lma.CheckLogCol,
 		lma.CheckLogDir,
@@ -30,6 +30,7 @@ func PerformAllChecks(store *sql.DB, ctx context.Context) []*model.Result {
 		lma.CheckLogTrunc,
 		lma.CheckLogLT,
 		lma.CheckLogFileSize,
+		lma.CheckSyslog,
 		lma.CheckSyslogMsg,
 		lma.CheckServLogMsg,
 		lma.CheckSQLStat,
@@ -182,4 +183,51 @@ func PrintScore(score map[int]*model.Status) {
 		(float64(score[0].Pass) / float64((score[0].Pass + score[0].Fail)) * 100),
 	)
 
+}
+func CheckByControl(store *sql.DB, ctx context.Context, control string) *model.Result {
+
+	funcStore := map[string]func(*sql.DB, context.Context) (*model.Result, error){
+		"1.2":    installation.CheckSystemdServiceFiles,
+		"1.3":    installation.CheckDataCluster,        // 1.3
+		"2.1":    permissions.CheckSystemdServiceFiles, // 2.1
+		"3.1.2":  lma.CheckLogDest,
+		"3.1.3":  lma.CheckLogCol,
+		"3.1.4":  lma.CheckLogDir,
+		"3.1.5":  lma.CheckLogFile,
+		"3.1.6":  lma.CheckLogFilePerm,
+		"3.1.7":  lma.CheckLogTrunc,
+		"3.1.8":  lma.CheckLogLT,
+		"3.1.9":  lma.CheckLogFileSize,
+		"3.1.10": lma.CheckSyslog,
+		"3.1.11": lma.CheckSyslogMsg,
+		"3.1.12": lma.CheckServLogMsg,
+		"3.1.13": lma.CheckSQLStat,
+		"3.1.14": lma.CheckDebugPrintParse,
+		"3.1.15": lma.CheckDebugPrintRewritten,
+		"3.1.16": lma.CheckDebugPrintPlan,
+		"3.1.17": lma.CheckDebugPrettyPrint,
+		"3.1.18": lma.CheckLogConnections,
+		"3.1.19": lma.CheckLogDisconnections,
+		"3.1.20": lma.ChecklogErrorVerbosity,
+		"3.1.21": lma.CheckLogHostname,
+		"3.1.22": lma.ChecklogLinePrefix,
+		"3.1.23": lma.CheckLogStatement,
+		"3.1.24": lma.CheckLogTimezone,
+		"3.2":    lma.CheckSharedPreloadLibraries,
+		"4.3":    auth.CheckFunctionPrivileges,
+		"4.5":    auth.CheckObjectPermissions,
+		"4.7":    auth.CheckSetUserExtension,
+		"6.2":    settings.CheckSetUserExtension,
+		"6.7":    settings.CheckFIPS,
+		"6.8":    settings.CheckSSL,
+		"6.9":    settings.CheckPGCrypto,
+		"7.3":    replication.CheckArchiveMode,
+	}
+	if function, ok := funcStore[control]; ok {
+		result, _ := function(store, ctx)
+		return result
+	}
+	fmt.Println("Invalid Control, Try Again!")
+	// result, _ := myFunc(store, ctx)
+	return nil
 }

@@ -22,7 +22,7 @@ func Execute440(ctx context.Context) (result *model.Result) {
 
 	result, cmdOutput, err := ExecRdsCommand(ctx, "aws rds describe-event-subscriptions --query 'EventSubscriptionsList[*].{SourceType:SourceType, SourceIdsList:SourceIdsList, EventCategoriesList:EventCategoriesList}'")
 	if err != nil {
-		result.Status = "Fail"
+		result.Status = Fail
 		result.FailReason = fmt.Errorf("error executing command %s", err)
 		return result
 	}
@@ -30,13 +30,13 @@ func Execute440(ctx context.Context) (result *model.Result) {
 	var arrayOfDescribeEventSubs []DescribeEventSubscription
 	err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfDescribeEventSubs)
 	if err != nil {
-		result.Status = "Fail"
+		result.Status = Fail
 		result.FailReason = fmt.Errorf("error un marshalling %s", err)
 		return
 	}
 
 	if len(arrayOfDescribeEventSubs) == 0 {
-		result.Status = "Fail"
+		result.Status = Fail
 		result.FailReason = "no describe event subscriptions exist"
 		return
 	}
@@ -45,12 +45,12 @@ func Execute440(ctx context.Context) (result *model.Result) {
 		if sub.SourceType == "db-security-group" {
 			// all the instances type are covered && all event category list are covered for all instances
 			if sub.SourceIdsList == nil {
-				result.Status = "Pass"
+				result.Status = Pass
 				return
 			}
 		}
 	}
-	result.Status = "Fail"
+	result.Status = Fail
 	result.FailReason = "no subscriptions for security group"
 	return result
 

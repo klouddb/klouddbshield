@@ -26,7 +26,7 @@ func Execute380(ctx context.Context) (result *model.Result) {
 
 	result, cmdOutput, err := ExecRdsCommand(ctx, `aws rds describe-db-instances --filters --query "DBInstances[*].{BackupRetentionPeriod:BackupRetentionPeriod,DBInstanceIdentifier:DBInstanceIdentifier}"`)
 	if err != nil {
-		result.Status = "Fail"
+		result.Status = Fail
 		result.FailReason = fmt.Errorf("error executing command %s", err)
 		return result
 	}
@@ -34,20 +34,26 @@ func Execute380(ctx context.Context) (result *model.Result) {
 	var backupRetentionValues []BackupRetention
 	err = json.Unmarshal([]byte(cmdOutput.StdOut), &backupRetentionValues)
 	if err != nil {
-		result.Status = "Fail"
+		result.Status = Fail
 		result.FailReason = fmt.Errorf("error un marshalling cmdOutput.StdOut: %s, error :%s", cmdOutput.StdOut, err)
 		return
 	}
-
+	printer := NewTablePrinter()
 	for _, multiAZDB := range backupRetentionValues {
 
 		if multiAZDB.BackupRetentionPeriod < 7 {
-			result.Status = "Fail"
-			result.FailReason = fmt.Errorf("data base %s have retention period less than 7", multiAZDB.DBInstanceIdentifier)
-			return
+			result.Status = Fail
+			// result.FailReason = fmt.Errorf("data base %s have retention period less than 7", multiAZDB.DBInstanceIdentifier)
+			printer.AddInstance(multiAZDB.DBInstanceIdentifier, "Fail", fmt.Sprintf("%d", multiAZDB.BackupRetentionPeriod))
+			continue
+		} else {
+			printer.AddInstance(multiAZDB.DBInstanceIdentifier, "Pass", fmt.Sprintf("%d", multiAZDB.BackupRetentionPeriod))
 		}
 	}
-	result.Status = "Pass"
+	if result.Status != Fail {
+		result.Status = Pass
+	}
+	result.FailReason = printer.Print()
 	return result
 
 }

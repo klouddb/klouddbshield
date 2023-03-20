@@ -27,7 +27,7 @@ linters:
     - gosec
     - gocritic
     - vet
-    - revive
+    # - revive
     - deadcode
     - errcheck
     - gosimple

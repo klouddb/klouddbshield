@@ -37,13 +37,18 @@ type MySQL struct {
 }
 
 type App struct {
-	Debug       bool   `toml:"debug"`
-	DryRun      bool   `toml:"dryRun"`
-	Hostname    string `toml:"hostname"`
-	Run         bool
-	RunPostgres bool
-	RunMySql    bool
-	RunRds      bool
+	Debug           bool   `toml:"debug"`
+	DryRun          bool   `toml:"dryRun"`
+	Hostname        string `toml:"hostname"`
+	Run             bool
+	RunPostgres     bool
+	RunMySql        bool
+	RunRds          bool
+	Verbose         bool
+	Control         string
+	VerboseRDS      bool
+	VerboseMySQL    bool
+	VerbosePostgres bool
 }
 
 var CONF *Config
@@ -51,16 +56,19 @@ var CONF *Config
 var Version = "dev"
 
 func NewConfig() (*Config, error) {
-	// var verbose bool
+	var verbose bool
 	var version bool
 	var run bool
 	var runPostgres bool
 	var runMySql bool
 	var runRds bool
+	var control string
+	flag.BoolVar(&verbose, "verbose", verbose, "As of today verbose only works for a specific control. Ex ciscollector -r --verbose --control 6.7")
+	flag.StringVar(&control, "control", control, "Check verbose detail for individual control.\nMake sure to use this with --verbose option.\nEx: ciscollector -r --verbose --control 6.7")
 	flag.BoolVar(&run, "r", run, "Run")
-	flag.BoolVar(&runMySql, "run-mysql", runMySql, "Run MySQL")
-	flag.BoolVar(&runPostgres, "run-postgres", runPostgres, "Run Postgres")
-	flag.BoolVar(&runRds, "run-rds", runRds, "Run AWS RDS")
+	// flag.BoolVar(&runMySql, "run-mysql", runMySql, "Run MySQL")
+	// flag.BoolVar(&runPostgres, "run-postgres", runPostgres, "Run Postgres")
+	// flag.BoolVar(&runRds, "run-rds", runRds, "Run AWS RDS")
 	// flag.BoolVar(&verbose, "v", verbose, "Verbose")
 	flag.BoolVar(&version, "version", version, "Print version")
 
@@ -70,11 +78,14 @@ func NewConfig() (*Config, error) {
 		log.Debug().Str("version", Version).Send()
 		os.Exit(0)
 	}
-	if !(run || runMySql || runPostgres || runRds) {
+	if !(run || verbose) {
 		flag.Usage()
 		os.Exit(0)
 	}
-	if run {
+	// if controlVerbose != "" {
+	// 	fmt.Print(controlVerbose)
+	// }
+	if run && !verbose {
 		fmt.Println("1.Postgres\n2.MySQL\n3.AWS RDS")
 		fmt.Printf("Enter your choice to execute(1/2/3):")
 		choice := 0
@@ -91,7 +102,6 @@ func NewConfig() (*Config, error) {
 			os.Exit(1)
 		}
 	}
-
 	c := new(Config)
 
 	v := viper.New()
@@ -99,11 +109,6 @@ func NewConfig() (*Config, error) {
 	v.SetConfigName("kshieldconfig")
 	v.AddConfigPath(".")
 	v.AddConfigPath("/etc/klouddbshield")
-
-	c.App.Run = run
-	c.App.RunMySql = runMySql
-	c.App.RunPostgres = runPostgres
-	c.App.RunRds = runRds
 	if !runRds {
 		err := v.ReadInConfig()
 		if err != nil {
@@ -114,6 +119,39 @@ func NewConfig() (*Config, error) {
 			return nil, fmt.Errorf("unmarshal: %w", err)
 		}
 	}
+	c.App.Run = run
+	c.App.RunMySql = runMySql
+	c.App.RunPostgres = runPostgres
+	c.App.RunRds = runRds
+	c.App.Verbose = verbose
+	c.App.Control = control
+
+	if run && verbose {
+		fmt.Println("Please select the database type:\n1.Postgres\n2.MySQL\n3.AWS RDS")
+		fmt.Printf("Enter your choice to execute(1/2/3):")
+		choice := 0
+		fmt.Scanln(&choice)
+		switch choice {
+		case 1:
+			if c.App.Verbose && c.Postgres != nil {
+				c.App.VerbosePostgres = true
+			} else {
+				fmt.Println("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
+				os.Exit(1)
+			}
+
+		case 2:
+			fmt.Println("Verbose feature is not available for MySQL and RDS yet .. Will be added in future releases")
+			os.Exit(1)
+		case 3:
+			fmt.Println("Verbose feature is not available for MySQL and RDS yet .. Will be added in future releases")
+			os.Exit(1)
+		default:
+			fmt.Println("Invalid Choice, Please Try Again.")
+			os.Exit(1)
+		}
+	}
+
 	var err error
 	if c.App.Hostname == "" {
 		c.App.Hostname, err = os.Hostname()
@@ -123,6 +161,9 @@ func NewConfig() (*Config, error) {
 	}
 	if c.MySQL == nil && c.Postgres == nil && !runRds {
 		return nil, fmt.Errorf("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
+	}
+	if c.MySQL != nil && c.Postgres != nil && !runRds {
+		return nil, fmt.Errorf("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate either mysql or postgres at a time. For additional details please check github readme.")
 	}
 	if c.MySQL == nil && runMySql {
 		return nil, fmt.Errorf("In older version we used [database] label and in current version we are changing it to [mysql] and kindly update your kshieldconfig file(/etc/klouddbshield/kshieldconfig.toml) - See sample entry in readme.")
@@ -156,6 +197,7 @@ func MustNewConfig() *Config {
 	if err != nil {
 		fmt.Println("Can't create config")
 		fmt.Println(err)
+		fmt.Println("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
 		os.Exit(1)
 	}
 

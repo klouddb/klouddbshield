@@ -20,6 +20,7 @@ var re = regexp.MustCompile(`(?m)(?:host=)([^\s]+)`)
 func Open(conf config.Postgres) (*sql.DB, string, error) {
 	// "host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable"
 	url := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", conf.Host, conf.Port, conf.User, conf.Password, conf.DBName)
+
 	db, err := sql.Open("postgres", url)
 	if err != nil {
 		log.Error().
@@ -44,7 +45,7 @@ func Open(conf config.Postgres) (*sql.DB, string, error) {
 	// 	Int("Max open connections", conf.MaxOpenConn).
 	// 	Int("Max idle connections", conf.MaxIdleConn).
 	// 	Msg("Database connected successfully")
-	fmt.Println("Database connected successfully")
+	// fmt.Println("Database connected successfully")
 	// Extract hostname from connection string
 	hostnameGroup := re.FindStringSubmatch(url)
 	var hostname string
