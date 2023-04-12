@@ -12,11 +12,13 @@ import (
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/klouddb/klouddbshield/htmlreport"
+	"github.com/klouddb/klouddbshield/model"
 	"github.com/klouddb/klouddbshield/mysql"
 	"github.com/klouddb/klouddbshield/pkg/config"
 	"github.com/klouddb/klouddbshield/pkg/mysqldb"
 	"github.com/klouddb/klouddbshield/pkg/postgresdb"
 	"github.com/klouddb/klouddbshield/postgres"
+	"github.com/klouddb/klouddbshield/postgres/hbascanner"
 	"github.com/klouddb/klouddbshield/rds"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -40,16 +42,23 @@ func main() {
 	ctx := context.Background()
 	if cnf.App.VerbosePostgres {
 		runPostgresByControl(ctx, cnf)
-		return
+
 	}
 	if cnf.App.RunMySql {
 		runMySql(ctx, cnf)
 	}
 	if cnf.App.RunPostgres {
 		runPostgres(ctx, cnf)
+
 	}
 	if cnf.App.RunRds {
 		runRDS(ctx, cnf)
+	}
+	if cnf.App.HBASacanner {
+		runHBAScanner(ctx, cnf)
+	}
+	if cnf.App.VerboseHBASacanner {
+		runHBAScannerByControl(ctx, cnf)
 	}
 
 }
@@ -63,6 +72,7 @@ func runPostgresByControl(ctx context.Context, cnf *config.Config) {
 	if result == nil {
 		os.Exit(1)
 	}
+
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	if result.Status == "Pass" {
@@ -78,6 +88,7 @@ func runPostgresByControl(ctx context.Context, cnf *config.Config) {
 		switch ty := result.FailReason.(type) {
 
 		case string:
+
 			t.AppendRow(table.Row{"Fail Reason", result.FailReason})
 		case []map[string]interface{}:
 			failReason := ""
@@ -129,17 +140,18 @@ func runMySql(ctx context.Context, cnf *config.Config) {
 	fmt.Println("mysqlsecreport.json file generated")
 	// }
 }
-func runPostgres(ctx context.Context, cnf *config.Config) {
+func runPostgres(ctx context.Context, cnf *config.Config) []*model.Result {
 	postgresDatabase := cnf.Postgres
 	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
 	if err != nil {
-		return
+		return nil
 	}
 	listOfResults := postgres.PerformAllChecks(postgresStore, ctx)
 	jsonData, err := json.MarshalIndent(listOfResults, "", "  ")
 	if err != nil {
-		return
+		return nil
 	}
+
 	err = os.WriteFile("postgressecreport.json", jsonData, 0600)
 	if err != nil {
 		log.Error().Err(err).Msg("Unable to generate postgressecreport.json file: " + err.Error())
@@ -154,6 +166,16 @@ func runPostgres(ctx context.Context, cnf *config.Config) {
 		fmt.Println("**********listOfResults*************\n", data)
 	}
 	fmt.Println("postgressecreport.html file generated")
+	// data = htmlreport.GenerateMarkdown(listOfResults)
+	// htmldata = []byte(data)
+	// err = os.WriteFile("postgressecreport.md", htmldata, 0600)
+	// if err != nil {
+	// 	log.Error().Err(err).Msg("Unable to generate postgressecreport.md file: " + err.Error())
+	// 	fmt.Println("**********listOfResults*************\n", data)
+	// }
+	// fmt.Println("postgressecreport.md file generated")
+	return listOfResults
+
 }
 
 func runRDS(ctx context.Context, cnf *config.Config) {
@@ -176,4 +198,54 @@ func runRDS(ctx context.Context, cnf *config.Config) {
 		fmt.Println("**********listOfResults*************\n", string(jsonData))
 	}
 	fmt.Println("rdssecreport.json file generated")
+}
+func runHBAScanner(ctx context.Context, cnf *config.Config) []*model.HBAScannerResult {
+	postgresDatabase := cnf.Postgres
+	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
+	if err != nil {
+		return nil
+	}
+	listOfResults := hbascanner.HBAScanner(postgresStore, ctx)
+
+	data := htmlreport.GenerateHTMLReportForHBA(listOfResults)
+	htmldata := []byte(data)
+	err = os.WriteFile("hbascannerreport.html", htmldata, 0002)
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to generate hbascannerreport.html file: " + err.Error())
+		fmt.Println("**********listOfResults*************\n", data)
+	}
+	fmt.Println("hbascannerreport.html file generated")
+	for i := 0; i < len(listOfResults); i++ {
+		listOfResults[i].Procedure = strings.ReplaceAll(listOfResults[i].Procedure, "\t", " ")
+		listOfResults[i].Procedure = strings.ReplaceAll(listOfResults[i].Procedure, "\n", " ")
+		if listOfResults[i].FailRows != nil {
+			for j := 0; j < len(listOfResults[i].FailRows); j++ {
+				listOfResults[i].FailRows[j] = strings.ReplaceAll(listOfResults[i].FailRows[j], "\t", " ")
+			}
+		}
+	}
+
+	jsonData, err := json.MarshalIndent(listOfResults, "", "  ")
+	if err != nil {
+		return nil
+	}
+	err = os.WriteFile("hbascannerreport.json", jsonData, 0002)
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to generate hbascannerreport.json file: " + err.Error())
+		fmt.Println("**********listOfResults*************\n", string(jsonData))
+	}
+	fmt.Println("hbascannerreport.json file generated")
+	return listOfResults
+}
+func runHBAScannerByControl(ctx context.Context, cnf *config.Config) {
+	postgresDatabase := cnf.Postgres
+	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
+	if err != nil {
+		return
+	}
+	result := hbascanner.HBAScannerByControl(postgresStore, ctx, cnf.App.Control)
+	if result == nil {
+		os.Exit(1)
+	}
+
 }

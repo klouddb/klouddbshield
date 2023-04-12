@@ -32,7 +32,7 @@ v1.0.0 - 02-26-2021`,
 	if outStr != "" {
 		result.Status = "Pass"
 	} else {
-		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err, errStr)
 		result.Status = "Fail"
 
 	}
@@ -66,7 +66,7 @@ v1.0.0 - 02-26-2021`,
 	data, err := utils.GetJSON(store, query)
 	if err != nil {
 		result.Status = "Fail"
-		result.FailReason = err.Error()
+		result.FailReason = err
 		return result, nil
 	}
 
@@ -91,7 +91,7 @@ v1.0.0 - 02-26-2021`,
 	data, err = utils.GetJSON(store, query)
 	if err != nil {
 		result.Status = "Fail"
-		result.FailReason = err.Error()
+		result.FailReason = err
 		return result, nil
 	}
 
@@ -119,7 +119,7 @@ v1.0.0 - 02-26-2021`,
 	if errStr != "" && err != nil {
 		result.Status = "Pass"
 	} else {
-		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err.Error(), errStr)
+		result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err, errStr)
 		result.Status = "Fail"
 	}
 

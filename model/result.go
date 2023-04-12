@@ -26,3 +26,13 @@ type Status struct {
 	Pass int
 	Fail int
 }
+type HBAScannerResult struct {
+	Title            string
+	Control          int
+	Description      string
+	Procedure        string
+	Status           string
+	FailRowsLineNums []int    `json:"-"`
+	FailRows         []string `json:"FailRows,omitempty"`
+	FailRowsInString string   `json:"-"`
+}

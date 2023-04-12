@@ -104,7 +104,7 @@ var body = `<!doctype html>
 		<div class="myContainer">
 			<header>
 				<div class="container">
-					<h1 class="col-lg-9">%s CIS Report</h1>
+					<h1 class="col-lg-9">%s</h1>
 				</div>
 			</header>
 			<div class="container">
@@ -119,11 +119,12 @@ var body = `<!doctype html>
 						</tr>
 					</thead>
 
-%s
+	%s
 
 				</table>
 			</div>
 		</div>
+		%s
 	</div>
 	<footer>
 		<div class="container">
@@ -151,3 +152,63 @@ var body = `<!doctype html>
 </body>
 
 </html>`
+
+var hsbtabletemplate = `					<tr>
+<td>%s</td>
+%s
+<td><span class="expandChildTable"></span>
+	<div class="childTableRow">
+		<table class="table" id="innerTable">
+			<tr>
+				<th>Description </th>
+				<td>%s</td>
+			</tr>
+			%s
+			
+		<tr>
+		<th>Process to Validate </th>
+		<td>%s</td>
+	</tr>
+	
+
+			
+		</table>
+	</div>
+</td>
+</tr>`
+
+// var hsbfailRows = `
+// <tr>
+// <th>Failed Rows </th>
+// <td>%s</td>
+// </tr>`
+// var hbafailReason = `
+// <tr>
+// <th>Failed Rows </th>
+// <td>%s</td>
+// </tr>`
+var hbaFailRowsBodyTemplate = `
+<div class="container">
+					<h6>%s</h6>
+				</div>
+<div class="container">
+
+	<table class="table" id="maintable">
+		<thead>
+			<tr>
+				<th>Line Number</th>
+				<th style="text-align:left;">HBA Entry</th>
+			</tr>
+		</thead>
+		%s
+	</table>
+</div>`
+var hbaFailRowsTemplate = `	
+	
+			<tr>
+				<td>%d</td>
+		
+				<td>%s</td>
+			</tr>
+		
+`

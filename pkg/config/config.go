@@ -37,18 +37,20 @@ type MySQL struct {
 }
 
 type App struct {
-	Debug           bool   `toml:"debug"`
-	DryRun          bool   `toml:"dryRun"`
-	Hostname        string `toml:"hostname"`
-	Run             bool
-	RunPostgres     bool
-	RunMySql        bool
-	RunRds          bool
-	Verbose         bool
-	Control         string
-	VerboseRDS      bool
-	VerboseMySQL    bool
-	VerbosePostgres bool
+	Debug              bool   `toml:"debug"`
+	DryRun             bool   `toml:"dryRun"`
+	Hostname           string `toml:"hostname"`
+	Run                bool
+	RunPostgres        bool
+	RunMySql           bool
+	RunRds             bool
+	Verbose            bool
+	Control            string
+	VerboseRDS         bool
+	VerboseMySQL       bool
+	VerbosePostgres    bool
+	HBASacanner        bool
+	VerboseHBASacanner bool
 }
 
 var CONF *Config
@@ -63,9 +65,11 @@ func NewConfig() (*Config, error) {
 	var runMySql bool
 	var runRds bool
 	var control string
+	var hbaSacanner bool
 	flag.BoolVar(&verbose, "verbose", verbose, "As of today verbose only works for a specific control. Ex ciscollector -r --verbose --control 6.7")
 	flag.StringVar(&control, "control", control, "Check verbose detail for individual control.\nMake sure to use this with --verbose option.\nEx: ciscollector -r --verbose --control 6.7")
 	flag.BoolVar(&run, "r", run, "Run")
+	// flag.BoolVar(&hbaSacanner, "r", run, "Run")
 	// flag.BoolVar(&runMySql, "run-mysql", runMySql, "Run MySQL")
 	// flag.BoolVar(&runPostgres, "run-postgres", runPostgres, "Run Postgres")
 	// flag.BoolVar(&runRds, "run-rds", runRds, "Run AWS RDS")
@@ -86,17 +90,25 @@ func NewConfig() (*Config, error) {
 	// 	fmt.Print(controlVerbose)
 	// }
 	if run && !verbose {
-		fmt.Println("1.Postgres\n2.MySQL\n3.AWS RDS")
-		fmt.Printf("Enter your choice to execute(1/2/3):")
+		fmt.Println("1.Postgres\n2.MySQL\n3.AWS RDS\n4.HBA Scanner")
+		fmt.Printf("Enter your choice to execute(1/2/3/4):")
 		choice := 0
 		fmt.Scanln(&choice)
 		switch choice {
 		case 1:
 			runPostgres = true
+			response := ""
+			fmt.Println("Do you also want to run HBA Scanner?(y/n):")
+			fmt.Scanln(&response)
+			if response == "y" || response == "Y" {
+				hbaSacanner = true
+			}
 		case 2:
 			runMySql = true
 		case 3:
 			runRds = true
+		case 4:
+			hbaSacanner = true
 		default:
 			fmt.Println("Invalid Choice, Please Try Again.")
 			os.Exit(1)
@@ -125,10 +137,10 @@ func NewConfig() (*Config, error) {
 	c.App.RunRds = runRds
 	c.App.Verbose = verbose
 	c.App.Control = control
-
+	c.App.HBASacanner = hbaSacanner
 	if run && verbose {
-		fmt.Println("Please select the database type:\n1.Postgres\n2.MySQL\n3.AWS RDS")
-		fmt.Printf("Enter your choice to execute(1/2/3):")
+		fmt.Println("Please select the database type:\n1.Postgres\n2.MySQL\n3.AWS RDS\n4.HBA Scanner")
+		fmt.Printf("Enter your choice to execute(1/2/3/4):")
 		choice := 0
 		fmt.Scanln(&choice)
 		switch choice {
@@ -146,6 +158,13 @@ func NewConfig() (*Config, error) {
 		case 3:
 			fmt.Println("Verbose feature is not available for MySQL and RDS yet .. Will be added in future releases")
 			os.Exit(1)
+		case 4:
+			if c.App.Verbose && c.Postgres != nil {
+				c.App.VerboseHBASacanner = true
+			} else {
+				fmt.Println("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
+				os.Exit(1)
+			}
 		default:
 			fmt.Println("Invalid Choice, Please Try Again.")
 			os.Exit(1)
