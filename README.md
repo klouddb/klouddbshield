@@ -15,6 +15,8 @@
 
 Postgres  -   Please read https://klouddb.io/cis-benchmarks-for-postgres-klouddbshield-1-1/
 
+HBA Scanner - Please read https://klouddb.io/hba-checker-klouddb-shield-1-4/
+
 MySQL     -   Please read https://klouddb.io/releasing-first-version-of-klouddb-shield-mysql-cis-benchmarks/ 
 
 RDS       -   Please read https://klouddb.io/klouddb-shield-1-2-rds-cis-benchmarks/
