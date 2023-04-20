@@ -21,7 +21,7 @@ MySQL     -   Please read https://klouddb.io/releasing-first-version-of-klouddb-
 
 RDS       -   Please read https://klouddb.io/klouddb-shield-1-2-rds-cis-benchmarks/
 
-Currently we check for 86 controls - 32 controls(Postgres) 46 controls(MySQL) and 8 controls(RDS) and we plan to add more checks soon. We tested this tool on CentOS and Ubuntu ( PG 14 and PG13)
+Currently we check for 94 controls - 40 controls(Postgres) 46 controls(MySQL) and 8 controls(RDS) and we plan to add more checks soon. We tested this tool on CentOS and Ubuntu ( PG 14 and PG13)
 
 NOTE -  For some linux commands you might need root/sudo access 
 
