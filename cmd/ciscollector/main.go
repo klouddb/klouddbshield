@@ -38,6 +38,12 @@ func main() {
 		log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 	}
 
+	htmlHelper := &htmlreport.HTMLHelper{}
+	defer func() {
+		htmlHelper.Generate("report.html", 0600)
+		fmt.Println("html report generated")
+	}()
+
 	// Program context
 	ctx := context.Background()
 	if cnf.App.VerbosePostgres {
@@ -48,14 +54,14 @@ func main() {
 		runMySql(ctx, cnf)
 	}
 	if cnf.App.RunPostgres {
-		runPostgres(ctx, cnf)
+		runPostgres(ctx, cnf, htmlHelper)
 
 	}
 	if cnf.App.RunRds {
 		runRDS(ctx, cnf)
 	}
 	if cnf.App.HBASacanner {
-		runHBAScanner(ctx, cnf)
+		runHBAScanner(ctx, cnf, htmlHelper)
 	}
 	if cnf.App.VerboseHBASacanner {
 		runHBAScannerByControl(ctx, cnf)
@@ -140,7 +146,7 @@ func runMySql(ctx context.Context, cnf *config.Config) {
 	fmt.Println("mysqlsecreport.json file generated")
 	// }
 }
-func runPostgres(ctx context.Context, cnf *config.Config) []*model.Result {
+func runPostgres(ctx context.Context, cnf *config.Config, h *htmlreport.HTMLHelper) []*model.Result {
 	postgresDatabase := cnf.Postgres
 	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
 	if err != nil {
@@ -159,13 +165,7 @@ func runPostgres(ctx context.Context, cnf *config.Config) []*model.Result {
 	}
 	fmt.Println("postgressecreport.json file generated")
 	data := htmlreport.GenerateHTMLReport(listOfResults, "Postgres")
-	htmldata := []byte(data)
-	err = os.WriteFile("postgressecreport.html", htmldata, 0600)
-	if err != nil {
-		log.Error().Err(err).Msg("Unable to generate postgressecreport.html file: " + err.Error())
-		fmt.Println("**********listOfResults*************\n", data)
-	}
-	fmt.Println("postgressecreport.html file generated")
+	h.AddTab("Postgres", data)
 	// data = htmlreport.GenerateMarkdown(listOfResults)
 	// htmldata = []byte(data)
 	// err = os.WriteFile("postgressecreport.md", htmldata, 0600)
@@ -199,7 +199,7 @@ func runRDS(ctx context.Context, cnf *config.Config) {
 	}
 	fmt.Println("rdssecreport.json file generated")
 }
-func runHBAScanner(ctx context.Context, cnf *config.Config) []*model.HBAScannerResult {
+func runHBAScanner(ctx context.Context, cnf *config.Config, h *htmlreport.HTMLHelper) []*model.HBAScannerResult {
 	postgresDatabase := cnf.Postgres
 	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
 	if err != nil {
@@ -208,13 +208,7 @@ func runHBAScanner(ctx context.Context, cnf *config.Config) []*model.HBAScannerR
 	listOfResults := hbascanner.HBAScanner(postgresStore, ctx)
 
 	data := htmlreport.GenerateHTMLReportForHBA(listOfResults)
-	htmldata := []byte(data)
-	err = os.WriteFile("hbascannerreport.html", htmldata, 0002)
-	if err != nil {
-		log.Error().Err(err).Msg("Unable to generate hbascannerreport.html file: " + err.Error())
-		fmt.Println("**********listOfResults*************\n", data)
-	}
-	fmt.Println("hbascannerreport.html file generated")
+	h.AddTab("HSB Scanner Report", data)
 	for i := 0; i < len(listOfResults); i++ {
 		listOfResults[i].Procedure = strings.ReplaceAll(listOfResults[i].Procedure, "\t", " ")
 		listOfResults[i].Procedure = strings.ReplaceAll(listOfResults[i].Procedure, "\n", " ")
