@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/klouddb/klouddbshield/model"
 )
 
@@ -82,7 +84,7 @@ func PerformAllChecks(ctx context.Context) []*model.Result {
 	gp.WaitGroup().Wait()
 	gp.ShutDown(true, time.Second)
 
-	CalculateScore(listOfResult)
+	// CalculateScore(listOfResult)
 	return listOfResult
 }
 
@@ -163,4 +165,51 @@ func PrintScore(score map[int]*model.Status) {
 		(float64(score[0].Pass) / float64((score[0].Pass + score[0].Fail)) * 100),
 	)
 
+}
+
+func ConvertToTable(listOfResults []*model.Result) string {
+	sort.Slice(listOfResults, func(i, j int) bool {
+		v1, err := version.NewVersion(listOfResults[i].Control)
+		if err != nil {
+			return false
+		}
+		v2, err := version.NewVersion(listOfResults[j].Control)
+		if err != nil {
+			return false
+		}
+		// Comparison example. There is also GreaterThan, Equal, and just
+		// a simple Compare that returns an int allowing easy >=, <=, etc.
+		return v1.LessThan(v2)
+	})
+
+	// sb := strings.Builder{}
+	// for _, result := range listOfResults {
+	// 	sb.WriteString("\n\n")
+	// 	sp := NewSectionPrinter(result)
+	// 	sb.WriteString(sp.Print())
+	// 	sb.WriteString("\n\n")
+	// }
+	// return sb.String()
+
+	rdsPrinter := NewRDSPrinter(listOfResults)
+	return rdsPrinter.Print()
+}
+
+func ConvertToMainTable(listOfResults []*model.Result) string {
+	sort.Slice(listOfResults, func(i, j int) bool {
+		v1, err := version.NewVersion(listOfResults[i].Control)
+		if err != nil {
+			return false
+		}
+		v2, err := version.NewVersion(listOfResults[j].Control)
+		if err != nil {
+			return false
+		}
+		// Comparison example. There is also GreaterThan, Equal, and just
+		// a simple Compare that returns an int allowing easy >=, <=, etc.
+		return v1.LessThan(v2)
+	})
+
+	rdsPrinter := NewRDSPrinter(listOfResults)
+	return rdsPrinter.SectionPrint()
 }

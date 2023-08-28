@@ -1,16 +1,34 @@
 package model
 
-import "database/sql"
+import (
+	"database/sql"
+	"fmt"
+)
+
+type CaseResult struct {
+	Name   string
+	Reason string
+	Status string
+}
+
+func NewCaseResult(name string) *CaseResult {
+	return &CaseResult{
+		Name:   name,
+		Status: "Fail",
+		Reason: fmt.Sprintf("no subscription found for %s", name),
+	}
+}
 
 type Result struct {
-	FailReason  interface{} `json:"FailReason,omitempty"`
-	Status      string
-	Description string `json:"-"`
-	Control     string
-	Title       string
-	Rationale   string `json:"-"`
-	References  string `json:"-"`
-	Procedure   string `json:"-"`
+	FailReason     interface{} `json:"FailReason,omitempty"`
+	Status         string
+	Description    string `json:"-"`
+	Control        string
+	Title          string
+	Rationale      string `json:"-"`
+	References     string `json:"-"`
+	Procedure      string `json:"-"`
+	CaseFailReason map[string]*CaseResult
 }
 type Config struct {
 	store      *sql.DB

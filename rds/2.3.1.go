@@ -13,6 +13,7 @@ import (
 
 const Pass = "Pass"
 const Fail = "Fail"
+const Manual = "Manual"
 
 func ExecutePerDB(ctx context.Context, args ...interface{}) error {
 
@@ -25,7 +26,7 @@ func ExecutePerDB(ctx context.Context, args ...interface{}) error {
 			return nil
 		}
 
-		dbFunc, ok := args[0].(func(context.Context, string, *tablePrinter) *model.Result)
+		dbFunc, ok := args[0].(func(context.Context, string, *rdsInstancePrinter) *model.Result)
 		if !ok {
 			log.Println("first argument cant be parsed to dbStatus func")
 			return nil
@@ -36,7 +37,7 @@ func ExecutePerDB(ctx context.Context, args ...interface{}) error {
 			log.Println("second argument cant be parsed to string")
 			return nil
 		}
-		printer, ok := args[2].(*tablePrinter)
+		printer, ok := args[2].(*rdsInstancePrinter)
 		if !ok {
 			log.Println("third argument cant be parsed to table printer")
 			return nil
@@ -69,7 +70,8 @@ func Execute231(ctx context.Context) (result *model.Result) {
 			result = &model.Result{}
 		}
 		result.Control = "2.3.1"
-		result.Description = "Ensure that encryption is enabled for RDS instances"
+		result.Title = "Ensure that encryption is enabled for RDS instances"
+
 		result = fixFailReason(result)
 	}()
 
@@ -77,7 +79,7 @@ func Execute231(ctx context.Context) (result *model.Result) {
 	if err != nil {
 		return result
 	}
-	printer := NewTablePrinter()
+	printer := NewRDSInstancePrinter()
 	mutex := &sync.Mutex{}
 	gp := NewGoPool(ctx)
 
@@ -110,7 +112,7 @@ func GetEncryptionStatusOfDB2(ctx context.Context) *model.Result {
 	return nil
 }
 
-func GetEncryptionStatusOfDB(ctx context.Context, dbName string, printer *tablePrinter) *model.Result {
+func GetEncryptionStatusOfDB(ctx context.Context, dbName string, printer *rdsInstancePrinter) *model.Result {
 	result, cmdOutput, err := ExecRdsCommand(ctx, fmt.Sprintf(`aws rds describe-db-instances  --db-instance-identifier "%s" --query 'DBInstances[*].StorageEncrypted'`, dbName))
 	if err != nil {
 		result.Status = Fail

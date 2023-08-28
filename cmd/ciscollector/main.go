@@ -42,7 +42,7 @@ func main() {
 	ctx := context.Background()
 	if cnf.App.VerbosePostgres {
 		runPostgresByControl(ctx, cnf)
-
+		return
 	}
 	if cnf.App.RunMySql {
 		runMySql(ctx, cnf)
@@ -166,14 +166,7 @@ func runPostgres(ctx context.Context, cnf *config.Config) []*model.Result {
 		fmt.Println("**********listOfResults*************\n", data)
 	}
 	fmt.Println("postgressecreport.html file generated")
-	// data = htmlreport.GenerateMarkdown(listOfResults)
-	// htmldata = []byte(data)
-	// err = os.WriteFile("postgressecreport.md", htmldata, 0600)
-	// if err != nil {
-	// 	log.Error().Err(err).Msg("Unable to generate postgressecreport.md file: " + err.Error())
-	// 	fmt.Println("**********listOfResults*************\n", data)
-	// }
-	// fmt.Println("postgressecreport.md file generated")
+
 	return listOfResults
 
 }
@@ -183,21 +176,29 @@ func runRDS(ctx context.Context, cnf *config.Config) {
 	rds.Validate()
 	listOfResults := rds.PerformAllChecks(ctx)
 
-	jsonData, err := json.MarshalIndent(listOfResults, "", "  ")
-	if err != nil {
-		fmt.Println("error marshaling list of results", err)
-		return
-	}
+	tableData := rds.ConvertToMainTable(listOfResults)
+	output := strings.ReplaceAll(string(tableData), `\n`, "\n")
 
-	output := strings.ReplaceAll(string(jsonData), `\n`, "\n")
+	fmt.Println("\n\n\nfor detailed information check the generated output file rdssecreport.json\n")
+	fmt.Println(output)
+
+	tableData = rds.ConvertToTable(listOfResults)
+
+	// jsonData, err := json.MarshalIndent(listOfResults, "", "  ")
+	// if err != nil {
+	// 	fmt.Println("error marshaling list of results", err)
+	// 	return
+	// }
+
+	output = strings.ReplaceAll(string(tableData), `\n`, "\n")
 
 	// write output data to file
-	err = os.WriteFile("rdssecreport.json", []byte(output), 0600)
+	err := os.WriteFile("rdssecreport.json", []byte(output), 0600)
 	if err != nil {
 		log.Error().Err(err).Msg("Unable to generate rdssecreport.json file: " + err.Error())
-		fmt.Println("**********listOfResults*************\n", string(jsonData))
+		fmt.Println("**********listOfResults*************\n", string(tableData))
 	}
-	fmt.Println("rdssecreport.json file generated")
+	fmt.Println("rdssecreport.json file generated\n\n")
 }
 func runHBAScanner(ctx context.Context, cnf *config.Config) []*model.HBAScannerResult {
 	postgresDatabase := cnf.Postgres
