@@ -18,7 +18,7 @@ func Execute232(ctx context.Context) (result *model.Result) {
 			result = &model.Result{}
 		}
 		result.Control = "2.3.2"
-		result.Description = "Ensure that auto minor version upgrade is enabled for RDS instances"
+		result.Title = "Ensure that auto minor version upgrade is enabled for RDS instances"
 		result = fixFailReason(result)
 	}()
 
@@ -26,7 +26,7 @@ func Execute232(ctx context.Context) (result *model.Result) {
 	if err != nil {
 		return result
 	}
-	printer := NewTablePrinter()
+	printer := NewRDSInstancePrinter()
 	mutex := &sync.Mutex{}
 	gp := NewGoPool(ctx)
 
@@ -51,7 +51,7 @@ func Execute232(ctx context.Context) (result *model.Result) {
 
 }
 
-func GetAutoMinorVersionOfDB(ctx context.Context, dbName string, printer *tablePrinter) *model.Result {
+func GetAutoMinorVersionOfDB(ctx context.Context, dbName string, printer *rdsInstancePrinter) *model.Result {
 	result, cmdOutput, err := ExecRdsCommand(ctx, fmt.Sprintf(`aws rds describe-db-instances --db-instance-identifier  "%s" --query 'DBInstances[*].AutoMinorVersionUpgrade'`, dbName))
 	if err != nil {
 		result.Status = Fail

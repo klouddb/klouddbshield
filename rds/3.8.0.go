@@ -20,7 +20,7 @@ func Execute380(ctx context.Context) (result *model.Result) {
 			result = &model.Result{}
 		}
 		result.Control = "3.8.0"
-		result.Description = "Ensure Relational Database Service backup retention policy is set"
+		result.Title = "Ensure Relational Database Service backup retention policy is set"
 		result = fixFailReason(result)
 	}()
 
@@ -38,7 +38,7 @@ func Execute380(ctx context.Context) (result *model.Result) {
 		result.FailReason = fmt.Errorf("error un marshalling cmdOutput.StdOut: %s, error :%s", cmdOutput.StdOut, err)
 		return
 	}
-	printer := NewTablePrinter()
+	printer := NewRDSInstancePrinter()
 	for _, multiAZDB := range backupRetentionValues {
 
 		if multiAZDB.BackupRetentionPeriod < 7 {

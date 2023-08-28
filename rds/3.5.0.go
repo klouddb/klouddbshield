@@ -20,7 +20,7 @@ func Execute350(ctx context.Context) (result *model.Result) {
 			result = &model.Result{}
 		}
 		result.Control = "3.5.0"
-		result.Description = "Multi-AZ check"
+		result.Title = "Multi-AZ check"
 		result = fixFailReason(result)
 	}()
 
@@ -38,7 +38,7 @@ func Execute350(ctx context.Context) (result *model.Result) {
 		result.FailReason = fmt.Errorf("error un marshalling %s", err)
 		return
 	}
-	printer := NewTablePrinter()
+	printer := NewRDSInstancePrinter()
 
 	for _, multiAZDB := range arrayOfDataBases {
 

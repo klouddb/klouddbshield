@@ -18,7 +18,7 @@ func Execute233(ctx context.Context) (result *model.Result) {
 			result = &model.Result{}
 		}
 		result.Control = "2.3.3"
-		result.Description = "Ensure that public address is not given to RDS instance"
+		result.Title = "Ensure that public address is not given to RDS instance"
 		result = fixFailReason(result)
 	}()
 
@@ -26,7 +26,7 @@ func Execute233(ctx context.Context) (result *model.Result) {
 	if err != nil {
 		return result
 	}
-	printer := NewTablePrinter()
+	printer := NewRDSInstancePrinter()
 	mutex := &sync.Mutex{}
 	gp := NewGoPool(ctx)
 
@@ -51,7 +51,7 @@ func Execute233(ctx context.Context) (result *model.Result) {
 
 }
 
-func GetPublicAccessStatusOfDB(ctx context.Context, dbName string, printer *tablePrinter) *model.Result {
+func GetPublicAccessStatusOfDB(ctx context.Context, dbName string, printer *rdsInstancePrinter) *model.Result {
 	result, cmdOutput, err := ExecRdsCommand(ctx, fmt.Sprintf(`aws rds describe-db-instances --db-instance-identifier  "%s" --query 'DBInstances[*].PubliclyAccessible'`, dbName))
 	if err != nil {
 		result.Status = Fail
