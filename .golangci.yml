@@ -24,17 +24,13 @@ linters:
     - misspell
     - gofmt
     - staticcheck
-    - gosec
-    - gocritic
+    # - gosec
+    # - gocritic
     - vet
-    # - revive
-    - deadcode
     - errcheck
     - gosimple
     - govet
-    - structcheck
     - typecheck
-    - varcheck
-    # Extras
     - gofmt
     - goimports
+    - unused

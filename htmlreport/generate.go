@@ -38,7 +38,7 @@ func GenerateHTMLReport(listOfResults []*model.Result, database string) string {
 
 	}
 
-	return fmt.Sprintf(body, database+" CIS Report", populateTable)
+	return fmt.Sprintf(body, populateTable, "")
 }
 func GenerateHTMLReportForHBA(listOfResults []*model.HBAScannerResult) string {
 	populateTable := ""
@@ -49,8 +49,8 @@ func GenerateHTMLReportForHBA(listOfResults []*model.HBAScannerResult) string {
 		if result.Status == "Fail" {
 			// populateFailedRowsTable += fmt.Sprintf(hbaFailRowsTemplate,
 			populateFailedRowsTable = ""
-			for _, row := range result.FailRows {
-				populateFailedRowsTable += fmt.Sprintf(hbaFailRowsTemplate, "", row)
+			for i, row := range result.FailRows {
+				populateFailedRowsTable += fmt.Sprintf(hbaFailRowsTemplate, result.FailRowsLineNums[i], row)
 			}
 			headline := fmt.Sprintf("HBA Check %d - %s (Failure Report)", result.Control, result.Description)
 			hbaFailRowsBodyTemplatedata += fmt.Sprintf(hbaFailRowsBodyTemplate, headline, populateFailedRowsTable)
@@ -60,17 +60,17 @@ func GenerateHTMLReportForHBA(listOfResults []*model.HBAScannerResult) string {
 
 			// strings.ReplaceAll(result.Procedure, "\n", "</br>"),
 			// )
-			populateTable += fmt.Sprintf(hsbtabletemplate,
+			populateTable += fmt.Sprintf(hbatabletemplate,
 				fmt.Sprintf("HBA Check %d - %s", result.Control, result.Description),
 				cross,
 				result.Description,
-				result.FailRowsInString,
+				fmt.Sprintf(hbafailRows, result.FailRowsInString),
 
 				result.Procedure,
 			)
 		} else {
 
-			populateTable += fmt.Sprintf(hsbtabletemplate,
+			populateTable += fmt.Sprintf(hbatabletemplate,
 				fmt.Sprintf("HBA Check %d - %s", result.Control, result.Description),
 				tick,
 				result.Description,
@@ -81,7 +81,7 @@ func GenerateHTMLReportForHBA(listOfResults []*model.HBAScannerResult) string {
 		}
 
 	}
-	return fmt.Sprintf(body, "HBA Scanner Report", populateTable, hbaFailRowsBodyTemplatedata)
+	return fmt.Sprintf(body, populateTable, hbaFailRowsBodyTemplatedata)
 }
 
 // | left foo      | right foo ffffffffffffffffff  <br>wwewffff<br>wwew<br>wwew|

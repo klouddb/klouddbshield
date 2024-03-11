@@ -2,8 +2,9 @@
 
 [![GitHub Release][release-img]][release]
 [![Go Report Card][report-card-img]][report-card]
-
-<!-- [![Build Status](https://github.com/klouddb/klouddbshield/workflows/Build/badge.svg?branch=main)](https://github.com/klouddb/klouddbshield/actions) -->
+[![Go Reference](https://pkg.go.dev/badge/github.com/klouddb/klouddbshield.svg)](https://pkg.go.dev/github.com/klouddb/klouddbshield)
+[![Go Build](https://github.com/klouddb/klouddbshield/actions/workflows/release.yml/badge.svg)](https://github.com/klouddb/klouddbshield/actions/workflows/release.yml)
+[![Go Vuln Check](https://github.com/klouddb/klouddbshield/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/klouddb/klouddbshield/actions/workflows/govulncheck.yml)
 
 [release-img]: https://img.shields.io/github/release/klouddb/klouddbshield.svg?logo=github
 [release]: https://github.com/klouddb/klouddbshield/releases

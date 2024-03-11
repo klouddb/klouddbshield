@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/klouddb/klouddbshield/model"
 	"github.com/klouddb/klouddbshield/pkg/utils"
@@ -36,9 +37,16 @@ func QueryTrustInMethod(store *sql.DB, ctx context.Context) (*model.HBAScannerRe
 	} else {
 		result.Status = "Pass"
 	}
+
 	for _, obj := range data {
 		result.FailRows = append(result.FailRows, getString(obj))
+		if obj["line_number"] != nil {
+			result.FailRowsLineNums = append(result.FailRowsLineNums, int(obj["line_number"].(int64)))
+		}
 	}
+
+	result.FailRowsInString = strings.Join(result.FailRows, "\n")
+
 	return &result, nil
 }
 func QueryAllInDatabase(store *sql.DB, ctx context.Context) (*model.HBAScannerResult, error) {
@@ -69,7 +77,13 @@ func QueryAllInDatabase(store *sql.DB, ctx context.Context) (*model.HBAScannerRe
 	}
 	for _, obj := range data {
 		result.FailRows = append(result.FailRows, getString(obj))
+		if obj["line_number"] != nil {
+			result.FailRowsLineNums = append(result.FailRowsLineNums, int(obj["line_number"].(int64)))
+		}
 	}
+
+	result.FailRowsInString = strings.Join(result.FailRows, "\n")
+
 	return &result, nil
 }
 func QueryAllInUser(store *sql.DB, ctx context.Context) (*model.HBAScannerResult, error) {
@@ -100,7 +114,13 @@ func QueryAllInUser(store *sql.DB, ctx context.Context) (*model.HBAScannerResult
 	}
 	for _, obj := range data {
 		result.FailRows = append(result.FailRows, getString(obj))
+		if obj["line_number"] != nil {
+			result.FailRowsLineNums = append(result.FailRowsLineNums, int(obj["line_number"].(int64)))
+		}
 	}
+
+	result.FailRowsInString = strings.Join(result.FailRows, "\n")
+
 	return &result, nil
 }
 func QueryMD5InMethod(store *sql.DB, ctx context.Context) (*model.HBAScannerResult, error) {
@@ -132,7 +152,13 @@ func QueryMD5InMethod(store *sql.DB, ctx context.Context) (*model.HBAScannerResu
 	}
 	for _, obj := range data {
 		result.FailRows = append(result.FailRows, getString(obj))
+		if obj["line_number"] != nil {
+			result.FailRowsLineNums = append(result.FailRowsLineNums, int(obj["line_number"].(int64)))
+		}
 	}
+
+	result.FailRowsInString = strings.Join(result.FailRows, "\n")
+
 	return &result, nil
 }
 func QueryPeerInMethod(store *sql.DB, ctx context.Context) (*model.HBAScannerResult, error) {
@@ -164,7 +190,13 @@ func QueryPeerInMethod(store *sql.DB, ctx context.Context) (*model.HBAScannerRes
 	}
 	for _, obj := range data {
 		result.FailRows = append(result.FailRows, getString(obj))
+		if obj["line_number"] != nil {
+			result.FailRowsLineNums = append(result.FailRowsLineNums, int(obj["line_number"].(int64)))
+		}
 	}
+
+	result.FailRowsInString = strings.Join(result.FailRows, "\n")
+
 	return &result, nil
 }
 func QueryIdentInMethod(store *sql.DB, ctx context.Context) (*model.HBAScannerResult, error) {
@@ -196,7 +228,13 @@ func QueryIdentInMethod(store *sql.DB, ctx context.Context) (*model.HBAScannerRe
 	}
 	for _, obj := range data {
 		result.FailRows = append(result.FailRows, getString(obj))
+		if obj["line_number"] != nil {
+			result.FailRowsLineNums = append(result.FailRowsLineNums, int(obj["line_number"].(int64)))
+		}
 	}
+
+	result.FailRowsInString = strings.Join(result.FailRows, "\n")
+
 	return &result, nil
 }
 func QueryPasswordInMethod(store *sql.DB, ctx context.Context) (*model.HBAScannerResult, error) {
@@ -228,7 +266,13 @@ func QueryPasswordInMethod(store *sql.DB, ctx context.Context) (*model.HBAScanne
 	}
 	for _, obj := range data {
 		result.FailRows = append(result.FailRows, getString(obj))
+		if obj["line_number"] != nil {
+			result.FailRowsLineNums = append(result.FailRowsLineNums, int(obj["line_number"].(int64)))
+		}
 	}
+
+	result.FailRowsInString = strings.Join(result.FailRows, "\n")
+
 	return &result, nil
 }
 func QueryType(store *sql.DB, ctx context.Context) (*model.HBAScannerResult, error) {
@@ -259,7 +303,13 @@ func QueryType(store *sql.DB, ctx context.Context) (*model.HBAScannerResult, err
 	}
 	for _, obj := range data {
 		result.FailRows = append(result.FailRows, getString(obj))
+		if obj["line_number"] != nil {
+			result.FailRowsLineNums = append(result.FailRowsLineNums, int(obj["line_number"].(int64)))
+		}
 	}
+
+	result.FailRowsInString = strings.Join(result.FailRows, "\n")
+
 	return &result, nil
 }
 func QueryIPPrivilege(store *sql.DB, ctx context.Context) (*model.HBAScannerResult, error) {
@@ -289,7 +339,13 @@ func QueryIPPrivilege(store *sql.DB, ctx context.Context) (*model.HBAScannerResu
 	}
 	for _, obj := range data {
 		result.FailRows = append(result.FailRows, getString(obj))
+		if obj["line_number"] != nil {
+			result.FailRowsLineNums = append(result.FailRowsLineNums, int(obj["line_number"].(int64)))
+		}
 	}
+
+	result.FailRowsInString = strings.Join(result.FailRows, "\n")
+
 	return &result, nil
 }
 func getString(obj map[string]interface{}) string {

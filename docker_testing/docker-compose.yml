@@ -1,0 +1,49 @@
+version: '3.9'
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: postgres-setup.Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./pglog/log${INDEX}:/var/log/postgresql
+    ports:
+      - 54321:5432
+    networks:
+      mynetwork:
+    entrypoint: bash -c '/docker-entrypoint-initdb.d/entrypoint.sh postgres'
+    environment:
+      - PREFIX=${PREFIX}
+      - FILE_SIZE=${FILE_SIZE}
+
+  createuser:
+    image: postgres:latest
+    depends_on:
+      - postgres
+    networks:
+      mynetwork:
+        ipv4_address: 192.168.0.25
+    volumes:
+      - ./createuser.sh:/docker-entrypoint-initdb.d/createuser.sh
+    entrypoint: bash -c 'sleep 10 && /docker-entrypoint-initdb.d/createuser.sh'
+
+  pgbench:
+    image: postgres:latest
+    depends_on:
+      - postgres
+    networks:
+      mynetwork:
+        ipv4_address: ${IP}
+    volumes:
+      - ./pgbench.sh:/docker-entrypoint-initdb.d/pgbench.sh
+    entrypoint: /docker-entrypoint-initdb.d/pgbench.sh
+    environment:
+      - PGUSERS=${PGUSERS}
+      - TIME=${TIME}
+
+networks:
+  mynetwork:
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.0.0/24
