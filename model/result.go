@@ -1,7 +1,6 @@
 package model
 
 import (
-	"database/sql"
 	"fmt"
 )
 
@@ -31,7 +30,6 @@ type Result struct {
 	CaseFailReason map[string]*CaseResult
 }
 type Config struct {
-	store      *sql.DB
 	DbHostname string
 	Results    []*Result
 }

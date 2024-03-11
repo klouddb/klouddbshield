@@ -1,0 +1,19 @@
+# [mysql]
+# host="localhost" 
+# port="3306" 
+# user="root" 
+# password="mysql111" 
+# maxIdleConn = 2
+# maxOpenConn = 2
+
+[postgres]
+host="localhost" 
+port="54321"
+user="myuser"
+dbname="postgres"
+password="password" 
+maxIdleConn = 2
+maxOpenConn = 2
+
+# [app]
+# debug = true

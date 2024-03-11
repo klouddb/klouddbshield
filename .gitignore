@@ -32,3 +32,10 @@ config.toml
 /ciscollector
 # End of https://www.toptal.com/developers/gitignore/api/go
 .DS_Store
+/kshieldconfig.toml
+/cmd/ciscollector/kshieldconfig.toml
+.vscode
+report.html
+report.json
+
+docker_testing/pglog/*

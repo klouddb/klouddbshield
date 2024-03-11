@@ -38,7 +38,7 @@ func Open(conf config.Postgres) (*sql.DB, string, error) {
 		db.SetMaxIdleConns(conf.MaxIdleConn)
 	}
 	if conf.MaxOpenConn > 0 {
-		db.SetMaxIdleConns(conf.MaxOpenConn)
+		db.SetMaxOpenConns(conf.MaxOpenConn)
 	}
 
 	// log.Info().

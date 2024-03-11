@@ -1,10 +1,16 @@
 package config
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
+	"github.com/klouddb/klouddbshield/model"
+	cons "github.com/klouddb/klouddbshield/pkg/const"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -13,6 +19,103 @@ type Config struct {
 	MySQL    *MySQL    `toml:"mysql"`
 	Postgres *Postgres `toml:"postgres"`
 	App      App       `toml:"app"`
+
+	LogParser *LogParser
+}
+
+type LogParser struct {
+	Command string
+
+	PgSettings *model.PgSettings
+
+	Begin time.Time
+	End   time.Time
+
+	LogFiles []string
+
+	IpFilePath string
+
+	OutputType string
+}
+
+func NewLogParser(command, beginTime, endTime, prefix, logfile, ipfile string) (*LogParser, error) {
+	prefix = strings.TrimSpace(prefix)
+	logfile = strings.TrimSpace(logfile)
+	ipfile = strings.TrimSpace(ipfile)
+	beginTime = strings.TrimSpace(beginTime)
+	endTime = strings.TrimSpace(endTime)
+
+	if command != cons.LogParserCMD_UniqueIPs && command != cons.LogParserCMD_InactiveUsr && command != cons.LogParserCMD_MismatchIPs {
+		return nil, fmt.Errorf("invalid command %s, please use unique_ip, mismatch_ips or inactive_users", command)
+	}
+
+	if prefix == "" {
+		return nil, fmt.Errorf("log line prefix is required")
+	}
+
+	var begin, end time.Time
+	var err error
+	if beginTime != "" {
+		begin, err = time.Parse("2006-01-02 15:04:05", beginTime)
+		if err != nil {
+			return nil, fmt.Errorf("error while parsing begin time: %w", err)
+		}
+	}
+
+	if endTime != "" {
+		end, err = time.Parse("2006-01-02 15:04:05", endTime)
+		if err != nil {
+			return nil, fmt.Errorf("error while parsing end time: %w", err)
+		}
+	}
+
+	// Get the list of files that match the pattern.
+	files, err := filepath.Glob(logfile)
+	if err != nil {
+		return nil, fmt.Errorf("error while validating log file name %s (%v)", logfile, err)
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no file found for given pattern %s", logfile)
+	}
+
+	if command == cons.LogParserCMD_MismatchIPs {
+		if ipfile == "" {
+			return nil, fmt.Errorf("ip file path is required for mismatch_ips command")
+		}
+		if _, err := os.Stat(ipfile); err != nil {
+			return nil, fmt.Errorf("error while validating ip file name %s (%v)", ipfile, err)
+		}
+	}
+
+	return &LogParser{
+		Command: command,
+
+		PgSettings: &model.PgSettings{
+			LogLinePrefix: prefix,
+		},
+
+		Begin: begin,
+		End:   end,
+
+		LogFiles:   files,
+		IpFilePath: ipfile,
+	}, nil
+}
+
+// IsValidTime checks if given time is between begin and end time
+func (a *LogParser) IsValidTime(t time.Time) bool {
+	// if begin and end time is not zero then check if t is between begin and end time
+	if !a.Begin.IsZero() && a.Begin.After(t) {
+		return false
+	}
+
+	if !a.End.IsZero() && a.End.Before(t) {
+		return false
+	}
+
+	// if begin time or end time is not set then return true
+	return true
 }
 
 type Postgres struct {
@@ -69,6 +172,39 @@ func NewConfig() (*Config, error) {
 	flag.BoolVar(&verbose, "verbose", verbose, "As of today verbose only works for a specific control. Ex ciscollector -r --verbose --control 6.7")
 	flag.StringVar(&control, "control", control, "Check verbose detail for individual control.\nMake sure to use this with --verbose option.\nEx: ciscollector -r --verbose --control 6.7")
 	flag.BoolVar(&run, "r", run, "Run")
+
+	// flags related to log parsing
+	var logParser string
+	var logfile string
+	flag.StringVar(&logParser, "logparser", logParser, `To run Log Parser. Supported commands are:
+1. unique_ip: To get unique IPs from log file NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser
+e.g 
+* ciscollector --logparser unique_ip --file-path /location/to/log/file.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix>
+* ciscollector --logparser unique_ip --file-path /location/to/log/file.log --prefix <logline prefix>
+* ciscollector --logparser unique_ip --file-path /location/to/log/*.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix>
+* ciscollector --logparser unique_ip --file-path /location/to/log/*.log --prefix <logline prefix>
+
+2. inactive_users: To get inactive users from log file	NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser
+e.g
+* ciscollector --logparser inactive_users --file-path /location/to/log/file.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix>
+* ciscollector --logparser inactive_users --file-path /location/to/log/file.log --prefix <logline prefix>
+* ciscollector --logparser inactive_users --file-path /location/to/log/*.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix>
+* ciscollector --logparser inactive_users --file-path /location/to/log/*.log --prefix <logline prefix>
+	`)
+	flag.StringVar(&logfile, "file-path", "", "File path e.g /location/to/log/file.log. required for all commands in log parser")
+
+	var beginTime, endTime string
+	// read begin time
+	flag.StringVar(&beginTime, "begin-time", "", "Begin time for log filtering. format supported [2006-01-02 15:04:05]. optional flag for log parser")
+	// read end time
+	flag.StringVar(&endTime, "end-time", "", "End time for log filtering. format supported [2006-01-02 15:04:05]. optional flag for log parser")
+	var prefix string
+	flag.StringVar(&prefix, "prefix", "", "Log line prefix for offline parsing. required for all commands in log parser")
+	var ipFilePath string
+	flag.StringVar(&ipFilePath, "ip-file-path", "", "File path for ip list. requered for mismatch_ips command in log parser")
+	var outputType string
+	flag.StringVar(&outputType, "output-type", "", "Output type for log parser. supported types are json, csv, table")
+
 	// flag.BoolVar(&hbaSacanner, "r", run, "Run")
 	// flag.BoolVar(&runMySql, "run-mysql", runMySql, "Run MySQL")
 	// flag.BoolVar(&runPostgres, "run-postgres", runPostgres, "Run Postgres")
@@ -78,11 +214,24 @@ func NewConfig() (*Config, error) {
 
 	flag.Parse()
 
+	var logParserConf *LogParser
+	if logParser != "" {
+		var err error
+		logParserConf, err = NewLogParser(logParser, beginTime, endTime, prefix, logfile, ipFilePath)
+		if err != nil {
+			fmt.Println("Invalid input for logparser:", err)
+			flag.Usage()
+			os.Exit(1)
+		}
+
+		logParserConf.OutputType = outputType
+	}
+
 	if version {
 		log.Debug().Str("version", Version).Send()
 		os.Exit(0)
 	}
-	if !(run || verbose) {
+	if !run && !verbose && logParser == "" {
 		flag.Usage()
 		os.Exit(0)
 	}
@@ -90,8 +239,7 @@ func NewConfig() (*Config, error) {
 	// 	fmt.Print(controlVerbose)
 	// }
 	if run && !verbose {
-		fmt.Println("1.Postgres\n2.MySQL\n3.AWS RDS\n4.HBA Scanner")
-		fmt.Printf("Enter your choice to execute(1/2/3/4):")
+		fmt.Print(cons.MSG_Choise)
 		choice := 0
 		fmt.Scanln(&choice)
 		switch choice {
@@ -109,28 +257,23 @@ func NewConfig() (*Config, error) {
 			runRds = true
 		case 4:
 			hbaSacanner = true
+		case 5:
+			logParserConf = getLogParserInputs()
 		default:
 			fmt.Println("Invalid Choice, Please Try Again.")
 			os.Exit(1)
 		}
 	}
-	c := new(Config)
 
-	v := viper.New()
-	v.SetConfigType("toml")
-	v.SetConfigName("kshieldconfig")
-	v.AddConfigPath(".")
-	v.AddConfigPath("/etc/klouddbshield")
+	c := &Config{}
 	if !runRds {
-		err := v.ReadInConfig()
-		if err != nil {
-			return nil, fmt.Errorf("fatal error config file: %w", err)
-		}
-		err = v.Unmarshal(c)
-		if err != nil {
-			return nil, fmt.Errorf("unmarshal: %w", err)
+		var err error
+		c, err = loadConfig()
+		if err != nil && logParserConf == nil {
+			return nil, fmt.Errorf("loading config: %w", err)
 		}
 	}
+
 	c.App.Run = run
 	c.App.RunMySql = runMySql
 	c.App.RunPostgres = runPostgres
@@ -138,9 +281,9 @@ func NewConfig() (*Config, error) {
 	c.App.Verbose = verbose
 	c.App.Control = control
 	c.App.HBASacanner = hbaSacanner
+	c.LogParser = logParserConf
 	if run && verbose {
-		fmt.Println("Please select the database type:\n1.Postgres\n2.MySQL\n3.AWS RDS\n4.HBA Scanner")
-		fmt.Printf("Enter your choice to execute(1/2/3/4):")
+		fmt.Print(cons.MSG_Choise)
 		choice := 0
 		fmt.Scanln(&choice)
 		switch choice {
@@ -165,6 +308,8 @@ func NewConfig() (*Config, error) {
 				fmt.Println("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
 				os.Exit(1)
 			}
+		case 5:
+			c.LogParser = getLogParserInputs()
 		default:
 			fmt.Println("Invalid Choice, Please Try Again.")
 			os.Exit(1)
@@ -178,7 +323,7 @@ func NewConfig() (*Config, error) {
 			return nil, fmt.Errorf("getting hostname: %w", err)
 		}
 	}
-	if c.MySQL == nil && c.Postgres == nil && !runRds {
+	if c.MySQL == nil && c.Postgres == nil && !runRds && c.LogParser == nil {
 		return nil, fmt.Errorf("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
 	}
 	if c.MySQL != nil && c.Postgres != nil && !runRds {
@@ -187,7 +332,9 @@ func NewConfig() (*Config, error) {
 	if c.MySQL == nil && runMySql {
 		return nil, fmt.Errorf("In older version we used [database] label and in current version we are changing it to [mysql] and kindly update your kshieldconfig file(/etc/klouddbshield/kshieldconfig.toml) - See sample entry in readme.")
 	}
-	if c.Postgres == nil && runPostgres {
+
+	postgresConfigNeeded := runPostgres || c.App.HBASacanner
+	if c.Postgres == nil && postgresConfigNeeded {
 		return nil, fmt.Errorf("In older version we used [database] label and in current version we are changing it to [postgres] and kindly update your kshieldconfig file(/etc/klouddbshield/kshieldconfig.toml) - See sample entry in readme.")
 	}
 	if c.MySQL != nil && c.MySQL.User == "" && runMySql {
@@ -199,16 +346,92 @@ func NewConfig() (*Config, error) {
 		fmt.Scanln(&c.MySQL.Password)
 	}
 
-	if c.Postgres != nil && c.Postgres.User == "" && runPostgres {
+	if c.Postgres != nil && c.Postgres.User == "" && postgresConfigNeeded {
 		fmt.Printf("Enter Your Postgres DB User: ")
 		fmt.Scanln(&c.Postgres.User)
 	}
-	if c.Postgres != nil && c.Postgres.Password == "" && runPostgres {
+	if c.Postgres != nil && c.Postgres.Password == "" && postgresConfigNeeded {
 		fmt.Printf("Enter Your DB Postgres Password for %s: ", c.Postgres.User)
 		fmt.Scanln(&c.Postgres.Password)
 	}
 	CONF = c
 	return c, nil
+}
+
+func loadConfig() (*Config, error) {
+	v := viper.New()
+	v.SetConfigType("toml")
+	v.SetConfigName("kshieldconfig")
+	v.AddConfigPath(".")
+	v.AddConfigPath("/etc/klouddbshield")
+
+	c := &Config{}
+
+	err := v.ReadInConfig()
+	if err != nil {
+		return c, fmt.Errorf("fatal error config file: %w", err)
+	}
+	err = v.Unmarshal(c)
+	if err != nil {
+		return c, fmt.Errorf("unmarshal: %w", err)
+	}
+
+	return c, nil
+}
+
+type inputReader struct {
+	reader *bufio.Reader
+}
+
+func newInputReader() *inputReader {
+	return &inputReader{
+		reader: bufio.NewReader(os.Stdin),
+	}
+}
+
+func (i *inputReader) Read(msg string) string {
+	fmt.Print(msg)
+	input, err := i.reader.ReadString('\n')
+	if err != nil {
+		fmt.Println("Invalid input for logparser:", err)
+		os.Exit(1)
+	}
+	input = strings.TrimSuffix(input, "\n")
+	input = strings.Trim(input, `"`)
+	input = strings.Trim(input, "'")
+
+	return input
+}
+
+func getLogParserInputs() *LogParser {
+	fmt.Print(cons.MSG_LogPaserChoise)
+	choice := 0
+	fmt.Scanln(&choice)
+	command := cons.LogParserChoiseMapping[choice]
+	if command == "" {
+		fmt.Println("Invalid Choice, Please Try Again.")
+		os.Exit(1)
+	}
+
+	reader := newInputReader()
+
+	prefix := reader.Read("Enter Log Line Prefix: ")
+	logfile := reader.Read("Enter Log File Path: ")
+	beginTime := reader.Read("Enter Begin Time (format: 2006-01-02 15:04:05) [optional]: ")
+	endTime := reader.Read("Enter End Time (format: 2006-01-02 15:04:05) [optional]: ")
+
+	var ipfile string
+	if command == cons.LogParserCMD_MismatchIPs {
+		ipfile = reader.Read("Enter IP File Path: ")
+	}
+
+	l, err := NewLogParser(command, beginTime, endTime, prefix, logfile, ipfile)
+	if err != nil {
+		fmt.Println("Invalid input for logparser:", err)
+		os.Exit(1)
+	}
+
+	return l
 }
 
 func MustNewConfig() *Config {

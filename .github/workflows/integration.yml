@@ -1,0 +1,73 @@
+name: integration
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        log_prefix:
+          - "%t [%p]: [%l-1] [trx_id=%x] user=%u,db=%d %r"
+          - "%t [%p]:"
+          - '%t %h %u %m '
+          - '%m (%h:%u) '
+          - '%m from %h by %u '
+          - '%m in %d by %u@%h '
+          - '%t %h %u [%p] '
+          - '%m (%h:%u:%p) '
+          - '%m from %h by %u pid=%p '
+          - '%m in %d by %u@%h pid=%p '
+          - '%t %h %u db=%d %m '
+          - '%m in %d by %u@%h'
+          - '[%p]: %t - %q[db=%d, user=%u, app=%a]  - [host=%h, trx_id=%x]'
+          - '[%p]: %m [%l-1] user=%u, db=%d, app=%a, client=%h'
+          - 'time=%t, pid=%p %q db=%d, usr=%u, client=%h , app=%a, line=%l'
+          - '%t [%u@%r/%a/%d:%p]: [%l]'
+          - '[%p]: %m [%l] (user=%u, db=%d) %h:%r'
+          - '%m [%p][%v] : [%l-1] %q[app=%a] '
+          - '%t [%p-%l] %q%u@%d '
+          - '%m [%p] %q[user=%u,db=%d,app=%a] '
+          - '%m [%p] %q[user=%u,db=%d,app=%a,host=%h] '
+          - '%t [%p]: [%l-1] user=%u,db=%d - PG-%e '
+          - '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+          - '%t [%p]: [%l-1] [trx_id=%x] user=%u,db=%d '
+          - '[%p]: [%l-1] db=%d,user=%u '
+          - '%m %r %u %a [%c] [%p] '
+          - '%m [%p]: [%l-1] db=%d,user=%u '
+          - 'pid=%p,user=%u,db=%d,app=%a,client=%h '
+          - 'user=%u,db=%d,app=%a,client=%h '
+          - '%p-%s-%c-%l-%h-%u-%d-%m '
+          - '%m [%p][%b][%v][%x] %q[user=%u,db=%d,app=%a] '
+          - '%m [%p] %q%u@%d '
+          - '%t [%p] %q%u@%d %h '
+          - '%m [%p] '
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.1
+          cache: true
+
+      - name: make install
+        run: make install
+
+      - name: create directory for log file
+        run: mkdir -p docker_testing/pglog/log0 && chmod -R 777 docker_testing/pglog && chmod -R 777 docker_testing/pglog/log0
+
+      - name: Setup and run test
+        run: |
+          cd docker_testing
+          integrationtest setup --prefix "${{ matrix.log_prefix }}"
+          sudo chmod -R 777 pglog/log0
+          integrationtest test -p "${{ matrix.log_prefix }}" -f "pglog/log0/postgresql*.log"
+          docker-compose down -v
