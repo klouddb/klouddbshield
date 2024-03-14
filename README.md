@@ -14,7 +14,7 @@
 
 ## How to run this tool on my server ?
 
-Logparser
+Logparser NOTE : Results vary depending on your logging settings (log_statement etc..)
 
 ```
 ciscollector --logparser inactive_users --file-path /var/lib/postgresql/14/main/log/postgresql-2024-03-11_120824.log --prefix pid=%p,user=%u,db=%d,app=%a,client=%h
