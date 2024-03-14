@@ -14,6 +14,18 @@
 
 ## How to run this tool on my server ?
 
+Logparser
+
+```
+ciscollector --logparser inactive_users --file-path /var/lib/postgresql/14/main/log/postgresql-2024-03-11_120824.log --prefix pid=%p,user=%u,db=%d,app=%a,client=%h
+
+
+
+ciscollector --logparser unique_ip --file-path /var/lib/postgresql/14/main/log/postgresql-2024-03-11_120824.log --prefix pid=%p,user=%u,db=%d,app=%a,client=%h
+
+NOTE : If you have multiple log files you can give wildcard in single quotes e.g '/var/lib/postgresql/14/main/log/postgresql-2024-03-11*;
+```
+
 Postgres  -   Please read https://klouddb.io/cis-benchmarks-for-postgres-klouddbshield-1-1/
 
 HBA Scanner - Please read https://klouddb.io/hba-checker-klouddb-shield-1-4/
