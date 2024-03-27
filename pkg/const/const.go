@@ -19,8 +19,9 @@ const (
 3. AWS RDS
 4. HBA Scanner
 5. Log Parser
+6. Password Manager
 
-Enter your choice to execute(1/2/3/4/5):`
+Enter your choice to execute(1/2/3/4/5/6):`
 
 	MSG_LogPaserChoise = `
 1. Inactive Users

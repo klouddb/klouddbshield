@@ -35,3 +35,6 @@ nfpms:
       - src: kshieldconfig_example.toml
         dst: /etc/klouddbshield/kshieldconfig.toml
         type: config
+      - src: passwords/*
+        dst: /etc/klouddbshield/passwords
+        type: config

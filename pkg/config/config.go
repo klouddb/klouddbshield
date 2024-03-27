@@ -21,6 +21,8 @@ type Config struct {
 	App      App       `toml:"app"`
 
 	LogParser *LogParser
+
+	GeneratePassword *GeneratePassword `toml:"generatePassword"`
 }
 
 type LogParser struct {
@@ -139,6 +141,13 @@ type MySQL struct {
 	MaxOpenConn int `toml:"maxOpenConn"`
 }
 
+type GeneratePassword struct {
+	Length           int `toml:"length"`
+	NumberCount      int `toml:"numberCount"`
+	NumUppercase     int `toml:"numUppercase"`
+	SpecialCharCount int `toml:"specialCharCount"`
+}
+
 type App struct {
 	Debug              bool   `toml:"debug"`
 	DryRun             bool   `toml:"dryRun"`
@@ -154,6 +163,15 @@ type App struct {
 	VerbosePostgres    bool
 	HBASacanner        bool
 	VerboseHBASacanner bool
+
+	RunMysqlConnTest    bool
+	RunPostgresConnTest bool
+	RunGeneratePassword bool
+	RunPwnedUsers       bool
+	RunPwnedPasswords   bool
+	InputDirectory      string
+	UseDefaults         bool
+	ThrottlerLIMIT      int
 }
 
 var CONF *Config
@@ -169,6 +187,9 @@ func NewConfig() (*Config, error) {
 	var runRds bool
 	var control string
 	var hbaSacanner bool
+	var runPostgresConnTest, runGeneratePassword, runPwnedUsers, runPwnedPassword bool
+	var userDefaults bool
+	var inputDirectory string
 	flag.BoolVar(&verbose, "verbose", verbose, "As of today verbose only works for a specific control. Ex ciscollector -r --verbose --control 6.7")
 	flag.StringVar(&control, "control", control, "Check verbose detail for individual control.\nMake sure to use this with --verbose option.\nEx: ciscollector -r --verbose --control 6.7")
 	flag.BoolVar(&run, "r", run, "Run")
@@ -205,6 +226,8 @@ e.g
 	var outputType string
 	flag.StringVar(&outputType, "output-type", "", "Output type for log parser. supported types are json, csv, table")
 
+	flag.BoolVar(&userDefaults, "y", run, "Use default options")
+	flag.StringVar(&inputDirectory, "dir", "", "Directory")
 	// flag.BoolVar(&hbaSacanner, "r", run, "Run")
 	// flag.BoolVar(&runMySql, "run-mysql", runMySql, "Run MySQL")
 	// flag.BoolVar(&runPostgres, "run-postgres", runPostgres, "Run Postgres")
@@ -259,6 +282,25 @@ e.g
 			hbaSacanner = true
 		case 5:
 			logParserConf = getLogParserInputs()
+		case 6:
+			fmt.Println("\n1.Password attack simulator\n2.Password generator\n3.Match common usernames\n4.Pawned password detector")
+			fmt.Printf("Enter your choice to execute(1/2/3/4):")
+			choice := 0
+			fmt.Scanln(&choice)
+			switch choice {
+			case 1:
+				runPostgresConnTest = true
+			case 2:
+				runGeneratePassword = true
+			case 3:
+				runPwnedUsers = true
+			case 4:
+				runPwnedPassword = true
+			default:
+				fmt.Println("Invalid Choice, Please Try Again.")
+				os.Exit(1)
+			}
+
 		default:
 			fmt.Println("Invalid Choice, Please Try Again.")
 			os.Exit(1)
@@ -282,6 +324,12 @@ e.g
 	c.App.Control = control
 	c.App.HBASacanner = hbaSacanner
 	c.LogParser = logParserConf
+	c.App.RunPostgresConnTest = runPostgresConnTest
+	c.App.RunPwnedUsers = runPwnedUsers
+	c.App.RunPwnedPasswords = runPwnedPassword
+	c.App.RunGeneratePassword = runGeneratePassword
+	c.App.UseDefaults = userDefaults
+	c.App.InputDirectory = inputDirectory
 	if run && verbose {
 		fmt.Print(cons.MSG_Choise)
 		choice := 0
@@ -310,6 +358,25 @@ e.g
 			}
 		case 5:
 			c.LogParser = getLogParserInputs()
+		case 6:
+			fmt.Println("\n1.Password attack simulator\n2.Password generator\n3.Match common usernames\n4.Pawned password detector")
+			fmt.Printf("Enter your choice to execute(1/2/3/4):")
+			choice := 0
+			fmt.Scanln(&choice)
+			switch choice {
+			case 1:
+				runPostgresConnTest = true
+			case 2:
+				runGeneratePassword = true
+			case 3:
+				runPwnedUsers = true
+			case 4:
+				runPwnedPassword = true
+			default:
+				fmt.Println("Invalid Choice, Please Try Again.")
+				os.Exit(1)
+			}
+
 		default:
 			fmt.Println("Invalid Choice, Please Try Again.")
 			os.Exit(1)
@@ -354,6 +421,16 @@ e.g
 		fmt.Printf("Enter Your DB Postgres Password for %s: ", c.Postgres.User)
 		fmt.Scanln(&c.Postgres.Password)
 	}
+
+	if c.GeneratePassword == nil {
+		c.GeneratePassword = &GeneratePassword{
+			Length:           20,
+			NumberCount:      2,
+			NumUppercase:     2,
+			SpecialCharCount: 2,
+		}
+	}
+
 	CONF = c
 	return c, nil
 }

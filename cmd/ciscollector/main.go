@@ -7,16 +7,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
 	"reflect"
 	"runtime"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/klouddb/klouddbshield/htmlreport"
 	"github.com/klouddb/klouddbshield/model"
 	"github.com/klouddb/klouddbshield/mysql"
+	"github.com/klouddb/klouddbshield/passwordmanager"
 	"github.com/klouddb/klouddbshield/pkg/config"
 	cons "github.com/klouddb/klouddbshield/pkg/const"
 	"github.com/klouddb/klouddbshield/pkg/logger"
@@ -111,6 +114,22 @@ func main() {
 			fmt.Println("Invalid command for log parser")
 			os.Exit(1)
 		}
+	}
+
+	if cnf.App.RunPostgresConnTest {
+		runPostgresPasswordScanner(ctx, cnf)
+	}
+
+	if cnf.App.RunGeneratePassword {
+		runPasswordGenerator(ctx, cnf)
+	}
+
+	if cnf.App.RunPwnedUsers {
+		runPwnedUsers(ctx, cnf)
+	}
+
+	if cnf.App.RunPwnedPasswords {
+		runPwnedPassword(ctx, cnf)
 	}
 }
 
@@ -479,6 +498,155 @@ func runHBAScannerByControl(ctx context.Context, cnf *config.Config) {
 	result := hbascanner.HBAScannerByControl(postgresStore, ctx, cnf.App.Control)
 	if result == nil {
 		os.Exit(1)
+	}
+
+}
+
+func runPostgresPasswordScanner(ctx context.Context, cnf *config.Config) {
+
+	fmt.Print("\n****************************************************************")
+	fmt.Print("\n** Don't use Password attack simulator feature in production. **")
+	fmt.Print("\n** Please copy your users to test environment and try there.  **")
+	fmt.Print("\n****************************************************************\n\n")
+
+	// var host, port string
+	// fmt.Printf("Enter Your Postgres Host (Default localhost): ")
+	// fmt.Scanln(&host)
+	// if host == "" {
+	// 	host = "localhost"
+	// }
+	// fmt.Printf("Enter Your Postgres Port for Host %s (Default 5432): ", host)
+	// fmt.Scanln(&port)
+	// if port == "" {
+	// 	port = "5432"
+	// }
+
+	// var bufferSize int
+	// fmt.Printf("Enter number of passwords to be bufferred (Default 1000000): ")
+	// fmt.Scanln(&bufferSize)
+	// if bufferSize != 0 {
+	// 	passwordmanager.ChannelBufferSize = bufferSize
+	// }
+
+	// var attemptSize int
+	// fmt.Printf("Enter number of auths to be performed in parallel for a user (Disabled for 0 & 1): ")
+	// fmt.Scanln(&attemptSize)
+	// if attemptSize != 0 {
+	// 	passwordmanager.GoroutinesPerUser = attemptSize
+	// }
+
+	var path string
+	fmt.Printf("Enter path to the passwords files (Default /etc/klouddbshield/passwords): ")
+	fmt.Scanln(&path)
+	if path == "" {
+		path = "/etc/klouddbshield/passwords"
+	}
+	passwordmanager.ParentDir = path
+
+	postgresDatabase := cnf.Postgres
+	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
+	if err != nil {
+		return
+	}
+	listOfUsers, _ := passwordmanager.GetPostgresUsers(postgresStore)
+	fmt.Println("listOfUsers:", listOfUsers)
+	ctx, cancelFunc := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer cancelFunc()
+
+	host := cnf.Postgres.Host
+	port := cnf.Postgres.Port
+
+	passwordmanager.PostgresPasswordScanner(ctx, host, port, listOfUsers)
+}
+
+func runPasswordGenerator(ctx context.Context, cnf *config.Config) {
+	var passwordLength, digitsCount, uppercaseCount, specialCount int
+
+	fmt.Printf("Enter password length (Default %v): ", cnf.GeneratePassword.Length)
+	fmt.Scanln(&passwordLength)
+	if passwordLength == 0 {
+		passwordLength = cnf.GeneratePassword.Length
+	}
+
+	fmt.Printf("Enter number of digits (Default %v): ", cnf.GeneratePassword.NumberCount)
+	fmt.Scanln(&digitsCount)
+	if digitsCount == 0 {
+		digitsCount = cnf.GeneratePassword.NumberCount
+	}
+
+	fmt.Printf("Enter number of uppercase characters (Default %v): ", cnf.GeneratePassword.NumUppercase)
+	fmt.Scanln(&uppercaseCount)
+	if uppercaseCount == 0 {
+		uppercaseCount = cnf.GeneratePassword.NumUppercase
+	}
+
+	fmt.Printf("Enter number of special characters (Default %v): ", cnf.GeneratePassword.SpecialCharCount)
+	fmt.Scanln(&specialCount)
+	if specialCount == 0 {
+		specialCount = cnf.GeneratePassword.SpecialCharCount
+	}
+
+	passwd := passwordmanager.GeneratePassword(passwordLength, digitsCount, uppercaseCount, specialCount)
+
+	fmt.Println("Here's the password:", passwd)
+}
+
+func runPwnedUsers(ctx context.Context, cnf *config.Config) {
+	pgUsernameMap := map[string]struct{}{}
+	for _, userName := range passwordmanager.PGUsernameList {
+		pgUsernameMap[userName] = struct{}{}
+	}
+
+	postgresDatabase := cnf.Postgres
+	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	listOfUsers, _ := passwordmanager.GetPostgresUsers(postgresStore)
+
+	commonUserNames := []string{}
+	for _, userName := range listOfUsers {
+		if _, exists := pgUsernameMap[userName]; exists {
+			commonUserNames = append(commonUserNames, userName)
+		}
+	}
+
+	if len(commonUserNames) > 0 {
+		fmt.Printf("Found these common usernames in the database: %s\n", strings.Join(commonUserNames, ", "))
+	}
+}
+
+func runPwnedPassword(ctx context.Context, cnf *config.Config) {
+	dir := "./pwnedpasswords"
+	if cnf.App.InputDirectory != "" {
+		dir = cnf.App.InputDirectory
+	}
+
+	stat, err := os.Stat(dir)
+	if err != nil || !stat.IsDir() {
+		fmt.Println("You need to download the pawnedpasswords file and put it under pwnedpasswords subdirectory to use this feature. Please refer to our github repo readme for further instructions.")
+		return
+	}
+
+	password := ""
+	fmt.Print("Enter password to be checked: ")
+	fmt.Scanln(&password)
+	if password == "" {
+		fmt.Println("Password cannot be blank")
+		return
+	}
+
+	times, err := passwordmanager.IsPasswordPwned(password, dir)
+	if err != nil {
+		if err == passwordmanager.ErrPasswordIsPwned {
+			fmt.Println("The password is pwned for", times, "times")
+		} else {
+			fmt.Println("Error:", err)
+		}
+	} else {
+		fmt.Println("Congratulations! The password is not pwned.")
 	}
 
 }
