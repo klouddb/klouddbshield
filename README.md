@@ -14,8 +14,7 @@
 
 ## How to run this tool on my server ?
 
-## !! IMPORTANT !! 
-Please refer to https://klouddb.gitbook.io/klouddb_shield for detailed documentation
+## !! IMPORTANT !! Please refer to https://klouddb.gitbook.io/klouddb_shield for detailed documentation
 
 
 
