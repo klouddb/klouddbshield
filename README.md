@@ -14,25 +14,10 @@
 
 ## How to run this tool on my server ?
 
-Logparser NOTE : Results vary depending on your logging settings (log_statement etc..)
-
-```
-ciscollector --logparser inactive_users --file-path /var/lib/postgresql/14/main/log/postgresql-2024-03-11_120824.log --prefix pid=%p,user=%u,db=%d,app=%a,client=%h
+## !! IMPORTANT !! 
+Please refer to https://klouddb.gitbook.io/klouddb_shield for detailed documentation
 
 
-
-ciscollector --logparser unique_ip --file-path /var/lib/postgresql/14/main/log/postgresql-2024-03-11_120824.log --prefix pid=%p,user=%u,db=%d,app=%a,client=%h
-
-NOTE : If you have multiple log files you can give wildcard in single quotes e.g '/var/lib/postgresql/14/main/log/postgresql-2024-03-11*;
-```
-
-Postgres  -   Please read https://klouddb.io/cis-benchmarks-for-postgres-klouddbshield-1-1/
-
-HBA Scanner - Please read https://klouddb.io/hba-checker-klouddb-shield-1-4/
-
-MySQL     -   Please read https://klouddb.io/releasing-first-version-of-klouddb-shield-mysql-cis-benchmarks/ 
-
-RDS       -   Please read https://klouddb.io/klouddb-shield-1-2-rds-cis-benchmarks/
 
 Currently we check for 94 controls - 40 controls(Postgres) 46 controls(MySQL) and 8 controls(RDS) and we plan to add more checks soon. We tested this tool on CentOS and Ubuntu ( PG 14 and PG13)
 
