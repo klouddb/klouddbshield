@@ -22,6 +22,7 @@ import (
 	"github.com/klouddb/klouddbshield/passwordmanager"
 	"github.com/klouddb/klouddbshield/pkg/config"
 	cons "github.com/klouddb/klouddbshield/pkg/const"
+	"github.com/klouddb/klouddbshield/pkg/hbarules"
 	"github.com/klouddb/klouddbshield/pkg/logger"
 	"github.com/klouddb/klouddbshield/pkg/mysqldb"
 	"github.com/klouddb/klouddbshield/pkg/parselog"
@@ -110,6 +111,8 @@ func main() {
 			runInactiveUSersLogParser(ctx, cnf, store)
 		// case cons.LogParserCMD_MismatchIPs:
 		// 	runMismatchIPsLogParser(ctx, cnf)
+		case cons.LogParserCMD_HBAUnusedLines:
+			runHBAUnusedLinesLogParser(ctx, cnf, store)
 		default:
 			fmt.Println("Invalid command for log parser")
 			os.Exit(1)
@@ -144,6 +147,62 @@ func updatePgSettings(ctx context.Context, store *sql.DB, pgSettings *model.PgSe
 	}
 
 	pgSettings.LogConnections = ps.LogConnections
+}
+
+func runHBAUnusedLinesLogParser(ctx context.Context, cnf *config.Config, store *sql.DB) {
+
+	// check if postgres setting contains required variable or connection logs
+	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%h") && !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%r") {
+		fmt.Println("Please set log_line_prefix to '%h' or '%r' or enable log_connections")
+		return
+	}
+
+	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%u") || !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%d") {
+		fmt.Printf("In logline prefix, please set '%s' and '%s'\n", "%u", "%d") // using printf to avoid the warning for %d in println
+		return
+	}
+
+	baseParser := parselog.GetDynamicBaseParser(cnf.LogParser.PgSettings.LogLinePrefix)
+
+	var hbaRules []model.HBAFIleRules
+
+	// if user is passing hba conf file manually then he or she are expecting that file to be scanned
+	if cnf.LogParser.HbaConfFile != "" {
+		var err error
+		hbaRules, err = hbarules.ScanHBAFile(ctx, store, cnf.LogParser.HbaConfFile)
+		if err != nil {
+			fmt.Println("Got error while scanning hba file:", err)
+			return
+		}
+	} else if store != nil {
+		var err error
+		hbaRules, err = utils.GetDatabaseAndHostForUSerFromHbaFileRules(ctx, store)
+		if err != nil {
+			fmt.Println("Got error while getting hba rules:", err)
+			return
+		}
+	} else {
+		fmt.Println("Please provide hba file or database connection")
+		return
+	}
+
+	hbaValidator, err := hbarules.ParseHBAFileRules(hbaRules)
+	if err != nil {
+		fmt.Println("Got error while parsing hba rules:", err)
+		return
+	}
+
+	hbaUnusedLineParser := parselog.NewHbaUnusedLines(cnf, baseParser, hbaValidator)
+	runner.RunFastParser(ctx, cnf, hbaUnusedLineParser.Feed, parselog.GetBaseParserValidator(baseParser))
+
+	if ctx.Err() != nil {
+		fmt.Println("file parsing is taking longer then expected, please check the file or errors in" + logger.GetLogFileName())
+		return
+	}
+
+	fmt.Println("")
+	fmt.Println("Unused lines found from given log file:", hbaValidator.GetUnusedLines())
+	fmt.Println("")
 }
 
 func runMismatchIPsLogParser(ctx context.Context, cnf *config.Config) {

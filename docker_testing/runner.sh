@@ -7,7 +7,7 @@
 ############################ widely used prefixes #################################
 # PREFIXES=('%t %h %u %m ' '%m (%h:%u) ' '%m from %h by %u ' '%m in %d by %u@%h ' '%t %h %u [%p] ' '%m (%h:%u:%p) ' '%m from %h by %u pid=%p ' '%m in %d by %u@%h pid=%p ' '%t %h %u db=%d %m ' '%m in %d by %u@%h db=%d')
 ####################################################################################
-PREFIXES=('%t [%p]: ')
+PREFIXES=('%m in %d by %u@%h ')
 
 FILE_SIZE=12MB # to modify file size
 

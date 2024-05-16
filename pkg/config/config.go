@@ -37,17 +37,20 @@ type LogParser struct {
 
 	IpFilePath string
 
+	HbaConfFile string
+
 	OutputType string
 }
 
-func NewLogParser(command, beginTime, endTime, prefix, logfile, ipfile string) (*LogParser, error) {
+func NewLogParser(command, beginTime, endTime, prefix, logfile, ipfile, hbaConfigFile string) (*LogParser, error) {
 	prefix = strings.TrimSpace(prefix)
 	logfile = strings.TrimSpace(logfile)
 	ipfile = strings.TrimSpace(ipfile)
 	beginTime = strings.TrimSpace(beginTime)
 	endTime = strings.TrimSpace(endTime)
+	hbaConfigFile = strings.TrimSpace(hbaConfigFile)
 
-	if command != cons.LogParserCMD_UniqueIPs && command != cons.LogParserCMD_InactiveUsr && command != cons.LogParserCMD_MismatchIPs {
+	if command != cons.LogParserCMD_UniqueIPs && command != cons.LogParserCMD_InactiveUsr && command != cons.LogParserCMD_MismatchIPs && command != cons.LogParserCMD_HBAUnusedLines {
 		return nil, fmt.Errorf("invalid command %s, please use unique_ip, mismatch_ips or inactive_users", command)
 	}
 
@@ -100,8 +103,9 @@ func NewLogParser(command, beginTime, endTime, prefix, logfile, ipfile string) (
 		Begin: begin,
 		End:   end,
 
-		LogFiles:   files,
-		IpFilePath: ipfile,
+		LogFiles:    files,
+		IpFilePath:  ipfile,
+		HbaConfFile: hbaConfigFile,
 	}, nil
 }
 
@@ -198,20 +202,29 @@ func NewConfig() (*Config, error) {
 	var logParser string
 	var logfile string
 	flag.StringVar(&logParser, "logparser", logParser, `To run Log Parser. Supported commands are:
-1. unique_ip: To get unique IPs from log file NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser
+1. unique_ip: To get unique IPs from log file NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser=unique_ip
 e.g 
 * ciscollector --logparser unique_ip --file-path /location/to/log/file.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix>
 * ciscollector --logparser unique_ip --file-path /location/to/log/file.log --prefix <logline prefix>
 * ciscollector --logparser unique_ip --file-path /location/to/log/*.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix>
 * ciscollector --logparser unique_ip --file-path /location/to/log/*.log --prefix <logline prefix>
 
-2. inactive_users: To get inactive users from log file	NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser
+2. inactive_users: To get inactive users from log file	NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser=inactive_users
 e.g
 * ciscollector --logparser inactive_users --file-path /location/to/log/file.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix>
 * ciscollector --logparser inactive_users --file-path /location/to/log/file.log --prefix <logline prefix>
 * ciscollector --logparser inactive_users --file-path /location/to/log/*.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix>
 * ciscollector --logparser inactive_users --file-path /location/to/log/*.log --prefix <logline prefix>
-	`)
+
+3. unused_lines: To get unused lines from pg_hba.conf file by comparing that with log file 
+NOTE: --begin-time and --end-time are optional flags and --prefix, --file-path and --hba-file are required flags if you are using --logparser=unused_lines
+e.g
+* ciscollector --logparser unused_lines --file-path /location/to/log/file.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix> --hba-file /location/to/pg_hba.conf
+* ciscollector --logparser unused_lines --file-path /location/to/log/file.log --prefix <logline prefix> --hba-file /location/to/pg_hba.conf
+* ciscollector --logparser unused_lines --file-path /location/to/log/*.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix> --hba-file /location/to/pg_hba.conf
+* ciscollector --logparser unused_lines --file-path /location/to/log/*.log --prefix <logline prefix> --hba-file /location/to/pg_hba.conf
+
+`)
 	flag.StringVar(&logfile, "file-path", "", "File path e.g /location/to/log/file.log. required for all commands in log parser")
 
 	var beginTime, endTime string
@@ -222,7 +235,9 @@ e.g
 	var prefix string
 	flag.StringVar(&prefix, "prefix", "", "Log line prefix for offline parsing. required for all commands in log parser")
 	var ipFilePath string
-	flag.StringVar(&ipFilePath, "ip-file-path", "", "File path for ip list. requered for mismatch_ips command in log parser")
+	// flag.StringVar(&ipFilePath, "ip-file-path", "", "File path for ip list. requered for mismatch_ips command in log parser") // TODO removed because we are not using missing_ip command
+	var hbaConfigFile string
+	flag.StringVar(&hbaConfigFile, "hba-file", "", "file path for pg_hba.conf. for unused_lines command in log parser")
 	var outputType string
 	flag.StringVar(&outputType, "output-type", "", "Output type for log parser. supported types are json, csv, table")
 
@@ -240,7 +255,7 @@ e.g
 	var logParserConf *LogParser
 	if logParser != "" {
 		var err error
-		logParserConf, err = NewLogParser(logParser, beginTime, endTime, prefix, logfile, ipFilePath)
+		logParserConf, err = NewLogParser(logParser, beginTime, endTime, prefix, logfile, ipFilePath, hbaConfigFile)
 		if err != nil {
 			fmt.Println("Invalid input for logparser:", err)
 			flag.Usage()
@@ -502,7 +517,12 @@ func getLogParserInputs() *LogParser {
 		ipfile = reader.Read("Enter IP File Path: ")
 	}
 
-	l, err := NewLogParser(command, beginTime, endTime, prefix, logfile, ipfile)
+	var hbaConfigFile string
+	if command == cons.LogParserCMD_HBAUnusedLines {
+		hbaConfigFile = reader.Read("Enter pg_hba.conf File Path: ")
+	}
+
+	l, err := NewLogParser(command, beginTime, endTime, prefix, logfile, ipfile, hbaConfigFile)
 	if err != nil {
 		fmt.Println("Invalid input for logparser:", err)
 		os.Exit(1)

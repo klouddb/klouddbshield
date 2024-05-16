@@ -53,7 +53,7 @@ func init() {
 }
 
 func startPostgres() {
-	cmd := exec.Command("docker-compose", "up", "--build", "-d", "postgres")
+	cmd := exec.Command("docker", "compose", "up", "--build", "-d", "postgres")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -72,7 +72,7 @@ func startPostgres() {
 }
 
 func createUSers() {
-	cmd := exec.Command("docker-compose", "run", "--rm", "createuser")
+	cmd := exec.Command("docker", "compose", "run", "--rm", "createuser")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -93,7 +93,7 @@ func createUSers() {
 func execPgbench(wg *sync.WaitGroup, pgUsers, ip string) {
 	defer wg.Done()
 	fmt.Println("executing pgbench command for users:", pgUsers, "and ip:", ip)
-	cmd := exec.Command("docker-compose", "run", "--rm", "pgbench")
+	cmd := exec.Command("docker", "compose", "run", "--rm", "pgbench")
 	cmd.Env = append(os.Environ(),
 		"PGUSERS="+pgUsers,
 		"IP="+ip,

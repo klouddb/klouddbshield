@@ -70,4 +70,4 @@ jobs:
           integrationtest setup --prefix "${{ matrix.log_prefix }}"
           sudo chmod -R 777 pglog/log0
           integrationtest test -p "${{ matrix.log_prefix }}" -f "pglog/log0/postgresql*.log"
-          docker-compose down -v
+          docker compose down -v

@@ -3,8 +3,10 @@ package parselog
 import (
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/klouddb/klouddbshield/pkg/config"
+	"github.com/klouddb/klouddbshield/pkg/hbarules"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
 
@@ -117,4 +119,55 @@ func (u *userParser) Feed(line string) error {
 
 func (u *userParser) GetUniqueUser() map[string]bool {
 	return u.uniqueUsers.GetAll()
+}
+
+type hbaUnusedLines struct {
+	cnf *config.Config
+
+	baseParser BaseParser
+
+	hbafileRulesValidator hbarules.HbaRuleValidator
+	mt                    sync.Mutex
+}
+
+func NewHbaUnusedLines(cnf *config.Config, baseParser BaseParser, hbafileRulesValidator hbarules.HbaRuleValidator) *hbaUnusedLines {
+	return &hbaUnusedLines{
+		cnf: cnf,
+
+		baseParser: baseParser,
+
+		hbafileRulesValidator: hbafileRulesValidator,
+	}
+}
+
+func (u *hbaUnusedLines) Feed(line string) error {
+	parsedData, err := u.baseParser.Parse(line)
+	if err != nil {
+		return err
+	}
+
+	if !u.cnf.LogParser.IsValidTime(parsedData.GetTime()) {
+		return nil
+	}
+
+	user, err := parsedData.GetUser()
+	if err != nil {
+		return nil
+	}
+
+	host, err := parsedData.GetHost()
+	if err != nil {
+		return nil
+	}
+
+	database, err := parsedData.GetDatabase()
+	if err != nil {
+		return nil
+	}
+
+	u.mt.Lock()
+	u.hbafileRulesValidator.ValidateEntry(database, user, host)
+	u.mt.Unlock()
+
+	return nil
 }
