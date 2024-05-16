@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -20,6 +21,7 @@ func init() {
 			testInactiveUser(prefix, filename)
 			// testMissingIPs(prefix, filename)
 			testUniqueIPs(prefix, filename)
+			testUnusedHbaLines(prefix, filename)
 		},
 	}
 
@@ -151,4 +153,47 @@ func testMissingIPs(prefix, file string) {
 	}
 
 	fmt.Println("mismatch ip test is working fine for prefix:", prefix)
+}
+
+func testUnusedHbaLines(prefix, file string) {
+	cmd := exec.Command("ciscollector",
+		"-logparser", cons.LogParserCMD_HBAUnusedLines,
+		"-prefix", prefix,
+		"-file-path", file,
+		"-output-type", "json",
+		"-hba-file", "./pg_hba.conf",
+	)
+
+	// create io.Writer to store output and print it later
+	var buf bytes.Buffer
+
+	cmd.Stdout = &buf
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("Got error while parsing file:", err)
+		os.Exit(1)
+	}
+
+	out := buf.String()
+	if strings.Contains(out, "In logline prefix, please set '%u' and '%d'") || strings.Contains(out, "Please set log_line_prefix to '%h' or '%r' or enable log_connections") {
+		fmt.Println("skipping test for unused files as required details are not available in prefix:", prefix)
+		return
+	}
+
+	if !strings.Contains(out, "Successfully parsed all files") {
+		fmt.Println("Got error while parsing file:", out)
+		// fail the command
+		os.Exit(1)
+	}
+
+	if strings.Contains(out, `Unused lines found from given log file: [11 23 28]`) {
+		fmt.Println("unused lines test is working fine for prefix:", prefix)
+		return
+	}
+
+	fmt.Println("not getting valid unused lines:", out)
+	os.Exit(1)
 }

@@ -26,14 +26,16 @@ Enter your choice to execute(1/2/3/4/5/6):`
 	MSG_LogPaserChoise = `
 1. Inactive Users
 2. Unique IPs
+3. HBA Unused Lines
 
-Enter your choice to execute(1/2/3):`
+Enter your choice to execute(1/2/3/4):`
 )
 
 const (
-	LogParserCMD_MismatchIPs = "mismatch_ips"
-	LogParserCMD_UniqueIPs   = "unique_ip"
-	LogParserCMD_InactiveUsr = "inactive_users"
+	LogParserCMD_MismatchIPs    = "mismatch_ips"
+	LogParserCMD_UniqueIPs      = "unique_ip"
+	LogParserCMD_InactiveUsr    = "inactive_users"
+	LogParserCMD_HBAUnusedLines = "unused_lines"
 )
 
 var (
@@ -41,5 +43,6 @@ var (
 		// 1: LogParserCMD_MismatchIPs,
 		1: LogParserCMD_InactiveUsr,
 		2: LogParserCMD_UniqueIPs,
+		3: LogParserCMD_HBAUnusedLines,
 	}
 )

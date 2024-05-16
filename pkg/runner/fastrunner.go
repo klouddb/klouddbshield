@@ -131,6 +131,7 @@ func (p *ProcessHelper) Process(ctx context.Context, filename string) error {
 
 	chunkProcessors := NewChunkProcessor(&linesPool, &stringPool, p.fn)
 
+	previousLine := []byte{}
 	for {
 		// if context context expired, stop processing
 		if ctx.Err() != nil {
@@ -138,11 +139,13 @@ func (p *ProcessHelper) Process(ctx context.Context, filename string) error {
 		}
 
 		buf := *(linesPool.Get().(*[]byte))
+		buf = append(buf, previousLine...)
+		previousLine = nil
 
-		n, err := r.Read(buf)
-		buf = buf[:n]
+		n, err := r.Read(buf[len(previousLine):])
+		buf = buf[:n+len(previousLine)]
 
-		if n == 0 || err == io.EOF {
+		if len(buf) == 0 {
 			break
 		}
 		if err != nil {
@@ -150,9 +153,19 @@ func (p *ProcessHelper) Process(ctx context.Context, filename string) error {
 		}
 
 		nextUntillNewline, err := r.ReadBytes('\n')
-
 		if err != io.EOF {
 			buf = append(buf, nextUntillNewline...)
+		}
+
+		// if next line contains tab, then read next line and append to current line
+		for {
+			nextToNextUntillNewline, err := r.ReadBytes('\n')
+			if err != io.EOF && len(nextToNextUntillNewline) > 0 && nextToNextUntillNewline[0] == '\t' {
+				buf = append(buf, nextToNextUntillNewline...)
+				continue
+			}
+			previousLine = nextUntillNewline
+			break
 		}
 
 		wg.Add(1)
@@ -211,7 +224,7 @@ func (p *ProcessHelper) validateFile(ctx context.Context, f *os.File) error {
 	}
 
 	if totalLine*70/100 < errorCount {
-		return fmt.Errorf("more than 70%% of the lines in the log file are not parsable. Please check the log file format")
+		return fmt.Errorf("more than 70%% of the lines in the log file are not parsable. Please check the log file format Total Line %d and Error count %d", totalLine, errorCount)
 	}
 
 	return nil
@@ -251,7 +264,8 @@ func (c *ChunkProcessor) Parse(ctx context.Context, chunk []byte) {
 
 	c.linesPool.Put(&chunk)
 
-	logLines := strings.Split(*logs, "\n")
+	logLines := mergeContinueLines(strings.Split(*logs, "\n"))
+
 	c.stringPool.Put(logs)
 
 	chunkSize := 30
@@ -308,4 +322,22 @@ func (c *ChunkProcessor) Parse(ctx context.Context, chunk []byte) {
 
 	wg.Wait()
 	logLines = nil
+}
+
+func mergeContinueLines(lines []string) []string {
+	mergedLines := []string{}
+	for _, line := range lines {
+		if len(mergedLines) == 0 {
+			mergedLines = append(mergedLines, line)
+			continue
+		}
+
+		if len(line) > 0 && line[0] == '\t' {
+			mergedLines[len(mergedLines)-1] += line
+		} else {
+			mergedLines = append(mergedLines, line)
+		}
+	}
+
+	return mergedLines
 }
