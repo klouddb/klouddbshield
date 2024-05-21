@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/klouddb/klouddbshield/model"
-	cons "github.com/klouddb/klouddbshield/pkg/const"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
+
+	"github.com/klouddb/klouddbshield/model"
+	cons "github.com/klouddb/klouddbshield/pkg/const"
 )
 
 type Config struct {
@@ -190,7 +191,7 @@ func NewConfig() (*Config, error) {
 	var runMySql bool
 	var runRds bool
 	var control string
-	var hbaSacanner bool
+	var hbaScanner bool
 	var runPostgresConnTest, runGeneratePassword, runPwnedUsers, runPwnedPassword bool
 	var userDefaults bool
 	var inputDirectory string
@@ -203,7 +204,7 @@ func NewConfig() (*Config, error) {
 	var logfile string
 	flag.StringVar(&logParser, "logparser", logParser, `To run Log Parser. Supported commands are:
 1. unique_ip: To get unique IPs from log file NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser=unique_ip
-e.g 
+e.g
 * ciscollector --logparser unique_ip --file-path /location/to/log/file.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix>
 * ciscollector --logparser unique_ip --file-path /location/to/log/file.log --prefix <logline prefix>
 * ciscollector --logparser unique_ip --file-path /location/to/log/*.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix>
@@ -216,7 +217,7 @@ e.g
 * ciscollector --logparser inactive_users --file-path /location/to/log/*.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix>
 * ciscollector --logparser inactive_users --file-path /location/to/log/*.log --prefix <logline prefix>
 
-3. unused_lines: To get unused lines from pg_hba.conf file by comparing that with log file 
+3. unused_lines: To get unused lines from pg_hba.conf file by comparing that with log file
 NOTE: --begin-time and --end-time are optional flags and --prefix, --file-path and --hba-file are required flags if you are using --logparser=unused_lines
 e.g
 * ciscollector --logparser unused_lines --file-path /location/to/log/file.log --begin-time "2021-01-01 00:00:00" --end-time "2021-01-01 23:59:59" --prefix <logline prefix> --hba-file /location/to/pg_hba.conf
@@ -287,14 +288,14 @@ e.g
 			fmt.Println("Do you also want to run HBA Scanner?(y/n):")
 			fmt.Scanln(&response)
 			if response == "y" || response == "Y" {
-				hbaSacanner = true
+				hbaScanner = true
 			}
 		case 2:
 			runMySql = true
 		case 3:
 			runRds = true
 		case 4:
-			hbaSacanner = true
+			hbaScanner = true
 		case 5:
 			logParserConf = getLogParserInputs()
 		case 6:
@@ -337,7 +338,7 @@ e.g
 	c.App.RunRds = runRds
 	c.App.Verbose = verbose
 	c.App.Control = control
-	c.App.HBASacanner = hbaSacanner
+	c.App.HBASacanner = hbaScanner
 	c.LogParser = logParserConf
 	c.App.RunPostgresConnTest = runPostgresConnTest
 	c.App.RunPwnedUsers = runPwnedUsers
@@ -454,7 +455,7 @@ func loadConfig() (*Config, error) {
 	v := viper.New()
 	v.SetConfigType("toml")
 	v.SetConfigName("kshieldconfig")
-	v.AddConfigPath(".")
+	v.AddConfigPath("./")
 	v.AddConfigPath("/etc/klouddbshield")
 
 	c := &Config{}

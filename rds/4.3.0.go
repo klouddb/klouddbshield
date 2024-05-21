@@ -140,7 +140,7 @@ func Execute430(ctx context.Context) (result *model.Result) {
 	}
 
 	// assign fail reason to empty
-	for dbName, _ := range dbSubMap {
+	for dbName := range dbSubMap {
 		dbResultMap[dbName] = model.NewCaseResult(dbName)
 	}
 

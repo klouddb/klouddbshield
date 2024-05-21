@@ -10,7 +10,7 @@ import (
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
 
-// 3.1.2 Ensure the log destinations are set correctly
+// 3.1.2 Ensure the log destinations are set correctly v16
 func CheckLogDest(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
 		Control:   "3.1.2",
@@ -18,12 +18,11 @@ func CheckLogDest(store *sql.DB, ctx context.Context) (*model.Result, error) {
 		Procedure: `postgres=# show log_destination;
 		Stderr is default and please set according to your standards.
 		You can also set multiple destinations using some thing like stderr,csvlog.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `PostgreSQL supports several methods for logging server messages, including stderr, csvlog and syslog.
 		On Windows, eventlog is also supported.
-		One or more of these destinations should be set for server log output.
-		`,
+		One or more of these destinations should be set for server log output.`,
 		Title: "Ensure the log destinations are set correctly",
 	}
 
@@ -69,17 +68,15 @@ v1.0.0 - 02-26-2021`,
 
 }
 
-// 3.1.3 Ensure the logging collector is enabled
+// 3.1.3 Ensure the logging collector is enabled v16
 func CheckLogCol(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
 		Control:   "3.1.3",
-		Rationale: `The logging collector approach is often more useful than logging to syslog, since some types of messages might not appear in syslog output. `,
-		Procedure: `postgres=# show 
-		logging_collector;
-		If you see the output as 'on' it is a PASS
-		`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		Rationale: `The logging collector approach is often more useful than logging to syslog, since some types of messages might not appear in syslog output.`,
+		Procedure: `postgres=# show logging_collector;
+		If you see the output as 'on' it is a PASS.`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The logging collector is a background process that captures log messages sent to stderr and redirects them into log files.`,
 		Title:       "Ensure the logging collector is enabled",
 	}
@@ -108,18 +105,18 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.4 Ensure the log file destination directory is set correctly
+// 3.1.4 Ensure the log file destination directory is set correctly v16
 func CheckLogDir(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
 		Control:   "3.1.4",
 		Rationale: `If log_directory is not set, it is interpreted as the absolute path '/' and PostgreSQL will attempt to write its logs there (and typically fail due to a lack of permissions to that directory).`,
 		Procedure: `postgres=# show log_directory;
-		Empty output is a FAIL . 
+		Empty output is a FAIL. 
 		Default is log which means it creates logs in a sub folder called log under DATADIR. 
-		It is always a better idea to keep the logs in a separate path (not in the datadir path)`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
-		Description: `The log_directory setting specifies the destination directory for log files`,
+		It is always a better idea to keep the logs in a separate path (not in the datadir path).`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
+		Description: `The log_directory setting specifies the destination directory for log files.`,
 		Title:       "Ensure the log file destination directory is set correctly",
 	}
 
@@ -147,7 +144,7 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.5 Ensure the filename pattern for log files is set correctly
+// 3.1.5 Ensure the filename pattern for log files is set correctly v16
 func CheckLogFile(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
 		Control:   "3.1.5",
@@ -156,8 +153,8 @@ func CheckLogFile(store *sql.DB, ctx context.Context) (*model.Result, error) {
 		Empty output is a FAIL.
 		Better not to have postgresql-%a.log as it creates one log file per day and could be overwritten.
 		According to your log retention requirements set a timestamp based logging format`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The log_filename setting specifies the filename pattern for log files. 
 		The value for log_filename should match your organization's logging policy.`,
 		Title: "Ensure the filename pattern for log files is set correctly",
@@ -187,17 +184,16 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.6 Ensure the log file permissions are set correctly
+// 3.1.6 Ensure the log file permissions are set correctly v16
 func CheckLogFilePerm(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
 		Control: "3.1.6",
 		Rationale: `Log files often contain sensitive data.
-		Allowing unnecessary access to log files may inadvertently expose sensitive data to unauthorized personnel.
-		`,
+		Allowing unnecessary access to log files may inadvertently expose sensitive data to unauthorized personnel.`,
 		Procedure: `postgres=# show log_file_mode;
 		If the output is 0600 then it is a PASS`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The log_file_mode setting determines the file permissions for log files when logging_collector is enabled.`,
 		Title:       "Ensure the log file permissions are set correctly",
 	}
@@ -226,7 +222,7 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.7 Ensure 'log_truncate_on_rotation' is enabled
+// 3.1.7 Ensure 'log_truncate_on_rotation' is enabled v16
 func CheckLogTrunc(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
 		Control:   "3.1.7",
@@ -234,8 +230,8 @@ func CheckLogTrunc(store *sql.DB, ctx context.Context) (*model.Result, error) {
 		Procedure: `postgres=# show log_truncate_on_rotation;
 		If it is not set to 'on', this is a fail.
 		Enabling or disabling the truncation should only be decided when also considering the value of log_filename and log_rotation_age/log_rotation_size.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `Enabling the log_truncate_on_rotation setting when logging_collector is enabled causes PostgreSQL to truncate (overwrite) existing log files with the same name during log rotation instead of appending to them.`,
 		Title:       "Ensure 'log_truncate_on_rotation' is enabled",
 	}
@@ -264,15 +260,15 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.8 Ensure the maximum log file lifetime is set correctly
+// 3.1.8 Ensure the maximum log file lifetime is set correctly v16
 func CheckLogLT(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
 		Control:   "3.1.8",
 		Rationale: `Log rotation is a standard best practice for log management.`,
 		Procedure: `postgres=# show log_rotation_age;
 		1d is generally good for production. Set to 1h to rotate logs hourly when doing performance analysis`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `When logging_collector is enabled, the log_rotation_age parameter determines the maximum lifetime of an individual log file (depending on the value of log_filename).
 		After this many minutes have elapsed, a new log file will be created via automatic log file rotation.`,
 		Title: "Ensure the maximum log file lifetime is set correctly",
@@ -302,7 +298,7 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.9 Ensure the maximum log file size is set correctly
+// 3.1.9 Ensure the maximum log file size is set correctly v16
 func CheckLogFileSize(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
 		Control: "3.1.9",
@@ -310,8 +306,8 @@ func CheckLogFileSize(store *sql.DB, ctx context.Context) (*model.Result, error)
 		This will prevent automatic log file rotation when files become too large, which could put log data at increased risk of loss (unless age-based rotation is configured).`,
 		Procedure: `show log_rotation_size;
 		If the output is 0 then this is a FAIL (0 is the default value)`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The log_rotation_size setting determines the maximum size of an individual log file.
 		Once the maximum size is reached, automatic log file rotation will occur.`,
 		Title: "Ensure the maximum log file size is set correctly",
@@ -341,7 +337,7 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.10 Ensure the correct syslog facility is selected
+// 3.1.10 Ensure the correct syslog facility is selected v16
 func CheckSyslog(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
 		Control:   "3.1.10",
@@ -350,8 +346,8 @@ func CheckSyslog(store *sql.DB, ctx context.Context) (*model.Result, error) {
 		If you see anything that starts with local that can be considered as PASS. 
 		But this control is totally dependent on your standards. 
 		Some people does not use syslog`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The syslog_facility setting specifies the syslog "facility" to be used when logging to syslog is enabled. 
 		You can choose from any of the 'local' facilities:
 		• LOCAL0
@@ -389,15 +385,98 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.11 Ensure the program name for PostgreSQL syslog messages is correct
+// 3.1.11 Ensure the program name for PostgreSQL syslog messages is correct v16
+func CheckSyslogSuppr(store *sql.DB, ctx context.Context) (*model.Result, error) {
+	result := &model.Result{
+		Control: "3.1.11",
+		Rationale: `Many modern Syslog implementations perform a log optimization and suppress
+		repeated log entries while emitting “--- last message repeated N times ---”.
+		If disabled, messages sent to Syslog could be suppressed and not logged. `,
+		Procedure: `show syslog_sequence_numbers;
+		Execute the SQL statement and confirm that the syslog_sequence_numbers is
+		enabled (on).`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
+		Description: `When logging to Syslog and syslog_sequence_numbers is on, then each message will be
+		prefixed by an increasing sequence number (such as [2]).
+		`,
+		Title: "Ensure syslog messages are not suppressed",
+	}
+
+	query := `show syslog_sequence_numbers;`
+
+	data, err := utils.GetJSON(store, query)
+	if err != nil {
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
+	}
+	syslogMsg := ""
+	for _, obj := range data {
+		if obj["syslog_sequence_numbers"] != nil {
+			syslogMsg = fmt.Sprint(obj["syslog_sequence_numbers"])
+			break
+		}
+	}
+	if syslogMsg != "on" {
+		result.Status = "Fail"
+		result.FailReason = data
+		return result, nil
+	}
+	result.Status = "Pass"
+	return result, nil
+}
+
+// 3.1.12 Ensure the syslog messages are not lost due to size v16
+func CheckServLogMsgSize(store *sql.DB, ctx context.Context) (*model.Result, error) {
+	result := &model.Result{
+		Control: "3.1.12",
+		Rationale: `Depending on the Syslog server in use, log messages exceeding 1024 bytes may be
+		lost or, potentially, cause the Syslog server processes to abort.`,
+		Procedure: `show syslog_split_messages;
+		Execute the SQL statement and confirm that the syslog_split_messages is
+		enabled (on).`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
+		Description: `PostgreSQL log messages can exceed 1024 bytes, which is a typical size limit for
+		traditional Syslog implementations. 
+		`,
+		Title: "Ensure syslog messages are not lost due to size",
+	}
+
+	query := `show syslog_split_messages;`
+
+	data, err := utils.GetJSON(store, query)
+	if err != nil {
+		result.Status = "Fail"
+		result.FailReason = err.Error()
+		return result, nil
+	}
+	servlogMsg := ""
+	for _, obj := range data {
+		if obj["syslog_split_messages"] != nil {
+			servlogMsg = fmt.Sprint(obj["syslog_split_messages"])
+			break
+		}
+	}
+	if servlogMsg != "on" {
+		result.Status = "Fail"
+		result.FailReason = data
+		return result, nil
+	}
+	result.Status = "Pass"
+	return result, nil
+}
+
+// 3.1.13 Ensure the program name for PostgreSQL syslog messages is correct v16
 func CheckSyslogMsg(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control:   "3.1.11",
+		Control:   "3.1.13",
 		Rationale: `If this is not set correctly, it may be difficult or impossible to distinguish PostgreSQL messages from other messages in syslog logs.`,
 		Procedure: `show syslog_ident;
 		If the output is postgres (default ), please adjust this value to suit your requirements or keep it as default- Depends on your standards`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The syslog_ident setting specifies the program name used to identify PostgreSQL messages in syslog logs. 
 		An example of a possible program name is postgres.
 		`,
@@ -428,18 +507,18 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.12 Ensure the correct messages are written to the server log
+// 3.1.14 Ensure the correct messages are written to the server log v16
 func CheckServLogMsg(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control:   "3.1.12",
+		Control:   "3.1.14",
 		Rationale: `If this is not set to the correct value, too many messages or too few messages may be written to the server log.`,
 		Procedure: `show log_min_messages;
 		If logging is not configured to at least warning, this is a fail.
 		Unless doing serious troubleshooting. 
 		If you want to output parses and plans, set to DEBUG1
 		`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The log_min_messages setting specifies the message levels that are written to the server log. 
 		Each level includes all the levels that follow it. 
 		The lower the level (vertically, below), the fewer messages are sent.
@@ -451,7 +530,7 @@ v1.0.0 - 02-26-2021`,
 		• DEBUG1
 		• INFO
 		• NOTICE
-		• WARNING
+		• WARNING <-- default
 		• ERROR
 		• LOG
 		• FATAL
@@ -474,7 +553,7 @@ v1.0.0 - 02-26-2021`,
 			break
 		}
 	}
-	if !strings.Contains(logMinMessages, "warning") {
+	if strings.Contains(logMinMessages, "error") || strings.Contains(logMinMessages, "log") || strings.Contains(logMinMessages, "fatal") || strings.Contains(logMinMessages, "panic") {
 		result.Status = "Fail"
 		result.FailReason = data
 		return result, nil
@@ -483,15 +562,15 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.13 Ensure the correct SQL statements generating errors are recorded
+// 3.1.15 Ensure the correct SQL statements generating errors are recorded v16
 func CheckSQLStat(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control:   "3.1.13",
+		Control:   "3.1.15",
 		Rationale: `If this is not set to the correct value, too many erring SQL statements or too few erring SQL statements may be written to the server log.`,
 		Procedure: `show log_min_error_statement;
 		If not configured to at least error, this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `TThe log_min_error_statement setting causes all SQL statements generating errors at or above the specified severity level to be recorded in the server log. 
 		Each level includes all the levels that follow it. 
 		The lower the level (vertically, below), the fewer messages are recorded. 
@@ -504,7 +583,7 @@ v1.0.0 - 02-26-2021`,
 		• INFO
 		• NOTICE
 		• WARNING
-		• ERROR
+		• ERROR <-- default
 		• LOG
 		• FATAL
 		• PANIC <-- practically mute`,
@@ -526,7 +605,7 @@ v1.0.0 - 02-26-2021`,
 			break
 		}
 	}
-	if statementinMessages != "error" {
+	if statementinMessages == "log" || statementinMessages == "fatal" || statementinMessages == "panic" {
 		result.Status = "Fail"
 		result.FailReason = data
 		return result, nil
@@ -535,15 +614,15 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.14 Ensure 'debug_print_parse' is disabled
+// 3.1.16 Ensure 'debug_print_parse' is disabled v16
 func CheckDebugPrintParse(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control:   "3.1.14",
+		Control:   "3.1.16",
 		Rationale: `Enabling any of the DEBUG printing variables may cause the logging of sensitive information that would otherwise be omitted based on the configuration of the other logging settings.`,
 		Procedure: `show debug_print_parse;
 		If not configured to off, this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The debug_print_parse setting enables printing the resulting parse tree for each executed query. 
 		These messages are emitted at the LOG message level. 
 		Unless directed otherwise by your organization's logging policy, it is recommended this setting be disabled by setting it to off.`,
@@ -574,15 +653,15 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.15 Ensure 'debug_print_rewritten' is disabled
+// 3.1.17 Ensure 'debug_print_rewritten' is disabled v16
 func CheckDebugPrintRewritten(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control:   "3.1.15",
+		Control:   "3.1.17",
 		Rationale: `Enabling any of the DEBUG printing variables may cause the logging of sensitive information that would otherwise be omitted based on the configuration of the other logging settings.`,
 		Procedure: `show debug_print_rewritten;
 		If not configured to off, this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The debug_print_rewritten setting enables printing the query rewriter output for each executed query. 
 		These messages are emitted at the LOG message level. 
 		Unless directed otherwise by your organization's logging policy, it is recommended this setting be disabled by setting it to off.`,
@@ -613,15 +692,15 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.16 Ensure 'debug_print_plan' is disabled
+// 3.1.18 Ensure 'debug_print_plan' is disabled v16
 func CheckDebugPrintPlan(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control:   "3.1.16",
+		Control:   "3.1.18",
 		Rationale: `Enabling any of the DEBUG printing variables may cause the logging of sensitive information that would otherwise be omitted based on the configuration of the other logging settings.`,
 		Procedure: `show debug_print_plan
 		If not configured to off, this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The debug_print_plan setting enables printing the execution plan for each executed query.
 		These messages are emitted at the LOG message level. 
 		Unless directed otherwise by your organization's logging policy, it is recommended this setting be disabled by setting it to off.`,
@@ -652,15 +731,15 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.17 Ensure 'debug_pretty_print' is enabled
+// 3.1.19 Ensure 'debug_pretty_print' is enabled v16
 func CheckDebugPrettyPrint(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control:   "3.1.17",
+		Control:   "3.1.19",
 		Rationale: `If this setting is disabled, the "compact" format is used instead, significantly reducing readability of the DEBUG statement log messages.`,
 		Procedure: `show debug_pretty_print ;
 		If not configured to on, this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `Enabling debug_pretty_print indents the messages produced by debug_print_parse, debug_print_rewritten, or debug_print_plan making them significantly easier to read.`,
 		Title:       "Ensure 'debug_pretty_print' is enabled",
 	}
@@ -689,16 +768,16 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.18 Ensure 'log_connections' is enabled
+// 3.1.20 Ensure 'log_connections' is enabled v16
 func CheckLogConnections(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control: "3.1.18",
+		Control: "3.1.20",
 		Rationale: `PostgreSQL does not maintain an internal record of attempted connections to the database for later auditing. 
 		It is only by enabling the logging of these attempts that one can determine if unexpected attempts are being made.`,
 		Procedure: `show log_connections;
 		If not configured to on, this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `Enabling the log_connections setting causes each attempted connection to the server to be logged, as well as successful completion of client authentication. 
 		This parameter cannot be changed after session start.`,
 		Title: "Ensure 'log_connections' is enabled",
@@ -728,16 +807,16 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.19 Ensure 'log_disconnections' is enabled
+// 3.1.21 Ensure 'log_disconnections' is enabled v16
 func CheckLogDisconnections(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control: "3.1.19",
+		Control: "3.1.21",
 		Rationale: `PostgreSQL does not maintain the beginning or ending of a connection internally for later review. 
 		It is only by enabling the logging of these that one can examine connections for failed attempts, 'over long' duration, or other anomalies.`,
 		Procedure: `show log_disconnections;
 		If not configured to on, this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `Enabling the log_disconnections setting logs the end of each session, including session duration. 
 		This parameter cannot be changed after session start.`,
 		Title: "Ensure 'log_disconnections' is enabled",
@@ -767,15 +846,15 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.20 Ensure 'log_error_verbosity' is set correctly
+// 3.1.22 Ensure 'log_error_verbosity' is set correctly v16
 func ChecklogErrorVerbosity(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control:   "3.1.20",
+		Control:   "3.1.22",
 		Rationale: `If this is not set to the correct value, too many details or too few details may be logged.`,
 		Procedure: `show log_error_verbosity ;
 		If not configured to verbose, this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The log_error_verbosity setting specifies the verbosity (amount of detail) of logged messages. 
 		Valid values are:
 		• TERSE
@@ -809,16 +888,16 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.21 Ensure 'log_hostname' is set correctly
+// 3.1.23 Ensure 'log_hostname' is set correctly v16
 func CheckLogHostname(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control: "3.1.21",
+		Control: "3.1.23",
 		Rationale: `Depending on your hostname resolution setup, enabling this setting might impose a non-negligible performance penalty. 
 		Additionally, the IP addresses that are logged can be resolved to their DNS names when reviewing the logs (unless dynamic host names are being used as part of your DHCP setup).`,
 		Procedure: `show log_hostname;
 		If not configured to off, this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `Enabling the log_hostname setting causes the hostname of the connecting host to be logged in addition to the host's IP address for connection log messages. 
 		Disabling the setting causes only the connecting host's IP address to be logged, and not the hostname. 
 		Unless your organization's logging policy requires hostname logging, it is best to disable this setting so as not to incur the overhead of DNS resolution for each statement that is logged.`,
@@ -849,17 +928,17 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.22 Ensure 'log_line_prefix' is set correctly
+// 3.1.24 Ensure 'log_line_prefix' is set correctly v16
 func ChecklogLinePrefix(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control: "3.1.22",
+		Control: "3.1.24",
 		Rationale: `Properly setting log_line_prefix allows for adding additional information to each log entry (such as the user, or the database). 
 		Said information may then be of use in auditing or security reviews.`,
 		Procedure: `show log_line_prefix;
 		If the prefix does not at a minimum include %m [%p]: [%l-1]
 		db=%d,user=%u,app=%a,client=%h, this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The log_line_prefix setting specifies a printf-style string that is prefixed to each log line.
 		If blank, no prefix is used. 
 		You should configure this as recommended by the pgBadger development team unless directed otherwise by your organization's logging policy.`,
@@ -897,15 +976,15 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.23 Ensure 'log_statement' is set correctly
+// 3.1.25 Ensure 'log_statement' is set correctly v16
 func CheckLogStatement(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control:   "3.1.23",
+		Control:   "3.1.25",
 		Rationale: `Setting log_statement to align with your organization's security and logging policies facilitates later auditing and review of database activities.`,
 		Procedure: `show log_statement;
 		If log_statement is set to none then this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The log_statement setting specifies the types of SQL statements that are logged. Valid values are:
 		• none (off)
 		• ddl
@@ -938,15 +1017,15 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.1.24 Ensure 'log_timezone' is set correctly
+// 3.1.26 Ensure 'log_timezone' is set correctly v16
 func CheckLogTimezone(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control:   "3.1.24",
+		Control:   "3.1.26",
 		Rationale: `Log entry timestamps should be configured for an appropriate time zone as defined by your organization's logging policy to ensure a lack of confusion around when a logged event occurred.`,
 		Procedure: `show log_timezone ;
 		If log_timezone is not set to GMT, UTC, or as defined by your organization's logging policy this is a fail.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The log_timezone setting specifies the time zone to use in timestamps within log messages.
 		This value is cluster-wide, so that all sessions will report timestamps consistently.
 		Unless directed otherwise by your organization's logging policy, set this to either GMT or UTC.`,
@@ -977,7 +1056,7 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 3.2 Ensure the PostgreSQL Audit Extension (pgAudit) is enabled
+// 3.2 Ensure the PostgreSQL Audit Extension (pgAudit) is enabled v16
 func CheckSharedPreloadLibraries(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
 		Control: "3.2",
@@ -998,8 +1077,8 @@ func CheckSharedPreloadLibraries(store *sql.DB, ctx context.Context) (*model.Res
 		• DDL: All DDL that is not included in the ROLE class.
 		• MISC: Miscellaneous commands, e.g. DISCARD, FETCH, CHECKPOINT, VACUUM.
 		`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16 Benchmark
+		v1.0.0 - 11-07-2023`,
 		Description: `The PostgreSQL Audit Extension (pgAudit) provides detailed session and/or object audit logging via the standard PostgreSQL logging facility. 
 		The goal of pgAudit is to provide PostgreSQL users with the capability to produce audit logs often required to comply with government, financial, or ISO certifications.`,
 		Title: "Ensure the PostgreSQL Audit Extension (pgAudit) is enabled",
@@ -1027,4 +1106,601 @@ v1.0.0 - 02-26-2021`,
 	}
 	result.Status = "Pass"
 	return result, nil
+}
+
+func Get_LMA_Results() map[string]*model.Result {
+	lma_result_list := map[string]*model.Result{
+		"log_destination": {
+			Control:   "3.1.2",
+			Rationale: `If log_destination is not set, then any log messages generated by the core PostgreSQL processes will be lost.`,
+			Procedure: `postgres=# show log_destination;
+			Stderr is default and please set according to your standards.
+			You can also set multiple destinations using some thing like stderr,csvlog.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `PostgreSQL supports several methods for logging server messages, including stderr, csvlog and syslog.
+			On Windows, eventlog is also supported.
+			One or more of these destinations should be set for server log output.`,
+			Title: "Ensure the log destinations are set correctly",
+		},
+		"logging_collector": {
+			Control:   "3.1.3",
+			Rationale: `The logging collector approach is often more useful than logging to syslog, since some types of messages might not appear in syslog output.`,
+			Procedure: `postgres=# show logging_collector;
+			If you see the output as 'on' it is a PASS.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The logging collector is a background process that captures log messages sent to stderr and redirects them into log files.`,
+			Title:       "Ensure the logging collector is enabled",
+		},
+		"log_directory": {
+			Control:   "3.1.4",
+			Rationale: `If log_directory is not set, it is interpreted as the absolute path '/' and PostgreSQL will attempt to write its logs there (and typically fail due to a lack of permissions to that directory).`,
+			Procedure: `postgres=# show log_directory;
+			Empty output is a FAIL. 
+			Default is log which means it creates logs in a sub folder called log under DATADIR. 
+			It is always a better idea to keep the logs in a separate path (not in the datadir path).`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The log_directory setting specifies the destination directory for log files.`,
+			Title:       "Ensure the log file destination directory is set correctly",
+		},
+		"log_filename": {
+			Control:   "3.1.5",
+			Rationale: `If log_filename is not set, then the value of log_directory is appended to an empty string and PostgreSQL will fail to start as it will try to write to a directory instead of a file.`,
+			Procedure: `postgres=# show log_filename;
+			Empty output is a FAIL.
+			Better not to have postgresql-%a.log as it creates one log file per day and could be overwritten.
+			According to your log retention requirements set a timestamp based logging format`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The log_filename setting specifies the filename pattern for log files. 
+			The value for log_filename should match your organization's logging policy.`,
+			Title: "Ensure the filename pattern for log files is set correctly",
+		},
+		"log_file_mode": {
+			Control: "3.1.6",
+			Rationale: `Log files often contain sensitive data.
+			Allowing unnecessary access to log files may inadvertently expose sensitive data to unauthorized personnel.`,
+			Procedure: `postgres=# show log_file_mode;
+			If the output is 0600 then it is a PASS`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The log_file_mode setting determines the file permissions for log files when logging_collector is enabled.`,
+			Title:       "Ensure the log file permissions are set correctly",
+		},
+		"log_truncate_on_rotation": {
+			Control:   "3.1.7",
+			Rationale: `If this setting is disabled, pre-existing log files will be appended to if log_filename is configured in such a way that static names are generated.`,
+			Procedure: `postgres=# show log_truncate_on_rotation;
+			If it is not set to 'on', this is a fail.
+			Enabling or disabling the truncation should only be decided when also considering the value of log_filename and log_rotation_age/log_rotation_size.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `Enabling the log_truncate_on_rotation setting when logging_collector is enabled causes PostgreSQL to truncate (overwrite) existing log files with the same name during log rotation instead of appending to them.`,
+			Title:       "Ensure 'log_truncate_on_rotation' is enabled",
+		},
+		"log_rotation_age": {
+			Control:   "3.1.8",
+			Rationale: `Log rotation is a standard best practice for log management.`,
+			Procedure: `postgres=# show log_rotation_age;
+			1d is generally good for production. Set to 1h to rotate logs hourly when doing performance analysis`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `When logging_collector is enabled, the log_rotation_age parameter determines the maximum lifetime of an individual log file (depending on the value of log_filename).
+			After this many minutes have elapsed, a new log file will be created via automatic log file rotation.`,
+			Title: "Ensure the maximum log file lifetime is set correctly",
+		},
+		"log_rotation_size": {
+			Control: "3.1.9",
+			Rationale: `If this is set to zero, the size-triggered creation of new log files is disabled. 
+			This will prevent automatic log file rotation when files become too large, which could put log data at increased risk of loss (unless age-based rotation is configured).`,
+			Procedure: `show log_rotation_size;
+			If the output is 0 then this is a FAIL (0 is the default value)`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The log_rotation_size setting determines the maximum size of an individual log file.
+			Once the maximum size is reached, automatic log file rotation will occur.`,
+			Title: "Ensure the maximum log file size is set correctly",
+		},
+		"syslog_facility": {
+			Control:   "3.1.10",
+			Rationale: `If not set to the appropriate facility, the PostgreSQL log messages may be intermingled with other applications' log messages, incorrectly routed, or potentially dropped (depending on your syslog configuration).`,
+			Procedure: `show syslog_facility;
+			If you see anything that starts with local that can be considered as PASS. 
+			But this control is totally dependent on your standards. 
+			Some people does not use syslog`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The syslog_facility setting specifies the syslog "facility" to be used when logging to syslog is enabled. 
+			You can choose from any of the 'local' facilities:
+			• LOCAL0
+			• LOCAL1
+			• LOCAL2
+			• LOCAL3
+			• LOCAL4
+			• LOCAL5
+			• LOCAL6
+			• LOCAL7`,
+			Title: "Ensure the correct syslog facility is selected",
+		},
+		"syslog_sequence_numbers": {
+			Control: "3.1.11",
+			Rationale: `Many modern Syslog implementations perform a log optimization and suppress
+			repeated log entries while emitting “--- last message repeated N times ---”.
+			If disabled, messages sent to Syslog could be suppressed and not logged. `,
+			Procedure: `show syslog_sequence_numbers;
+			Execute the SQL statement and confirm that the syslog_sequence_numbers is
+			enabled (on).`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `When logging to Syslog and syslog_sequence_numbers is on, then each message will be
+			prefixed by an increasing sequence number (such as [2]).
+			`,
+			Title: "Ensure syslog messages are not suppressed",
+		},
+		"syslog_split_messages": {
+			Control: "3.1.12",
+			Rationale: `Depending on the Syslog server in use, log messages exceeding 1024 bytes may be
+			lost or, potentially, cause the Syslog server processes to abort.`,
+			Procedure: `show syslog_split_messages;
+			Execute the SQL statement and confirm that the syslog_split_messages is
+			enabled (on).`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `PostgreSQL log messages can exceed 1024 bytes, which is a typical size limit for
+			traditional Syslog implementations. 
+			`,
+			Title: "Ensure syslog messages are not lost due to size",
+		},
+		"syslog_ident": {
+			Control:   "3.1.13",
+			Rationale: `If this is not set correctly, it may be difficult or impossible to distinguish PostgreSQL messages from other messages in syslog logs.`,
+			Procedure: `show syslog_ident;
+			If the output is postgres (default ), please adjust this value to suit your requirements or keep it as default- Depends on your standards`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The syslog_ident setting specifies the program name used to identify PostgreSQL messages in syslog logs. 
+			An example of a possible program name is postgres.
+			`,
+			Title: "Ensure the program name for PostgreSQL syslog messages is correct",
+		},
+		"log_min_messages": {
+			Control:   "3.1.14",
+			Rationale: `If this is not set to the correct value, too many messages or too few messages may be written to the server log.`,
+			Procedure: `show log_min_messages;
+			If logging is not configured to at least warning, this is a fail.
+			Unless doing serious troubleshooting. 
+			If you want to output parses and plans, set to DEBUG1
+			`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The log_min_messages setting specifies the message levels that are written to the server log. 
+			Each level includes all the levels that follow it. 
+			The lower the level (vertically, below), the fewer messages are sent.
+			Valid values are:
+			• DEBUG5 <-- exceedingly chatty
+			• DEBUG4
+			• DEBUG3
+			• DEBUG2
+			• DEBUG1
+			• INFO
+			• NOTICE
+			• WARNING <-- default
+			• ERROR
+			• LOG
+			• FATAL
+			• PANIC <-- practically mute`,
+			Title: "Ensure the correct messages are written to the server log",
+		},
+		"log_min_error_statement": {
+			Control:   "3.1.15",
+			Rationale: `If this is not set to the correct value, too many erring SQL statements or too few erring SQL statements may be written to the server log.`,
+			Procedure: `show log_min_error_statement;
+			If not configured to at least error, this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `TThe log_min_error_statement setting causes all SQL statements generating errors at or above the specified severity level to be recorded in the server log. 
+			Each level includes all the levels that follow it. 
+			The lower the level (vertically, below), the fewer messages are recorded. 
+			Valid values are:
+			• DEBUG5 <-- exceedingly chatty
+			• DEBUG4
+			• DEBUG3
+			• DEBUG2
+			• DEBUG1
+			• INFO
+			• NOTICE
+			• WARNING
+			• ERROR <-- default
+			• LOG
+			• FATAL
+			• PANIC <-- practically mute`,
+			Title: "Ensure the correct SQL statements generating errors are recorded",
+		},
+		"debug_print_parse": {
+			Control:   "3.1.16",
+			Rationale: `Enabling any of the DEBUG printing variables may cause the logging of sensitive information that would otherwise be omitted based on the configuration of the other logging settings.`,
+			Procedure: `show debug_print_parse;
+			If not configured to off, this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The debug_print_parse setting enables printing the resulting parse tree for each executed query. 
+			These messages are emitted at the LOG message level. 
+			Unless directed otherwise by your organization's logging policy, it is recommended this setting be disabled by setting it to off.`,
+			Title: "Ensure 'debug_print_parse' is disabled",
+		},
+		"debug_print_rewritten": {
+			Control:   "3.1.17",
+			Rationale: `Enabling any of the DEBUG printing variables may cause the logging of sensitive information that would otherwise be omitted based on the configuration of the other logging settings.`,
+			Procedure: `show debug_print_rewritten;
+			If not configured to off, this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The debug_print_rewritten setting enables printing the query rewriter output for each executed query. 
+			These messages are emitted at the LOG message level. 
+			Unless directed otherwise by your organization's logging policy, it is recommended this setting be disabled by setting it to off.`,
+			Title: "Ensure 'debug_print_rewritten' is disabled",
+		},
+		"debug_print_plan": {
+			Control:   "3.1.18",
+			Rationale: `Enabling any of the DEBUG printing variables may cause the logging of sensitive information that would otherwise be omitted based on the configuration of the other logging settings.`,
+			Procedure: `show debug_print_plan
+			If not configured to off, this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The debug_print_plan setting enables printing the execution plan for each executed query.
+			These messages are emitted at the LOG message level. 
+			Unless directed otherwise by your organization's logging policy, it is recommended this setting be disabled by setting it to off.`,
+			Title: "Ensure 'debug_print_plan' is disabled",
+		},
+		"debug_pretty_print": {
+			Control:   "3.1.19",
+			Rationale: `If this setting is disabled, the "compact" format is used instead, significantly reducing readability of the DEBUG statement log messages.`,
+			Procedure: `show debug_pretty_print ;
+			If not configured to on, this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `Enabling debug_pretty_print indents the messages produced by debug_print_parse, debug_print_rewritten, or debug_print_plan making them significantly easier to read.`,
+			Title:       "Ensure 'debug_pretty_print' is enabled",
+		},
+		"log_connections": {
+			Control: "3.1.20",
+			Rationale: `PostgreSQL does not maintain an internal record of attempted connections to the database for later auditing. 
+			It is only by enabling the logging of these attempts that one can determine if unexpected attempts are being made.`,
+			Procedure: `show log_connections;
+			If not configured to on, this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `Enabling the log_connections setting causes each attempted connection to the server to be logged, as well as successful completion of client authentication. 
+			This parameter cannot be changed after session start.`,
+			Title: "Ensure 'log_connections' is enabled",
+		},
+		"log_disconnections": {
+			Control: "3.1.21",
+			Rationale: `PostgreSQL does not maintain the beginning or ending of a connection internally for later review. 
+			It is only by enabling the logging of these that one can examine connections for failed attempts, 'over long' duration, or other anomalies.`,
+			Procedure: `show log_disconnections;
+			If not configured to on, this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `Enabling the log_disconnections setting logs the end of each session, including session duration. 
+			This parameter cannot be changed after session start.`,
+			Title: "Ensure 'log_disconnections' is enabled",
+		},
+		"log_error_verbosity": {
+			Control:   "3.1.22",
+			Rationale: `If this is not set to the correct value, too many details or too few details may be logged.`,
+			Procedure: `show log_error_verbosity ;
+			If not configured to verbose, this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The log_error_verbosity setting specifies the verbosity (amount of detail) of logged messages. 
+			Valid values are:
+			• TERSE
+			• DEFAULT
+			• VERBOSE
+			with each containing the fields of the level above it as well as additional fields.`,
+			Title: "Ensure 'log_error_verbosity' is set correctly",
+		},
+		"log_hostname": {
+			Control: "3.1.23",
+			Rationale: `Depending on your hostname resolution setup, enabling this setting might impose a non-negligible performance penalty. 
+			Additionally, the IP addresses that are logged can be resolved to their DNS names when reviewing the logs (unless dynamic host names are being used as part of your DHCP setup).`,
+			Procedure: `show log_hostname;
+			If not configured to off, this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `Enabling the log_hostname setting causes the hostname of the connecting host to be logged in addition to the host's IP address for connection log messages. 
+			Disabling the setting causes only the connecting host's IP address to be logged, and not the hostname. 
+			Unless your organization's logging policy requires hostname logging, it is best to disable this setting so as not to incur the overhead of DNS resolution for each statement that is logged.`,
+			Title: "Ensure 'log_hostname' is set correctly",
+		},
+		"log_line_prefix": {
+			Control: "3.1.24",
+			Rationale: `Properly setting log_line_prefix allows for adding additional information to each log entry (such as the user, or the database). 
+			Said information may then be of use in auditing or security reviews.`,
+			Procedure: `show log_line_prefix;
+			If the prefix does not at a minimum include %m [%p]: [%l-1]
+			db=%d,user=%u,app=%a,client=%h, this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The log_line_prefix setting specifies a printf-style string that is prefixed to each log line.
+			If blank, no prefix is used. 
+			You should configure this as recommended by the pgBadger development team unless directed otherwise by your organization's logging policy.`,
+			Title: "Ensure 'log_line_prefix' is set correctly",
+		},
+		"log_statement": {
+			Control:   "3.1.25",
+			Rationale: `Setting log_statement to align with your organization's security and logging policies facilitates later auditing and review of database activities.`,
+			Procedure: `show log_statement;
+			If log_statement is set to none then this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The log_statement setting specifies the types of SQL statements that are logged. Valid values are:
+			• none (off)
+			• ddl
+			• mod
+			• all (all statements)`,
+			Title: "Ensure 'log_statement' is set correctly",
+		},
+		"log_timezone": {
+			Control:   "3.1.26",
+			Rationale: `Log entry timestamps should be configured for an appropriate time zone as defined by your organization's logging policy to ensure a lack of confusion around when a logged event occurred.`,
+			Procedure: `show log_timezone ;
+			If log_timezone is not set to GMT, UTC, or as defined by your organization's logging policy this is a fail.`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The log_timezone setting specifies the time zone to use in timestamps within log messages.
+			This value is cluster-wide, so that all sessions will report timestamps consistently.
+			Unless directed otherwise by your organization's logging policy, set this to either GMT or UTC.`,
+			Title: "Ensure 'log_timezone' is set correctly",
+		},
+		"shared_preload_libraries": {
+			Control: "3.2",
+			Rationale: `Basic statement logging can be provided by the standard logging facility with log_statement = all. 
+			This is acceptable for monitoring and other uses but does not provide the level of detail generally required for an audit.`,
+			Procedure: `show shared_preload_libraries ;
+			If the output does not contain "pgaudit", this is a fail.
+			show pgaudit.log;
+			
+			If the output does not contain the desired auditing components, this is a fail.
+			The list below summarizes pgAudit.log components:
+			• READ: SELECT and COPY when the source is a relation or a query.
+			• WRITE: INSERT, UPDATE, DELETE, TRUNCATE, and COPY when the destination is a
+			relation.
+			• FUNCTION: Function calls and DO blocks.
+			• ROLE: Statements related to roles and privileges: GRANT, REVOKE, CREATE/ALTER/DROP
+			ROLE.
+			• DDL: All DDL that is not included in the ROLE class.
+			• MISC: Miscellaneous commands, e.g. DISCARD, FETCH, CHECKPOINT, VACUUM.
+			`,
+			References: `CIS PostgreSQL 16 Benchmark
+			v1.0.0 - 11-07-2023`,
+			Description: `The PostgreSQL Audit Extension (pgAudit) provides detailed session and/or object audit logging via the standard PostgreSQL logging facility. 
+			The goal of pgAudit is to provide PostgreSQL users with the capability to produce audit logs often required to comply with government, financial, or ISO certifications.`,
+			Title: "Ensure the PostgreSQL Audit Extension (pgAudit) is enabled",
+		},
+	}
+	return lma_result_list
+}
+
+func Check_LMA_Results(settingsMap map[string]string) map[string]*model.Result {
+	lmaResultsMap := Get_LMA_Results()
+
+	// 3.1.2 Ensure the log destinations are set correctly
+	if settingsMap["log_destination"] == "" {
+		lmaResultsMap["log_destination"].Status = "Fail"
+		lmaResultsMap["log_destination"].FailReason = "log_destination is not set"
+	} else {
+		lmaResultsMap["log_destination"].Status = "Pass"
+	}
+
+	// 3.1.3 Ensure the logging collector is enabled
+	if settingsMap["logging_collector"] != "on" {
+		lmaResultsMap["logging_collector"].Status = "Fail"
+		lmaResultsMap["logging_collector"].FailReason = "logging_collector is not enabled"
+	} else {
+		lmaResultsMap["logging_collector"].Status = "Pass"
+	}
+
+	// 3.1.4 Ensure the log file destination directory is set correctly
+	if settingsMap["log_directory"] == "" {
+		lmaResultsMap["log_directory"].Status = "Fail"
+		lmaResultsMap["log_directory"].FailReason = "log_directory is not set correctly"
+	} else {
+		lmaResultsMap["log_directory"].Status = "Pass"
+	}
+
+	// 3.1.5 Ensure the filename pattern for log files is set correctly
+	if settingsMap["log_filename"] == "" {
+		lmaResultsMap["log_filename"].Status = "Fail"
+		lmaResultsMap["log_filename"].FailReason = "log_filename is not set correctly"
+	} else {
+		lmaResultsMap["log_filename"].Status = "Pass"
+	}
+
+	// 3.1.6 Ensure the log file permissions are set correctly
+	if settingsMap["log_file_mode"] != "0600" {
+		lmaResultsMap["log_file_mode"].Status = "Fail"
+		lmaResultsMap["log_file_mode"].FailReason = "log_file_mode is not set correctly"
+	} else {
+		lmaResultsMap["log_file_mode"].Status = "Pass"
+	}
+
+	// 3.1.7 Ensure 'log_truncate_on_rotation' is enabled
+	if settingsMap["log_truncate_on_rotation"] != "on" {
+		lmaResultsMap["log_truncate_on_rotation"].Status = "Fail"
+		lmaResultsMap["log_truncate_on_rotation"].FailReason = "log_truncate_on_rotation is not enabled"
+	} else {
+		lmaResultsMap["log_truncate_on_rotation"].Status = "Pass"
+	}
+
+	// 3.1.8 Ensure the maximum log file lifetime is set correctly
+	if settingsMap["log_rotation_age"] == "" {
+		lmaResultsMap["log_rotation_age"].Status = "Fail"
+		lmaResultsMap["log_rotation_age"].FailReason = "log_rotation_age is not set correctly"
+	} else {
+		lmaResultsMap["log_rotation_age"].Status = "Pass"
+	}
+
+	// 3.1.9 Ensure the maximum log file size is set correctly
+	if settingsMap["log_rotation_size"] == "0" {
+		lmaResultsMap["log_rotation_size"].Status = "Fail"
+		lmaResultsMap["log_rotation_size"].FailReason = "log_rotation_size is not set correctly"
+	} else {
+		lmaResultsMap["log_rotation_size"].Status = "Pass"
+	}
+
+	// 3.1.10 Ensure the correct syslog facility is selected
+	if !strings.Contains(settingsMap["syslog_facility"], "local") {
+		lmaResultsMap["syslog_facility"].Status = "Fail"
+		lmaResultsMap["syslog_facility"].FailReason = "syslog_facility is not set correctly"
+	} else {
+		lmaResultsMap["syslog_facility"].Status = "Pass"
+	}
+
+	// 3.1.11 Ensure syslog messages are not suppressed
+	if settingsMap["syslog_sequence_numbers"] != "on" {
+		lmaResultsMap["syslog_sequence_numbers"].Status = "Fail"
+		lmaResultsMap["syslog_sequence_numbers"].FailReason = "syslog_sequence_numbers are suppressed"
+	} else {
+		lmaResultsMap["syslog_sequence_numbers"].Status = "Pass"
+	}
+
+	// 3.1.12 Ensure syslog messages are not lost due to size
+	if settingsMap["syslog_split_messages"] != "on" {
+		lmaResultsMap["syslog_split_messages"].Status = "Fail"
+		lmaResultsMap["syslog_split_messages"].FailReason = "syslog_split_messages is not enabled"
+	} else {
+		lmaResultsMap["syslog_split_messages"].Status = "Pass"
+	}
+
+	// 3.1.13 Ensure the program name for PostgreSQL syslog messages is correct
+	if settingsMap["syslog_ident"] == "" {
+		lmaResultsMap["syslog_ident"].Status = "Fail"
+		lmaResultsMap["syslog_ident"].FailReason = "syslog_ident is not set correctly"
+	} else {
+		lmaResultsMap["syslog_ident"].Status = "Pass"
+	}
+
+	// 3.1.14 Ensure the correct messages are written to the server log
+	if strings.Contains(settingsMap["log_min_messages"], "error") || strings.Contains(settingsMap["log_min_messages"], "log") || strings.Contains(settingsMap["log_min_messages"], "fatal") || strings.Contains(settingsMap["log_min_messages"], "panic") {
+		lmaResultsMap["log_min_messages"].Status = "Fail"
+		lmaResultsMap["log_min_messages"].FailReason = "log_min_messages is not set correctly"
+	} else {
+		lmaResultsMap["log_min_messages"].Status = "Pass"
+	}
+
+	// 3.1.15 Ensure the correct SQL statements generating errors are recorded
+	if settingsMap["log_min_error_statement"] == "error" || settingsMap["log_min_error_statement"] == "fatal" || settingsMap["log_min_error_statement"] == "panic" {
+		lmaResultsMap["log_min_error_statement"].Status = "Fail"
+		lmaResultsMap["log_min_error_statement"].FailReason = "log_min_error_statement is not set correctly"
+	} else {
+		lmaResultsMap["log_min_error_statement"].Status = "Pass"
+	}
+
+	// 3.1.16 Ensure 'debug_print_parse' is disabled
+	if settingsMap["debug_print_parse"] != "off" {
+		lmaResultsMap["debug_print_parse"].Status = "Fail"
+		lmaResultsMap["debug_print_parse"].FailReason = "debug_print_parse is not disabled"
+	} else {
+		lmaResultsMap["debug_print_parse"].Status = "Pass"
+	}
+
+	// 3.1.17 Ensure 'debug_print_rewritten' is disabled
+	if settingsMap["debug_print_rewritten"] != "off" {
+		lmaResultsMap["debug_print_rewritten"].Status = "Fail"
+		lmaResultsMap["debug_print_rewritten"].FailReason = "debug_print_rewritten is not disabled"
+	} else {
+		lmaResultsMap["debug_print_rewritten"].Status = "Pass"
+	}
+
+	// 3.1.18 Ensure 'debug_print_plan' is disabled
+	if settingsMap["debug_print_plan"] != "off" {
+		lmaResultsMap["debug_print_plan"].Status = "Fail"
+		lmaResultsMap["debug_print_plan"].FailReason = "debug_print_plan is not disabled"
+	} else {
+		lmaResultsMap["debug_print_plan"].Status = "Pass"
+	}
+
+	// 3.1.19 Ensure 'debug_pretty_print' is enabled
+	if settingsMap["debug_pretty_print"] != "on" {
+		lmaResultsMap["debug_pretty_print"].Status = "Fail"
+		lmaResultsMap["debug_pretty_print"].FailReason = "debug_pretty_print is not enabled"
+	} else {
+		lmaResultsMap["debug_pretty_print"].Status = "Pass"
+	}
+
+	// 3.1.20 Ensure 'log_connections' is enabled
+	if settingsMap["log_connections"] != "on" {
+		lmaResultsMap["log_connections"].Status = "Fail"
+		lmaResultsMap["log_connections"].FailReason = "log_connections is not enabled"
+	} else {
+		lmaResultsMap["log_connections"].Status = "Pass"
+	}
+
+	// 3.1.21 Ensure 'log_disconnections' is enabled
+	if settingsMap["log_disconnections"] != "on" {
+		lmaResultsMap["log_disconnections"].Status = "Fail"
+		lmaResultsMap["log_disconnections"].FailReason = "log_disconnections is not enabled"
+	} else {
+		lmaResultsMap["log_disconnections"].Status = "Pass"
+	}
+
+	// 3.1.22 Ensure 'log_error_verbosity' is set correctly
+	if settingsMap["log_error_verbosity"] != "verbose" {
+		lmaResultsMap["log_error_verbosity"].Status = "Fail"
+		lmaResultsMap["log_error_verbosity"].FailReason = "log_error_verbosity is not set correctly"
+	} else {
+		lmaResultsMap["log_error_verbosity"].Status = "Pass"
+	}
+
+	// 3.1.23 Ensure 'log_hostname' is set correctly
+	if settingsMap["log_hostname"] != "off" {
+		lmaResultsMap["log_hostname"].Status = "Fail"
+		lmaResultsMap["log_hostname"].FailReason = "log_hostname is not set correctly"
+	} else {
+		lmaResultsMap["log_hostname"].Status = "Pass"
+	}
+
+	// 3.1.24 Ensure 'log_line_prefix' is set correctly
+	if strings.Contains(settingsMap["log_line_prefix"], "%m") &&
+		strings.Contains(settingsMap["log_line_prefix"], "%p") &&
+		strings.Contains(settingsMap["log_line_prefix"], "%l") &&
+		strings.Contains(settingsMap["log_line_prefix"], "%d") &&
+		strings.Contains(settingsMap["log_line_prefix"], "%u") &&
+		strings.Contains(settingsMap["log_line_prefix"], "%a") &&
+		strings.Contains(settingsMap["log_line_prefix"], "%h") {
+		lmaResultsMap["log_line_prefix"].Status = "PASS"
+	} else {
+		lmaResultsMap["log_line_prefix"].Status = "Fail"
+		lmaResultsMap["log_line_prefix"].FailReason = "log_line_prefix is not set correctly"
+	}
+
+	// 3.1.25 Ensure 'log_statement' is set correctly
+	if settingsMap["log_statement"] == "none" {
+		lmaResultsMap["log_statement"].Status = "Fail"
+		lmaResultsMap["log_statement"].FailReason = "log_statement is not set correctly"
+	} else {
+		lmaResultsMap["log_statement"].Status = "Pass"
+	}
+
+	// 3.1.26 Ensure 'log_timezone' is set correctly
+	if settingsMap["log_timezone"] == "" {
+		lmaResultsMap["log_timezone"].Status = "Fail"
+		lmaResultsMap["log_timezone"].FailReason = "log_timezone is not set correctly"
+	} else {
+		lmaResultsMap["log_timezone"].Status = "Pass"
+	}
+
+	// 3.2 Ensure the PostgreSQL Audit Extension (pgAudit) is enabled
+	if !strings.Contains(settingsMap["shared_preload_libraries"], "pgaudit") {
+		lmaResultsMap["shared_preload_libraries"].Status = "Fail"
+		lmaResultsMap["shared_preload_libraries"].FailReason = "pgaudit is not enabled"
+	} else {
+		lmaResultsMap["shared_preload_libraries"].Status = "Pass"
+	}
+
+	return lmaResultsMap
 }

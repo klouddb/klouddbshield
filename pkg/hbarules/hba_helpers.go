@@ -109,7 +109,7 @@ func updateStringWithFilenameOrRolename(ctx context.Context, store *sql.DB, str,
 			updatedList = append(updatedList, usersFromFile...)
 		case '+':
 			if store == nil {
-				return "", fmt.Errorf("database connection is not available")
+				return "", fmt.Errorf("there is role in hba file, to get users from role we need database connection.")
 			}
 			roleName := strings.TrimPrefix(item, "+")
 			users, err := utils.GetUserForGivenRole(ctx, store, roleName)

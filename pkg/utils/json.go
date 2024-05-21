@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 )
 
 func GetJSON(store *sql.DB, sqlString string) ([]map[string]interface{}, error) {
@@ -85,6 +86,21 @@ func GetFailReasonInString(failReason interface{}) string {
 
 		}
 		return result
+	case []interface{}:
+		result := ""
+		for _, item := range ty {
+			switch itemTy := item.(type) {
+			case map[string]interface{}:
+				for key, value := range itemTy {
+					result += fmt.Sprintf("%s: %v, ", key, value)
+				}
+				result = strings.TrimSuffix(result, ", ") + "\n" // Clean up trailing comma and add newline
+			default:
+				result += fmt.Sprintf("Unsupported item type: %v\n", reflect.TypeOf(item))
+			}
+		}
+		return result
+
 	default:
 		var r = reflect.TypeOf(failReason)
 		return fmt.Sprintf("Other:%v\n", r)

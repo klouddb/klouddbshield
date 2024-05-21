@@ -119,7 +119,6 @@ func (t *rdsInstancePrinter) Print() string {
 type sectionPrinter struct {
 	table.Writer
 	result *model.Result
-	lines  []table.Row
 	Sb     strings.Builder
 }
 

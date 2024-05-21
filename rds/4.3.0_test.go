@@ -84,7 +84,7 @@ func TestExecute430(t *testing.T) {
 		}
 	})
 
-	t.Run("rds event  subscriptions returns one record souceIDlist is emtpy and source type is db-instance type", func(t *testing.T) {
+	t.Run("rds event  subscriptions returns one record souceIDlist is empty and source type is db-instance type", func(t *testing.T) {
 		setSubGetter()
 		db.EXPECT().GetDBMap(gomock.Any()).DoAndReturn(func(ctx context.Context) (*model.Result, map[string]bool, error) {
 			return nil, dbMap, nil

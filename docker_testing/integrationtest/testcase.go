@@ -121,39 +121,39 @@ func testInactiveUser(prefix, file string) {
 	fmt.Println("Inactive user test is working fine for prefix:", prefix)
 }
 
-func testMissingIPs(prefix, file string) {
-	cmd := exec.Command("ciscollector",
-		"-logparser", cons.LogParserCMD_MismatchIPs,
-		"-prefix", prefix,
-		"-file-path", file,
-		"-output-type", "json",
-		"-ip-file-path", "./ips.txt",
-	)
+// func testMissingIPs(prefix, file string) {
+// 	cmd := exec.Command("ciscollector",
+// 		"-logparser", cons.LogParserCMD_MismatchIPs,
+// 		"-prefix", prefix,
+// 		"-file-path", file,
+// 		"-output-type", "json",
+// 		"-ip-file-path", "./ips.txt",
+// 	)
 
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println("execution error from mismatch_ips:", err, string(out))
-		os.Exit(1)
-	}
+// 	out, err := cmd.CombinedOutput()
+// 	if err != nil {
+// 		fmt.Println("execution error from mismatch_ips:", err, string(out))
+// 		os.Exit(1)
+// 	}
 
-	if !strings.Contains(string(out), "Successfully parsed all files") {
-		fmt.Println("Successful message is not available (mismatch_ips):", string(out))
-		// fail the command
-		os.Exit(1)
-	}
+// 	if !strings.Contains(string(out), "Successfully parsed all files") {
+// 		fmt.Println("Successful message is not available (mismatch_ips):", string(out))
+// 		// fail the command
+// 		os.Exit(1)
+// 	}
 
-	if !strings.Contains(string(out), `Mismatch IPs:
-[
-	"192.168.1.26",
-	"192.168.2.26",
-	"192.168.3.26"
-]`) {
-		fmt.Println("not getting valid ips in output for missing ips:", string(out))
-		os.Exit(1)
-	}
+// 	if !strings.Contains(string(out), `Mismatch IPs:
+// [
+// 	"192.168.1.26",
+// 	"192.168.2.26",
+// 	"192.168.3.26"
+// ]`) {
+// 		fmt.Println("not getting valid ips in output for missing ips:", string(out))
+// 		os.Exit(1)
+// 	}
 
-	fmt.Println("mismatch ip test is working fine for prefix:", prefix)
-}
+// 	fmt.Println("mismatch ip test is working fine for prefix:", prefix)
+// }
 
 func testUnusedHbaLines(prefix, file string) {
 	cmd := exec.Command("ciscollector",

@@ -3,7 +3,6 @@ module github.com/klouddb/klouddbshield
 go 1.18
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jackc/pgx/v4 v4.18.3
@@ -17,6 +16,7 @@ require (
 )
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-openapi/errors v0.20.2 // indirect

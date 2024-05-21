@@ -18,8 +18,8 @@ func CheckFunctionPrivileges(store *sql.DB, ctx context.Context) (*model.Result,
 		Procedure: `SELECT nspname, proname, proargtypes, prosecdef, rolname, proconfig FROM pg_proc p JOIN pg_namespace n ON p.pronamespace = n.oid JOIN pg_authid a ON a.oid = p.proowner WHERE prosecdef OR NOT proconfig IS NULL;
 		Any function with a prosecdef value of 't' violates the rule.
 		Check prosecdeef column and mark this control as FAIL when you see 't'.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16
+		v1.0.0 - 11-07-2023`,
 		Description: `Privilege elevation must be utilized only where necessary.
 		Execute privileges for application functions should be restricted to authorized users only.`,
 		Title: "Ensure excessive function privileges are revoked",
@@ -44,7 +44,7 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 4.5 Use pg_permission extension to audit object permissions
+// 4.5 Use pg_permission extension to audit object permissions (deprecated?)
 func CheckObjectPermissions(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
 		Control: "4.5",
@@ -75,10 +75,10 @@ v1.0.0 - 02-26-2021`,
 	return result, nil
 }
 
-// 4.7 Ensure the set_user extension is installed
+// 4.6 Ensure the set_user extension is installed
 func CheckSetUserExtension(store *sql.DB, ctx context.Context) (*model.Result, error) {
 	result := &model.Result{
-		Control: "4.7",
+		Control: "4.6",
 		Rationale: `Even when reducing and limiting the access to the superuser role as described earlier in this benchmark, it is still difficult to determine who accessed the superuser role and what actions were taken using that role.
 		As such, it is ideal to prevent anyone from logging in as the superuser and forcing them to escalate their role.
 		This model is used at the OS level by the use of sudo and should be emulated in the database.
@@ -87,8 +87,8 @@ func CheckSetUserExtension(store *sql.DB, ctx context.Context) (*model.Result, e
 		Procedure: `select * from pg_available_extensions where name = 'set_user';
 		If the extension isn't found, this is a fail.`,
 		Description: `PostgreSQL access to the superuser database role must be controlled and audited to prevent unauthorized access.`,
-		References: `CIS PostgreSQL 13 Benchmark
-v1.0.0 - 02-26-2021`,
+		References: `CIS PostgreSQL 16
+		v1.0.0 - 11-07-2023`,
 		Title: "Ensure the set_user extension is installed",
 	}
 

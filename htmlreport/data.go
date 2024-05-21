@@ -18,11 +18,13 @@ class="bi bi-check-circle" viewBox="0 0 16 16">
 	d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"
 	fill="#20d908"></path>
 </svg></td>`
+
 var failReason = `
 <tr>
 <th>Fail Reason </th>
 <td>%s</td>
 </tr>`
+
 var tableTemplate = `					<tr>
 <td>%s</td>
 %s
@@ -71,6 +73,30 @@ const html = `<!DOCTYPE html>
         integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
 
     <style>
+
+	.maintable {
+		margin: 50px 0;
+		padding: 20px;
+		box-shadow: -webkit-box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.32);
+		-moz-box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.32);
+		box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.32);
+		width: 100%;
+		border-collapse: collapse;
+		overflow-x: auto;
+	}
+
+	.maintable thead th {
+		position: sticky;
+		top: 0;
+		background-color: white;
+		z-index: 10;
+	}
+
+	.maintable th tr {
+		min-width: 120px;
+		border:
+	}
+
 	.expandChildTable:before {
 		content: "+";
 		display: block;
@@ -96,13 +122,11 @@ const html = `<!DOCTYPE html>
 		border: 2px solid #555;
 	}
 
-	.maintable {
-		margin: 50px 0;
-		padding: 20px;
-		box-shadow: -webkit-box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.32);
-		-moz-box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.32);
-		box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.32);
+	.table-responsive {
+		overflow-x: auto;
 	}
+
+	
         /* Header Styles */
         header {
             background-color: #333;
@@ -210,14 +234,14 @@ const html = `<!DOCTYPE html>
 var body = `
 	<div class="wrapper">
 		<div class="myContainer">
-			<div class="container">
+			<div class="table-responsive">
 
 				<table class="table maintable">
 					<thead>
 						<tr>
 							<th>Control</th>
 							<th style="text-align:center;">Result</th>
-							<th style="width: 540px;text-align:center; ">Detailed Status</th>
+							<th style="width: 540px;text-align:center;">Detailed Status</th>
 
 						</tr>
 					</thead>
@@ -242,7 +266,7 @@ var hbatabletemplate = `
 					<th>Description </th>
 					<td>%s</td>
 				</tr>
-				%s
+					%s
 				<tr>
 					<th>Process to Validate </th>
 					<td>%s</td>

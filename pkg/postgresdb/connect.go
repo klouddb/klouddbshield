@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/klouddb/klouddbshield/pkg/config"
+	_ "github.com/lib/pq"
 	"github.com/rs/zerolog/log"
 
-	_ "github.com/lib/pq"
+	"github.com/klouddb/klouddbshield/pkg/config"
 )
 
 // Open opens a the postgres database connection specified by its connection

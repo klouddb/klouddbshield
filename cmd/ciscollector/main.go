@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -9,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -16,6 +16,10 @@ import (
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/olekukonko/tablewriter"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
 	"github.com/klouddb/klouddbshield/htmlreport"
 	"github.com/klouddb/klouddbshield/model"
 	"github.com/klouddb/klouddbshield/mysql"
@@ -32,9 +36,6 @@ import (
 	"github.com/klouddb/klouddbshield/postgres"
 	"github.com/klouddb/klouddbshield/postgres/hbascanner"
 	"github.com/klouddb/klouddbshield/rds"
-	"github.com/olekukonko/tablewriter"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 func init() {
@@ -54,7 +55,7 @@ func main() {
 		if len(resultMap) != 0 {
 			saveResultInFile(resultMap)
 		}
-		generated, err := htmlHelper.Generate("report.html", 0600)
+		generated, err := htmlHelper.Render("report.html", 0600)
 		if !generated {
 			return
 		}
@@ -205,74 +206,74 @@ func runHBAUnusedLinesLogParser(ctx context.Context, cnf *config.Config, store *
 	fmt.Println("")
 }
 
-func runMismatchIPsLogParser(ctx context.Context, cnf *config.Config) {
+// func runMismatchIPsLogParser(ctx context.Context, cnf *config.Config) {
 
-	// check if postgres setting contains required variable or connection logs
-	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%h") && !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%r") && !cnf.LogParser.PgSettings.LogConnections {
-		fmt.Println("Please set log_line_prefix to '%h' or '%r' or enable log_connections")
-		return
-	}
+// 	// check if postgres setting contains required variable or connection logs
+// 	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%h") && !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%r") && !cnf.LogParser.PgSettings.LogConnections {
+// 		fmt.Println("Please set log_line_prefix to '%h' or '%r' or enable log_connections")
+// 		return
+// 	}
 
-	baseParser := parselog.GetDynamicBaseParser(cnf.LogParser.PgSettings.LogLinePrefix)
+// 	baseParser := parselog.GetDynamicBaseParser(cnf.LogParser.PgSettings.LogLinePrefix)
 
-	uniqueIPparser := parselog.NewUniqueIPParser(cnf, baseParser)
+// 	uniqueIPparser := parselog.NewUniqueIPParser(cnf, baseParser)
 
-	runner.RunFastParser(ctx, cnf, uniqueIPparser.Feed, parselog.GetBaseParserValidator(baseParser))
+// 	runner.RunFastParser(ctx, cnf, uniqueIPparser.Feed, parselog.GetBaseParserValidator(baseParser))
 
-	if ctx.Err() != nil {
-		fmt.Println("file parsing is taking longer then expected, please check the file or errors in " + logger.GetLogFileName())
-		return
-	}
+// 	if ctx.Err() != nil {
+// 		fmt.Println("file parsing is taking longer then expected, please check the file or errors in " + logger.GetLogFileName())
+// 		return
+// 	}
 
-	if len(uniqueIPparser.GetUniqueIPs()) == 0 {
-		fmt.Println("\nNo unique IPs found in the file please check the file or errors in " + logger.GetLogFileName())
-		return
-	}
+// 	if len(uniqueIPparser.GetUniqueIPs()) == 0 {
+// 		fmt.Println("\nNo unique IPs found in the file please check the file or errors in " + logger.GetLogFileName())
+// 		return
+// 	}
 
-	err := printMisMatchIPs(cnf.LogParser.OutputType, cnf.LogParser.IpFilePath, uniqueIPparser.GetUniqueIPs())
-	if err != nil {
-		fmt.Println("Got error while matching IPs from the file:", err)
-	}
+// 	err := printMisMatchIPs(cnf.LogParser.OutputType, cnf.LogParser.IpFilePath, uniqueIPparser.GetUniqueIPs())
+// 	if err != nil {
+// 		fmt.Println("Got error while matching IPs from the file:", err)
+// 	}
 
-}
+// }
 
-func printMisMatchIPs(outputType, filePath string, uniqueIPs map[string]bool) error {
+// func printMisMatchIPs(outputType, filePath string, uniqueIPs map[string]bool) error {
 
-	readFile, err := os.Open(filePath)
-	if err != nil {
-		return fmt.Errorf("error while opening file (%s): %v", filePath, err)
-	}
-	defer readFile.Close()
+// 	readFile, err := os.Open(filePath)
+// 	if err != nil {
+// 		return fmt.Errorf("error while opening file (%s): %v", filePath, err)
+// 	}
+// 	defer readFile.Close()
 
-	fileScanner := bufio.NewScanner(readFile)
-	mismatchIps := []string{}
+// 	fileScanner := bufio.NewScanner(readFile)
+// 	mismatchIps := []string{}
 
-	for fileScanner.Scan() {
-		_, ok := uniqueIPs[fileScanner.Text()]
-		if !ok {
-			mismatchIps = append(mismatchIps, fileScanner.Text())
-		}
-	}
+// 	for fileScanner.Scan() {
+// 		_, ok := uniqueIPs[fileScanner.Text()]
+// 		if !ok {
+// 			mismatchIps = append(mismatchIps, fileScanner.Text())
+// 		}
+// 	}
 
-	if len(mismatchIps) == 0 {
-		fmt.Println("\nNo mismatch IPs found")
-		return nil
-	}
+// 	if len(mismatchIps) == 0 {
+// 		fmt.Println("\nNo mismatch IPs found")
+// 		return nil
+// 	}
 
-	fmt.Println("\nMismatch IPs:")
-	if outputType == "json" {
-		// print mismatch ips in json format
-		out, _ := json.MarshalIndent(mismatchIps, "", "\t")
-		fmt.Println(string(out))
-		return nil
-	}
+// 	fmt.Println("\nMismatch IPs:")
+// 	if outputType == "json" {
+// 		// print mismatch ips in json format
+// 		out, _ := json.MarshalIndent(mismatchIps, "", "\t")
+// 		fmt.Println(string(out))
+// 		return nil
+// 	}
 
-	for _, ip := range mismatchIps {
-		fmt.Println("\t" + ip)
-	}
+// 	for _, ip := range mismatchIps {
+// 		fmt.Println("\t" + ip)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func runInactiveUSersLogParser(ctx context.Context, cnf *config.Config, store *sql.DB) {
 	// check if postgres setting contains required variable or connection logs
@@ -489,17 +490,33 @@ func runPostgres(ctx context.Context, cnf *config.Config, h *htmlreport.HTMLHelp
 	if err != nil {
 		return nil
 	}
-	listOfResults := postgres.PerformAllChecks(postgresStore, ctx)
+
+	// Determine Postgres version
+	var postgresVersion string
+	err = postgresStore.QueryRow("SELECT version();").Scan(&postgresVersion)
+	if err != nil {
+		log.Error().Err(err).Msg(err.Error())
+	}
+	// Regular expression to find the version number.
+	re := regexp.MustCompile(`\d+`)
+	version := re.FindString(postgresVersion)
+
+	listOfResults, scoreMap, err := postgres.PerformAllChecks(postgresStore, ctx, version)
+	if err != nil {
+		log.Print(err)
+		return nil
+	}
 	resultMap["Postgres"] = listOfResults
 
-	data := htmlreport.GenerateHTMLReport(listOfResults, "Postgres")
+	data := htmlreport.RenderHTMLTemplate(listOfResults, scoreMap, version)
+
 	h.AddTab("Postgres", data)
 
 	return listOfResults
 
 }
 
-func runRDS(ctx context.Context, cnf *config.Config, resultMap map[string]interface{}) {
+func runRDS(ctx context.Context, _ *config.Config, resultMap map[string]interface{}) {
 	fmt.Println("running RDS ")
 	rds.Validate()
 	resultMap["RDS"] = rds.PerformAllChecks(ctx)
@@ -618,7 +635,7 @@ func runPostgresPasswordScanner(ctx context.Context, cnf *config.Config) {
 	passwordmanager.PostgresPasswordScanner(ctx, host, port, listOfUsers)
 }
 
-func runPasswordGenerator(ctx context.Context, cnf *config.Config) {
+func runPasswordGenerator(_ context.Context, cnf *config.Config) {
 	var passwordLength, digitsCount, uppercaseCount, specialCount int
 
 	fmt.Printf("Enter password length (Default %v): ", cnf.GeneratePassword.Length)
@@ -650,7 +667,7 @@ func runPasswordGenerator(ctx context.Context, cnf *config.Config) {
 	fmt.Println("Here's the password:", passwd)
 }
 
-func runPwnedUsers(ctx context.Context, cnf *config.Config) {
+func runPwnedUsers(_ context.Context, cnf *config.Config) {
 	pgUsernameMap := map[string]struct{}{}
 	for _, userName := range passwordmanager.PGUsernameList {
 		pgUsernameMap[userName] = struct{}{}
@@ -677,7 +694,7 @@ func runPwnedUsers(ctx context.Context, cnf *config.Config) {
 	}
 }
 
-func runPwnedPassword(ctx context.Context, cnf *config.Config) {
+func runPwnedPassword(_ context.Context, cnf *config.Config) {
 	dir := "./pwnedpasswords"
 	if cnf.App.InputDirectory != "" {
 		dir = cnf.App.InputDirectory
