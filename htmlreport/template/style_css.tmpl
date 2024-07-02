@@ -1,0 +1,326 @@
+{{ define "styles" }}
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
+                integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <style>
+        .critical_row {
+            background-color: #fee !important;
+        }
+        footer {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            font-size: 0.8em;
+        }
+        .data-container {
+            margin-top: 10px;
+            margin-bottom: 40px;
+        }
+
+        .data-container h2 {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            background-color: #f0f4f8;
+            padding: 10px;
+            border-left: 5px solid #56a4d7;
+            border-radius: 3px;
+        }
+
+        .no-data-block,
+        .data-block {
+            margin-top: 10px;
+        }
+
+        .tag-list {
+            list-style-type: none;
+            padding-left: 0;
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            flex: 1 1 calc(50% - 10px);
+            padding: 10px;
+            margin: 5px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .tag:hover {
+            background-color: #f0f4f8;
+        }
+
+        .hba-lines-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .hba-line {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .hba-line:hover {
+            background-color: #f0f4f8;
+        }
+
+        .line-no {
+            font-weight: bold;
+            color: #556081;
+        }
+
+        .line-content {
+            color: #333;
+        }
+
+        .scrollable-container {
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        #manualCheckTable {
+            width: 100%; /* Ensures the table width fully utilizes its container */
+            table-layout: fixed; /* Keeps the columns at fixed widths */
+            border-collapse: collapse;
+        }
+
+        #manualCheckTable th, #manualCheckTable td {
+            width: 200px; /* Sets a fixed width for each column */
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+            vertical-align: top;
+            white-space: normal;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #manualCheckTable th {
+            background-color: #f0f4f8;
+            font-weight: bold;
+        }
+
+        #manualCheckTable tbody {
+            display: block;
+            overflow-y: auto; /* Allows vertical scrolling within the tbody */
+            max-height: calc(2.5em * 10); /* Sets a fixed height to trigger vertical scrolling */
+        }
+
+        #manualCheckTable tbody tr {
+            display: table;
+            width: 100%;
+            border: 1px solid #ddd;
+            table-layout: fixed;
+        }
+
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table th {
+            background-color: #fff;
+            color: #333;
+        }
+
+        .table td {
+            color: #333;
+        }
+
+        .expandChildTable:before {
+            content: "+";
+            display: block;
+            text-align: center;
+            cursor: pointer;
+        }
+        #tos p {
+            width: 75%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .expandChildTable.selected:before {
+            content: "-";
+        }
+
+        .childTableRow {
+            display: none;
+            min-width: 300px; /* Replace with your desired minimum width */
+            max-width: 600px; /* Replace with your desired maximum width */
+            overflow-x: auto;
+            text-align: left;
+        }
+
+        .innerTableWrapper {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        #innerTable {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .childTableRow table {
+            border: 2px solid #555;
+        }
+
+        .maintable {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .infoIcon {
+            cursor: pointer;
+        }
+        /* Header Styles */
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+        }
+
+        header > div {
+            margin: 20px;
+            padding: 20px;
+            background-color: #f7f7f7;
+            border-radius: 5px;
+        }
+
+        .header-title img {
+            width: 200px;
+            height: auto;
+        }
+
+        /* Tab Styles */
+        .nav-link {
+            padding: 10px 20px;
+            border: none;
+            background-color: #f0f0f0;
+            color: #333;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-right: 5px;
+        }
+
+        .nav-link.active {
+            background-color: #fff;
+            color: #333;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background-color: #fff;
+            border-left: 1px solid #dee2e6;
+            border-right: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 0 0 5px 5px;
+        }
+
+        .subcontainer {
+            margin-top: 20px;
+        }
+
+        .tab-content.active-tab {
+            display: block;
+        }
+
+        .queryResult .table-striped thead tr {
+            background-color: #404eb3;
+            color: #fff;
+        }
+
+        .queryResult .table-striped tbody tr:nth-of-type(odd) {
+            background-color: transparent;
+        }
+
+        .queryResult .table-striped tbody tr:nth-of-type(even) {
+            background-color: #e3e5f4;
+        }
+
+        /* Progress bar */
+        .overall-progress-bar {
+            margin-bottom: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 20px;
+            background-color: #f7f7f7;
+        }
+
+        .progress-bar {
+            margin-bottom: 10px;
+            background-color: #ffffff;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+            width: 100%;
+            padding: 5px 10px;
+            box-sizing: border-box;
+        }
+
+        .progress {
+            width: 100%;
+            border: 1px solid #ccc;
+            height: 20px;
+        }
+
+        .progress-filled {
+            height: 100%;
+            transition: width 0.3s ease-in-out;
+        }
+
+        #summaryStats {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .failedrowtable {
+            margin-bottom: 20px;
+        }
+
+        .failedrowcontainer {
+            margin-bottom: 50px;
+        }
+
+        .failedrowcontainer h6 {
+            font-weight: bold;
+            color: #333;
+            background-color: #f0f4f8;
+            padding: 10px;
+            border-left: 5px solid #56a4d7;
+            border-radius: 3px;
+        }
+
+    </style>
+{{ end }}

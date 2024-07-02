@@ -21,13 +21,12 @@ func Execute350(ctx context.Context) (result *model.Result) {
 		}
 		result.Control = "3.5.0"
 		result.Title = "Multi-AZ check"
-		result = fixFailReason(result)
 	}()
 
 	result, cmdOutput, err := ExecRdsCommand(ctx, "aws rds describe-db-instances  --query 'DBInstances[*].{MultiAZ:MultiAZ, DBInstanceIdentifier:DBInstanceIdentifier}'")
 	if err != nil {
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error executing command %s", err)
+		result.FailReason = fmt.Sprintf("error executing command %s", err)
 		return result
 	}
 
@@ -35,7 +34,7 @@ func Execute350(ctx context.Context) (result *model.Result) {
 	err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfDataBases)
 	if err != nil {
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error un marshalling %s", err)
+		result.FailReason = fmt.Sprintf("error un marshalling %s", err)
 		return
 	}
 	printer := NewRDSInstancePrinter()

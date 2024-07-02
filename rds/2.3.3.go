@@ -19,7 +19,6 @@ func Execute233(ctx context.Context) (result *model.Result) {
 		}
 		result.Control = "2.3.3"
 		result.Title = "Ensure that public address is not given to RDS instance"
-		result = fixFailReason(result)
 	}()
 
 	result, dbMap, err := GetDBMap(ctx)

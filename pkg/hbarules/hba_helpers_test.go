@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/klouddb/klouddbshield/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -214,6 +215,21 @@ teestingdbs`,
 			},
 		},
 	}
+
+	// Create a mock SQL database
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock database: %v", err)
+	}
+	defer mockDB.Close()
+
+	// Set up the mock expectation for the query and result
+	rows := sqlmock.NewRows([]string{"rolname"})
+	rows.AddRow("support1")
+	rows.AddRow("support2")
+	rows.AddRow("support3")
+
+	mock.ExpectPrepare(`SELECT rolname FROM pg_roles WHERE pg_has_role( 'support', oid, 'member');`).ExpectQuery().WillReturnRows(rows)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

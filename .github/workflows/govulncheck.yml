@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: 1.21.9
+          go-version: 1.21.11
           cache: true
       - id: govulncheck
         uses: golang/govulncheck-action@v1

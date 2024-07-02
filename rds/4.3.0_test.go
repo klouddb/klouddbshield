@@ -84,7 +84,7 @@ func TestExecute430(t *testing.T) {
 		}
 	})
 
-	t.Run("rds event  subscriptions returns one record souceIDlist is emtpy and source type is db-instance type", func(t *testing.T) {
+	t.Run("rds event  subscriptions returns one record souceIDlist is empty and source type is db-instance type", func(t *testing.T) {
 		setSubGetter()
 		db.EXPECT().GetDBMap(gomock.Any()).DoAndReturn(func(ctx context.Context) (*model.Result, map[string]bool, error) {
 			return nil, dbMap, nil
@@ -312,7 +312,7 @@ func TestExecute430(t *testing.T) {
 		if result.Status != rds.Manual {
 			t.Error(result.Status)
 		}
-		if !strings.Contains(result.FailReason.(string), rds.ManualCheckNeeded) {
+		if !strings.Contains(result.FailReason, rds.ManualCheckNeeded) {
 			fmt.Println(result.FailReason)
 			t.Error("expect manual check needed")
 		}
@@ -458,7 +458,7 @@ func TestExecute430(t *testing.T) {
 		if result.Status != rds.Fail {
 			t.Error(result.Status)
 		}
-		if !strings.Contains(result.FailReason.(string), "subscription found for database1") {
+		if !strings.Contains(result.FailReason, "subscription found for database1") {
 			fmt.Println(result.FailReason)
 			t.Error("expect subscription found for database1")
 		}
@@ -634,7 +634,7 @@ func TestExecute430(t *testing.T) {
 		if result.Status != rds.Fail {
 			t.Error(result.Status)
 		}
-		if !strings.Contains(result.FailReason.(string), "only a subset of events under event category is present") {
+		if !strings.Contains(result.FailReason, "only a subset of events under event category is present") {
 			fmt.Println(result.FailReason)
 			t.Error("expect only a subset of events under event category is present")
 		}
@@ -683,7 +683,7 @@ func TestExecute430(t *testing.T) {
 		if result.Status != rds.Fail {
 			t.Error(result.Status)
 		}
-		if !strings.Contains(result.FailReason.(string), "only a subset of events under event category is present") {
+		if !strings.Contains(result.FailReason, "only a subset of events under event category is present") {
 			fmt.Println(result.FailReason)
 			t.Error("expect only a subset of events under event category is present")
 		}
@@ -725,7 +725,7 @@ func TestExecute430(t *testing.T) {
 		if result.Status != rds.Fail {
 			t.Error(result.Status)
 		}
-		// if !strings.Contains(result.FailReason.(string), "only a subset of events under event category is present") {
+		// if !strings.Contains(result.FailReason, "only a subset of events under event category is present") {
 		// 	fmt.Println(result.FailReason)
 		// 	t.Error("expect only a subset of events under event category is present")
 		// }
@@ -763,7 +763,7 @@ func TestExecute430(t *testing.T) {
 		if result.Status != rds.Pass {
 			t.Error(result.Status)
 		}
-		if !strings.Contains(result.FailReason.(string), "subscription found for") {
+		if !strings.Contains(result.FailReason, "subscription found for") {
 			fmt.Println(result.FailReason)
 			t.Error("expect subscription to be found")
 		}
@@ -818,7 +818,7 @@ func TestExecute430(t *testing.T) {
 		if result.Status != rds.Fail {
 			t.Error(result.Status)
 		}
-		if !strings.Contains(result.FailReason.(string), "only a subset of events under event category is present") {
+		if !strings.Contains(result.FailReason, "only a subset of events under event category is present") {
 			fmt.Println(result.FailReason)
 			t.Error("expect only a subset of events under event category is present to be found")
 		}
@@ -861,7 +861,7 @@ func TestExecute430(t *testing.T) {
 		if result.Status != rds.Fail {
 			t.Error(result.Status)
 		}
-		if !strings.Contains(result.FailReason.(string), "only a subset of events under event category is present") {
+		if !strings.Contains(result.FailReason, "only a subset of events under event category is present") {
 			fmt.Println(result.FailReason)
 			t.Error("expect only a subset of events under event category is present to be found")
 		}
@@ -898,19 +898,19 @@ func TestExecute430(t *testing.T) {
 		if result.Status != rds.Fail {
 			t.Error(result.Status)
 		}
-		if !strings.Contains(result.FailReason.(string), "subscription found for database1, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
+		if !strings.Contains(result.FailReason, "subscription found for database1, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
 			fmt.Println(result.FailReason)
 			t.Error("expect only a subset of events under event category is present to be found")
 		}
-		if !strings.Contains(result.FailReason.(string), "subscription found for database2, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
+		if !strings.Contains(result.FailReason, "subscription found for database2, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
 			fmt.Println(result.FailReason)
 			t.Error("expect only a subset of events under event category is present to be found")
 		}
-		if !strings.Contains(result.FailReason.(string), "no subscription found for database3") {
+		if !strings.Contains(result.FailReason, "no subscription found for database3") {
 			fmt.Println(result.FailReason)
 			t.Error("should print for which it is not having subscription")
 		}
-		if !strings.Contains(result.FailReason.(string), "no subscription found for database4") {
+		if !strings.Contains(result.FailReason, "no subscription found for database4") {
 			fmt.Println(result.FailReason)
 			t.Error("should print for which it is not having subscription")
 		}
@@ -945,19 +945,19 @@ func TestExecute430(t *testing.T) {
 			t.Error(result.Status)
 		}
 
-		if !strings.Contains(result.FailReason.(string), "subscription found for database1, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
+		if !strings.Contains(result.FailReason, "subscription found for database1, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
 			fmt.Println(result.FailReason)
 			t.Error("expect only a subset of events under event category is present to be found")
 		}
-		if !strings.Contains(result.FailReason.(string), "subscription found for database2, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
+		if !strings.Contains(result.FailReason, "subscription found for database2, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
 			fmt.Println(result.FailReason)
 			t.Error("expect only a subset of events under event category is present to be found")
 		}
-		if !strings.Contains(result.FailReason.(string), "subscription found for database3, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
+		if !strings.Contains(result.FailReason, "subscription found for database3, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
 			fmt.Println(result.FailReason)
 			t.Error("expect only a subset of events under event category is present to be found")
 		}
-		if !strings.Contains(result.FailReason.(string), "subscription found for database4, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
+		if !strings.Contains(result.FailReason, "subscription found for database4, only a subset of events under event category is present, others like deletion, failover, failure, maintenance, notification are missing for sns subscriptions") {
 			fmt.Println(result.FailReason)
 			t.Error("expect only a subset of events under event category is present to be found")
 		}

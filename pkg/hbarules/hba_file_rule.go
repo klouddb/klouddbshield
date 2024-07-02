@@ -13,17 +13,25 @@ import "sort"
 	}
 */
 
+type HBARawLine struct {
+	LineNo int
+	Line   string
+}
+
 type HbaRuleValidator interface {
 	ValidateEntry(database, username, address string)
+	GetUnusedLines() []HBARawLine
 }
 
 type hbaFileRule struct {
-	m map[string] /*database*/ map[string] /*username*/ []*hbaLine
+	m       map[string] /*database*/ map[string] /*username*/ []*hbaLine
+	lineMap map[int]string
 }
 
 func NewHBAFileRule() *hbaFileRule {
 	return &hbaFileRule{
-		m: make(map[string]map[string][]*hbaLine),
+		m:       make(map[string]map[string][]*hbaLine),
+		lineMap: make(map[int]string),
 	}
 }
 
@@ -75,7 +83,7 @@ func (h *hbaFileRule) ValidateEntry(database, username, address string) {
 	}
 }
 
-func (h *hbaFileRule) GetUnusedLines() []int {
+func (h *hbaFileRule) GetUnusedLines() []HBARawLine {
 	unusedLineMap := map[int]bool{}
 
 	for _, db := range h.m {
@@ -95,7 +103,15 @@ func (h *hbaFileRule) GetUnusedLines() []int {
 	}
 
 	unusedLines.Sort()
-	return unusedLines
+	out := make([]HBARawLine, len(unusedLines))
+	for i, lineNo := range unusedLines {
+		out[i] = HBARawLine{
+			LineNo: lineNo,
+			Line:   h.lineMap[lineNo],
+		}
+	}
+
+	return out
 }
 
 type hbaLine struct {
