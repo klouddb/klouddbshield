@@ -106,7 +106,7 @@ func GetDBMap(ctx context.Context) (*model.Result, map[string]bool, error) {
 	result, cmdOutput, err := ExecRdsCommand(ctx, "aws rds describe-db-instances --query 'DBInstances[*].DBInstanceIdentifier'")
 	if err != nil {
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error executing command %s", err)
+		result.FailReason = fmt.Sprintf("error executing command %s", err)
 		return result, dbMap, err
 	}
 
@@ -114,7 +114,7 @@ func GetDBMap(ctx context.Context) (*model.Result, map[string]bool, error) {
 	err = json.Unmarshal([]byte(cmdOutput.StdOut), &arrayOfDataBases)
 	if err != nil {
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error un marshalling %s", err)
+		result.FailReason = fmt.Sprintf("error un marshalling %s", err)
 		return result, dbMap, err
 	}
 
@@ -161,7 +161,6 @@ func Execute420(ctx context.Context) (result *model.Result) {
 		}
 		result.Control = "4.2.0"
 		result.Title = "Ensure SNS topic is created for RDS events"
-		result = fixFailReason(result)
 		isOneResultFail := false
 		for snsName, caseResult := range casResultMap {
 			if caseResult.Reason == Fail {
@@ -183,7 +182,7 @@ func Execute420(ctx context.Context) (result *model.Result) {
 	rdsSubscriptions, err := RDSSubGetter.GetEventSubscription(ctx)
 	if err != nil || rdsSubscriptions == nil || len(rdsSubscriptions.EventSubscriptionsList) == 0 {
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error getting subscriptions %s", err)
+		result.FailReason = fmt.Sprintf("error getting subscriptions %s", err)
 		return
 	}
 
@@ -193,7 +192,7 @@ func Execute420(ctx context.Context) (result *model.Result) {
 		casResultMap[name] = model.NewCaseResult(name)
 		if sub.SnsTopicArn == "" {
 			result.Status = Fail
-			result.FailReason = fmt.Errorf("SnsTopicArn is empty")
+			result.FailReason = "SnsTopicArn is empty"
 			casResultMap[name].Status = Fail
 			casResultMap[name].Reason = "SnsTopicArn is empty"
 			continue

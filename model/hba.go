@@ -6,4 +6,6 @@ type HBAFIleRules struct {
 	UserName   string `json:"user_name"`
 	Address    string `json:"address"`
 	NetMask    string `json:"netmask"`
+
+	Raw string `json:"raw"`
 }

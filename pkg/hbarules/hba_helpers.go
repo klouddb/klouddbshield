@@ -85,6 +85,7 @@ func ParseHBALine(ctx context.Context, store *sql.DB, re *regexp.Regexp, lineNum
 		UserName:   username,
 		Address:    match[4],
 		NetMask:    match[5],
+		Raw:        line,
 	}, nil
 }
 
@@ -164,7 +165,6 @@ func ParseHBAFileRules(rules []model.HBAFIleRules) (*hbaFileRule, error) {
 		}
 
 		if v, ok := addressMapping[r.Address]; ok {
-			fmt.Println("converting address", r.Address, "to", v)
 			r.Address = v
 			r.NetMask = ""
 		}
@@ -192,6 +192,8 @@ func ParseHBAFileRules(rules []model.HBAFIleRules) (*hbaFileRule, error) {
 			addressValidator = NewHostAddressValidator(r.Address)
 		}
 		hbaLine := NewHBALine(r.LineNumber, addressValidator)
+
+		hbaFileRule.lineMap[r.LineNumber] = r.Raw
 
 		for _, db := range strings.Split(r.Database, ",") {
 			for _, user := range strings.Split(r.UserName, ",") {

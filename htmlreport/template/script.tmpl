@@ -1,0 +1,47 @@
+{{ define "scripts" }}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"
+    integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k"
+    crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function () {
+            // Switch active tab and show corresponding content
+            $(".nav-link").on("click", function (e) {
+                e.preventDefault();
+                $(".nav-link").removeClass("active");
+                $(this).addClass("active");
+                $(".tab-pane").removeClass("active");
+                $($(this).attr("href")).addClass("active");
+                $(".tab-content").addClass("active-tab");
+            });
+
+      		// Toggle "selected" class on expandChildTableElement HBA report
+    		$(".expandChildTable").on("click", function () {
+    			$(this).toggleClass("selected");
+    			$(this).find(".childTableRow").toggle();
+    		});
+
+            // Toggle "selected" class on expandChildTableElement
+            $(".infoIcon").on("click", function () {
+                $(this).closest('tr').next('.childTableRow').toggle();  // This toggles the next row
+            });
+
+            // Expand and Collapse all child rows in the specific table
+            $(".toggleAll").on("click", function () {
+                var container = $(this).closest('.table-container');
+                var childRows = container.find('.childTableRow');
+
+                if ($(this).text() === "Expand All") {
+                    childRows.show();
+                    $(this).text("Collapse All");
+                } else {
+                    childRows.hide();
+                    $(this).text("Expand All");
+                }
+            });
+
+            // Show the default active tab
+            $(".nav-link.active").trigger("click");
+        });
+    </script>
+{{ end }}

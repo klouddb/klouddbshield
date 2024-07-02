@@ -135,7 +135,7 @@ func Execute430(ctx context.Context) (result *model.Result) {
 	if err != nil {
 		// log.Println("error getting database", err)
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error getting databases %s", err)
+		result.FailReason = fmt.Sprintf("error getting databases %s", err)
 		return result
 	}
 
@@ -148,9 +148,8 @@ func Execute430(ctx context.Context) (result *model.Result) {
 	defer func() {
 		result.Control = "4.3.0"
 		result.Title = "Ensure RDS event subscriptions are enabled for Instance level events"
-		result = fixFailReason(result)
 
-		for dbName, _ := range dbSubMap {
+		for dbName := range dbSubMap {
 			_, ok := dbResultMap[dbName]
 			if !ok {
 				dbResultMap[dbName] = model.NewCaseResult(dbName)
@@ -175,7 +174,7 @@ func Execute430(ctx context.Context) (result *model.Result) {
 	if err != nil || arrayOfDescribeEventSubs == nil {
 		// log.Println("error getting database", err, arrayOfDescribeEventSubs)
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error getting subscriptions %s", err)
+		result.FailReason = fmt.Sprintf("error getting subscriptions %s", err)
 		return
 	}
 
@@ -192,7 +191,7 @@ func Execute430(ctx context.Context) (result *model.Result) {
 			return
 		}
 
-		_, sourceIDListNil := GetSourceIDList(&sub)
+		_, sourceIDListNil := GetSourceIDList(&sub) //nolint:staticcheck
 		if sourceIDListNil {
 			continue
 		}
@@ -220,7 +219,7 @@ func Execute430(ctx context.Context) (result *model.Result) {
 
 	// if sourceIDlist is nil we have subscription for all
 	if sourceIDListNil {
-		for srcID, _ := range dbSubMap {
+		for srcID := range dbSubMap {
 			arrayOfSourceIDList = append(arrayOfSourceIDList, srcID)
 		}
 	}

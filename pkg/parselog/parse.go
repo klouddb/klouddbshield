@@ -68,22 +68,22 @@ func (u *UniqueIPParser) GetUniqueIPs() map[string]bool {
 	return u.uniqueIPs.GetAll()
 }
 
-type userParser struct {
+type UniqueUserParser struct {
 	uniqueUsers *utils.LockSet
 	cnf         *config.Config
 
 	baseParser BaseParser
 }
 
-func NewUserParser(cnf *config.Config, baseParser BaseParser) *userParser {
-	return &userParser{
+func NewUserParser(cnf *config.Config, baseParser BaseParser) *UniqueUserParser {
+	return &UniqueUserParser{
 		uniqueUsers: utils.NewLockSet(),
 		cnf:         cnf,
 		baseParser:  baseParser,
 	}
 }
 
-func (u *userParser) Feed(line string) error {
+func (u *UniqueUserParser) Feed(line string) error {
 
 	parsedData, err := u.baseParser.Parse(line)
 	if err != nil {
@@ -117,11 +117,11 @@ func (u *userParser) Feed(line string) error {
 	return nil
 }
 
-func (u *userParser) GetUniqueUser() map[string]bool {
+func (u *UniqueUserParser) GetUniqueUser() map[string]bool {
 	return u.uniqueUsers.GetAll()
 }
 
-type hbaUnusedLines struct {
+type HbaUnusedLineParser struct {
 	cnf *config.Config
 
 	baseParser BaseParser
@@ -130,8 +130,8 @@ type hbaUnusedLines struct {
 	mt                    sync.Mutex
 }
 
-func NewHbaUnusedLines(cnf *config.Config, baseParser BaseParser, hbafileRulesValidator hbarules.HbaRuleValidator) *hbaUnusedLines {
-	return &hbaUnusedLines{
+func NewHbaUnusedLines(cnf *config.Config, baseParser BaseParser, hbafileRulesValidator hbarules.HbaRuleValidator) *HbaUnusedLineParser {
+	return &HbaUnusedLineParser{
 		cnf: cnf,
 
 		baseParser: baseParser,
@@ -140,7 +140,7 @@ func NewHbaUnusedLines(cnf *config.Config, baseParser BaseParser, hbafileRulesVa
 	}
 }
 
-func (u *hbaUnusedLines) Feed(line string) error {
+func (u *HbaUnusedLineParser) Feed(line string) error {
 	parsedData, err := u.baseParser.Parse(line)
 	if err != nil {
 		return err
@@ -170,4 +170,78 @@ func (u *hbaUnusedLines) Feed(line string) error {
 	u.mt.Unlock()
 
 	return nil
+}
+
+func (u *HbaUnusedLineParser) GetUnusedLines() []hbarules.HBARawLine {
+	return u.hbafileRulesValidator.GetUnusedLines()
+}
+
+type LeakedPasswordResponse struct {
+	Query    string
+	Password string
+}
+
+type PasswordLeakParser struct {
+	cnf        *config.Config
+	baseParser BaseParser
+
+	passwordRegex *regexp.Regexp
+
+	leakPasswordResp []LeakedPasswordResponse
+	mt               sync.Mutex
+
+	supportedEncryptionAlgorithms []string
+}
+
+func NewPasswordLeakParser(cnf *config.Config, baseParser BaseParser) *PasswordLeakParser {
+	return &PasswordLeakParser{
+		cnf:           cnf,
+		baseParser:    baseParser,
+		passwordRegex: regexp.MustCompile(`(?i)PASSWORD\s+'([^']+)'`),
+
+		supportedEncryptionAlgorithms: []string{"md5", "scram-sha-256", "plain", "crypt", "password"},
+	}
+}
+
+func (u *PasswordLeakParser) Feed(line string) error {
+	parsedData, err := u.baseParser.Parse(line)
+	if err != nil {
+		return err
+	}
+
+	if !u.cnf.LogParser.IsValidTime(parsedData.GetTime()) {
+		return nil
+	}
+
+	msg := parsedData.GetDescription()
+
+	resp := u.passwordRegex.FindStringSubmatch(msg)
+	if len(resp) == 0 {
+		return nil
+	}
+
+	passwordLower := strings.ToLower(resp[1])
+	// if it is encrypted password then we can consider it as safe
+	for _, alg := range u.supportedEncryptionAlgorithms {
+		if strings.HasPrefix(passwordLower, alg) && len(passwordLower) > len(alg) {
+			return nil
+		}
+	}
+
+	u.mt.Lock()
+	defer u.mt.Unlock()
+
+	u.leakPasswordResp = append(u.leakPasswordResp, LeakedPasswordResponse{
+		Query:    msg,
+		Password: resp[1],
+	})
+
+	return nil
+}
+
+func (u *PasswordLeakParser) GetLeakedPasswords() []LeakedPasswordResponse {
+	u.mt.Lock()
+	defer u.mt.Unlock()
+
+	return u.leakPasswordResp
 }

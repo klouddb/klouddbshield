@@ -93,7 +93,7 @@ func TestExecute420(t *testing.T) {
 		if result.Status != rds.Fail {
 			t.Error(result.Status)
 		}
-		if !strings.Contains(result.FailReason.(string), "SnsTopicArn is empty") {
+		if !strings.Contains(result.FailReason, "SnsTopicArn is empty") {
 			fmt.Println(result.FailReason)
 			t.Error("SnsTopicArn should be empty should come in error")
 		}
@@ -227,7 +227,7 @@ func TestExecute420(t *testing.T) {
 		if result.Status != rds.Fail {
 			t.Error(result.FailReason)
 		}
-		if !strings.Contains(result.FailReason.(string), "has pending confirmation for testdb@gmail.com") {
+		if !strings.Contains(result.FailReason, "has pending confirmation for testdb@gmail.com") {
 			fmt.Println(result.FailReason)
 			t.Error("SnsTopicArn should show pending confirmation")
 		}
@@ -298,7 +298,7 @@ func TestExecute420(t *testing.T) {
 		if result.Status != rds.Pass {
 			t.Error(result.FailReason)
 		}
-		if !strings.Contains(result.FailReason.(string), "is present") {
+		if !strings.Contains(result.FailReason, "is present") {
 			fmt.Println(result.FailReason)
 			t.Error("SnsTopicArn should show pending confirmation")
 		}

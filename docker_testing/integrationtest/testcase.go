@@ -22,6 +22,7 @@ func init() {
 			// testMissingIPs(prefix, filename)
 			testUniqueIPs(prefix, filename)
 			testUnusedHbaLines(prefix, filename)
+			testLeakedPasswordScanner(prefix, filename)
 		},
 	}
 
@@ -195,5 +196,67 @@ func testUnusedHbaLines(prefix, file string) {
 	}
 
 	fmt.Println("not getting valid unused lines:", out)
+	os.Exit(1)
+}
+
+func testLeakedPasswordScanner(prefix, file string) {
+	cmd := exec.Command("ciscollector",
+		"-logparser", cons.LogParserCMD_PasswordLeakScanner,
+		"-prefix", prefix,
+		"-file-path", file,
+		"-output-type", "json",
+	)
+
+	// create io.Writer to store output and print it later
+	var buf bytes.Buffer
+
+	cmd.Stdout = &buf
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("Got error while parsing file:", err)
+		os.Exit(1)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "Successfully parsed all files") {
+		fmt.Println("Got error while parsing file:", out)
+		// fail the command
+		os.Exit(1)
+	}
+
+	if strings.Contains(out, `[
+	{
+		"Query": "statement: CREATE USER user0 WITH PASSWORD 'password';",
+		"Password": "password"
+	},
+	{
+		"Query": "statement: CREATE USER user1 WITH PASSWORD 'password';",
+		"Password": "password"
+	},
+	{
+		"Query": "statement: CREATE USER user2 WITH PASSWORD 'password';",
+		"Password": "password"
+	},
+	{
+		"Query": "statement: CREATE USER user3 WITH PASSWORD 'password';",
+		"Password": "password"
+	},
+	{
+		"Query": "statement: CREATE USER user4 WITH PASSWORD 'password';",
+		"Password": "password"
+	},
+	{
+		"Query": "statement: CREATE USER user5 WITH PASSWORD 'password';",
+		"Password": "password"
+	}
+]`) {
+		fmt.Println("unused lines test is working fine for prefix:", prefix)
+		return
+	}
+
+	fmt.Println("not getting valid password scanner output:", out)
 	os.Exit(1)
 }

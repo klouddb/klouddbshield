@@ -3,22 +3,19 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
-	"reflect"
 	"regexp"
 	"runtime"
-	"sort"
 	"strings"
 	"syscall"
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/olekukonko/tablewriter"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/term"
 
 	"github.com/klouddb/klouddbshield/htmlreport"
 	"github.com/klouddb/klouddbshield/model"
@@ -26,8 +23,8 @@ import (
 	"github.com/klouddb/klouddbshield/passwordmanager"
 	"github.com/klouddb/klouddbshield/pkg/config"
 	cons "github.com/klouddb/klouddbshield/pkg/const"
-	"github.com/klouddb/klouddbshield/pkg/hbarules"
 	"github.com/klouddb/klouddbshield/pkg/logger"
+	"github.com/klouddb/klouddbshield/pkg/logparser"
 	"github.com/klouddb/klouddbshield/pkg/mysqldb"
 	"github.com/klouddb/klouddbshield/pkg/parselog"
 	"github.com/klouddb/klouddbshield/pkg/postgresdb"
@@ -35,7 +32,9 @@ import (
 	"github.com/klouddb/klouddbshield/pkg/utils"
 	"github.com/klouddb/klouddbshield/postgres"
 	"github.com/klouddb/klouddbshield/postgres/hbascanner"
+	"github.com/klouddb/klouddbshield/postgres/userlist"
 	"github.com/klouddb/klouddbshield/rds"
+	"github.com/klouddb/klouddbshield/simpletextreport"
 )
 
 func init() {
@@ -49,24 +48,23 @@ func main() {
 		log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 	}
 
-	htmlHelper := &htmlreport.HTMLHelper{}
-	resultMap := map[string]interface{}{}
+	fileData := ""
 	defer func() {
-		if len(resultMap) != 0 {
-			saveResultInFile(resultMap)
+		if len(fileData) != 0 {
+			saveResultInFile(fileData)
 		}
-		generated, err := htmlHelper.Render("report.html", 0600)
-		if !generated {
-			return
-		}
+		filePath, err := htmlreport.Render("klouddbshield_report.html", 0600)
 		if err != nil {
-			log.Error().Err(err).Msg("Unable to generate report.html file: " + err.Error())
-		} else {
-			fmt.Println("HTML report generated")
+			log.Error().Err(err).Msg("Unable to generate klouddbshield_report.html file: " + err.Error())
+		} else if filePath != "" {
+			fmt.Println("For Detailed report please open HTML report in your browser [" + filePath + "]")
 		}
 
 	}()
 
+	if cnf.App.PrintSummaryOnly {
+		fmt.Println("Processing all checks...\r")
+	}
 	// Program context
 	ctx := context.Background()
 	if cnf.App.VerbosePostgres {
@@ -74,17 +72,28 @@ func main() {
 		return
 	}
 	if cnf.App.RunMySql {
-		runMySql(ctx, cnf, resultMap)
+		runMySql(ctx, cnf, &fileData)
 	}
-	if cnf.App.RunPostgres {
-		runPostgres(ctx, cnf, htmlHelper, resultMap)
 
-	}
-	if cnf.App.RunRds {
-		runRDS(ctx, cnf, resultMap)
+	var postgresSummary map[int]*model.Status
+	var overviewErrorMap = map[string]error{}
+	var hbaResult []*model.HBAScannerResult
+	if cnf.App.RunPostgres {
+		postgresSummary, overviewErrorMap["All Postgres checks(Recommended)"] = runPostgres(ctx, cnf, &fileData)
 	}
 	if cnf.App.HBASacanner {
-		runHBAScanner(ctx, cnf, htmlHelper, resultMap)
+		hbaResult, overviewErrorMap["HBA Scanner"] = runHBAScanner(ctx, cnf, &fileData)
+	}
+
+	if cnf.App.PrintSummaryOnly {
+		postgres.PrintShortSummary(postgresSummary, hbaResult, overviewErrorMap)
+	} else {
+		postgres.PrintScore(postgresSummary)
+		postgres.PrintSummary(hbaResult)
+	}
+
+	if cnf.App.RunRds {
+		runRDS(ctx, cnf, &fileData)
 	}
 	if cnf.App.VerboseHBASacanner {
 		runHBAScannerByControl(ctx, cnf)
@@ -92,31 +101,31 @@ func main() {
 
 	if cnf.LogParser != nil {
 		// run log parser
-		// controlling number of cores used by log parser to 1
-		runtime.GOMAXPROCS(1)
+		// controlling number of cores used by log parser to user input value
+		if cnf.LogParser.CPULimit != 0 {
+			runtime.GOMAXPROCS(cnf.LogParser.CPULimit)
+		}
 
 		var store *sql.DB
 		if cnf.Postgres != nil {
-			var err error
-			store, _, err = postgresdb.Open(*cnf.Postgres)
-			if err != nil {
-				fmt.Println("Error while connecting to database: ", err)
-			}
+			store, _, _ = postgresdb.Open(*cnf.Postgres)
 		}
 		updatePgSettings(ctx, store, cnf.LogParser.PgSettings)
-
-		switch cnf.LogParser.Command {
-		case cons.LogParserCMD_UniqueIPs:
-			runUniqueIPLogParser(ctx, cnf)
-		case cons.LogParserCMD_InactiveUsr:
-			runInactiveUSersLogParser(ctx, cnf, store)
-		// case cons.LogParserCMD_MismatchIPs:
-		// 	runMismatchIPsLogParser(ctx, cnf)
-		case cons.LogParserCMD_HBAUnusedLines:
-			runHBAUnusedLinesLogParser(ctx, cnf, store)
-		default:
-			fmt.Println("Invalid command for log parser")
-			os.Exit(1)
+		err := runLogParserWithMultipleParser(ctx, cnf, store, &fileData)
+		if cnf.App.PrintSummaryOnly {
+			overviewErrorMap["Inactive user report"] = err
+			overviewErrorMap["Client ip report"] = err
+			overviewErrorMap["HBA unused lines report"] = err
+			overviewErrorMap["Password leak scanner"] = err
+		} else if err != nil {
+			fmt.Println("> Error while running log parser: ", text.FgRed.Sprint(err))
+		}
+	} else if cnf.LogParserConfigErr != nil {
+		if cnf.App.PrintSummaryOnly {
+			overviewErrorMap["Inactive user report"] = cnf.LogParserConfigErr
+			overviewErrorMap["Client ip report"] = cnf.LogParserConfigErr
+			overviewErrorMap["HBA unused lines report"] = cnf.LogParserConfigErr
+			overviewErrorMap["Password leak scanner"] = cnf.LogParserConfigErr
 		}
 	}
 
@@ -128,13 +137,37 @@ func main() {
 		runPasswordGenerator(ctx, cnf)
 	}
 
+	if cnf.App.RunGenerateEncryptedPassword {
+		runEncryptedPasswordGenerator(ctx, cnf)
+	}
+
 	if cnf.App.RunPwnedUsers {
-		runPwnedUsers(ctx, cnf)
+		overviewErrorMap["Password Manager"] = runPwnedUsers(ctx, cnf, &fileData)
 	}
 
 	if cnf.App.RunPwnedPasswords {
 		runPwnedPassword(ctx, cnf)
 	}
+
+	if cnf.App.PrintSummaryOnly {
+		htmlreport.CreateAllTab()
+	}
+
+	for _, cmd := range cons.CommandList {
+		v, ok := overviewErrorMap[cmd]
+		if !ok {
+			continue
+		}
+		tick := text.FgGreen.Sprint("✔")
+		err := ""
+		if v != nil {
+			tick = text.FgRed.Sprint("✘")
+			err = v.Error()
+		}
+
+		fmt.Println(tick, cmd, err)
+	}
+
 }
 
 func updatePgSettings(ctx context.Context, store *sql.DB, pgSettings *model.PgSettings) {
@@ -143,67 +176,104 @@ func updatePgSettings(ctx context.Context, store *sql.DB, pgSettings *model.PgSe
 	}
 	ps, err := utils.GetPGSettings(ctx, store)
 	if err != nil {
-		fmt.Println("Error while getting postgres settings: ", err)
+		fmt.Println("Error while getting postgres settings: ", text.FgRed.Sprint(err))
 		os.Exit(1)
 	}
 
 	pgSettings.LogConnections = ps.LogConnections
 }
 
-func runHBAUnusedLinesLogParser(ctx context.Context, cnf *config.Config, store *sql.DB) {
-
-	// check if postgres setting contains required variable or connection logs
-	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%h") && !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%r") {
-		fmt.Println("Please set log_line_prefix to '%h' or '%r' or enable log_connections")
-		return
-	}
-
-	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%u") || !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%d") {
-		fmt.Printf("In logline prefix, please set '%s' and '%s'\n", "%u", "%d") // using printf to avoid the warning for %d in println
-		return
-	}
-
+func runLogParserWithMultipleParser(ctx context.Context, cnf *config.Config, store *sql.DB, fileData *string) error {
 	baseParser := parselog.GetDynamicBaseParser(cnf.LogParser.PgSettings.LogLinePrefix)
-
-	var hbaRules []model.HBAFIleRules
-
-	// if user is passing hba conf file manually then he or she are expecting that file to be scanned
-	if cnf.LogParser.HbaConfFile != "" {
-		var err error
-		hbaRules, err = hbarules.ScanHBAFile(ctx, store, cnf.LogParser.HbaConfFile)
-		if err != nil {
-			fmt.Println("Got error while scanning hba file:", err)
-			return
-		}
-	} else if store != nil {
-		var err error
-		hbaRules, err = utils.GetDatabaseAndHostForUSerFromHbaFileRules(ctx, store)
-		if err != nil {
-			fmt.Println("Got error while getting hba rules:", err)
-			return
-		}
-	} else {
-		fmt.Println("Please provide hba file or database connection")
-		return
-	}
-
-	hbaValidator, err := hbarules.ParseHBAFileRules(hbaRules)
+	allParser, err := getAllParser(ctx, cnf, store, baseParser)
 	if err != nil {
-		fmt.Println("Got error while parsing hba rules:", err)
-		return
+		return fmt.Errorf("Error while getting all parser: %v", err)
 	}
 
-	hbaUnusedLineParser := parselog.NewHbaUnusedLines(cnf, baseParser, hbaValidator)
-	runner.RunFastParser(ctx, cnf, hbaUnusedLineParser.Feed, parselog.GetBaseParserValidator(baseParser))
-
-	if ctx.Err() != nil {
-		fmt.Println("file parsing is taking longer then expected, please check the file or errors in" + logger.GetLogFileName())
-		return
+	validatorFunc := parselog.GetBaseParserValidator(baseParser)
+	runnerFunctions := []runner.ParserFunc{}
+	for _, parser := range allParser {
+		runnerFunctions = append(runnerFunctions, parser.Feed)
 	}
 
-	fmt.Println("")
-	fmt.Println("Unused lines found from given log file:", hbaValidator.GetUnusedLines())
-	fmt.Println("")
+	fastRunnerResp, err := runner.RunFastParser(ctx, cnf, runnerFunctions, validatorFunc)
+	if err != nil {
+		return fmt.Errorf("Error while running fast parser: %v", err)
+	}
+
+	fmt.Println(text.Bold.Sprint("Log Parser Summary:"))
+	if fastRunnerResp == nil || fastRunnerResp.TotalLines == 0 {
+		logparser.PrintFileParsingError(fastRunnerResp.FileErrors)
+		htmlreport.RanderLogParserError(fmt.Errorf("We were not able parse any log line. Please check your log file and log line prefix."))
+		return fmt.Errorf("We were not able parse any log line. Please check your log file and log line prefix.")
+	}
+
+	for _, parser := range allParser {
+		if resultCalculator, ok := parser.(logparser.ResultCalculator); ok {
+			err := resultCalculator.CalculateResult(ctx)
+			if err != nil {
+				logparser.PrintErrorBox("Error", fmt.Errorf("Error while calculating result: %v", err))
+			}
+		}
+	}
+
+	if cnf.App.PrintSummaryOnly {
+		logparser.PrintSummary(ctx, allParser, cnf, fastRunnerResp, fileData)
+	} else {
+		logparser.PrintFastRunnerReport(cnf, fastRunnerResp)
+		logparser.PrintTerminalResultsForLogParser(ctx, allParser, cnf.LogParser.OutputType)
+	}
+
+	htmlreport.RenderLogparserResponse(ctx, store, allParser)
+	return nil
+}
+
+func getAllParser(ctx context.Context, cnf *config.Config, store *sql.DB, baseParser parselog.BaseParser) ([]runner.Parser, error) {
+	allParser := []runner.Parser{}
+
+	for _, command := range cnf.LogParser.Commands {
+		switch command {
+		case cons.LogParserCMD_HBAUnusedLines:
+			unusedLinesHelper := logparser.NewUnusedHBALineHelper(store)
+			err := unusedLinesHelper.Init(ctx, cnf, baseParser)
+			if err != nil {
+				allParser = append(allParser, logparser.NewErrorHelper(command, "warning", err.Error()))
+			} else {
+				allParser = append(allParser, unusedLinesHelper)
+			}
+
+		case cons.LogParserCMD_UniqueIPs:
+			uniqueIPs := logparser.NewUniqueIPHelper()
+			err := uniqueIPs.Init(ctx, cnf, baseParser)
+			if err != nil {
+				allParser = append(allParser, logparser.NewErrorHelper(command, "warning", err.Error()))
+			} else {
+				allParser = append(allParser, uniqueIPs)
+			}
+		case cons.LogParserCMD_InactiveUsr:
+			inactiveUser := logparser.NewInactiveUsersHelper(store)
+			err := inactiveUser.Init(ctx, cnf, baseParser)
+			if err != nil {
+				allParser = append(allParser, logparser.NewErrorHelper(command, "warning", err.Error()))
+			} else {
+				allParser = append(allParser, inactiveUser)
+			}
+		case cons.LogParserCMD_PasswordLeakScanner:
+			passwordLeakScanner := logparser.NewPasswordLeakHelper()
+			err := passwordLeakScanner.Init(ctx, cnf, baseParser)
+			if err != nil {
+				allParser = append(allParser, logparser.NewErrorHelper(command, "warning", err.Error()))
+			} else {
+				allParser = append(allParser, passwordLeakScanner)
+			}
+		}
+	}
+
+	if len(allParser) == 0 {
+		return nil, fmt.Errorf("No parser found for given input")
+	}
+
+	return allParser, nil
 }
 
 // func runMismatchIPsLogParser(ctx context.Context, cnf *config.Config) {
@@ -275,147 +345,11 @@ func runHBAUnusedLinesLogParser(ctx context.Context, cnf *config.Config, store *
 // 	return nil
 // }
 
-func runInactiveUSersLogParser(ctx context.Context, cnf *config.Config, store *sql.DB) {
-	// check if postgres setting contains required variable or connection logs
-	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%u") && !cnf.LogParser.PgSettings.LogConnections {
-		fmt.Println("Please set log_line_prefix to '%u' or enable log_connections")
-		return
-	}
-
-	userdata, err := compareInvalidUserFromDatabaseAndLog(ctx, cnf, store)
+func saveResultInFile(result string) {
+	err := os.WriteFile("klouddbshield_report.txt", []byte(result), 0600)
 	if err != nil {
-		fmt.Println("Got error while comparing users from database and log file: ", err)
-		return
-	}
-
-	if ctx.Err() != nil {
-		fmt.Println("file parsing is taking longer then expected, please check the file or errors in" + logger.GetLogFileName())
-		return
-	}
-
-	if len(userdata) == 0 || len(userdata[1]) == 0 {
-		fmt.Println("No users found in log file. please check the log file or errors in " + logger.GetLogFileName())
-		return
-	}
-
-	// userdata[0] contains users from database
-	// userdata[1] contains users from log file
-	// userdata[2] contains inactive users from database
-
-	if cnf.LogParser.OutputType == "json" {
-		out, _ := json.MarshalIndent(userdata, "", "\t")
-		fmt.Println(string(out))
-		return
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	if len(userdata[0]) > 0 {
-		table.Append([]string{"Users from DB", strings.Join(userdata[0], ", ")})
-	}
-	table.Append([]string{"Users from log", strings.Join(userdata[1], ", ")})
-	if len(userdata[2]) > 0 {
-		table.Append([]string{"Inactive users in db", strings.Join(userdata[2], ", ")})
-	}
-
-	table.SetRowLine(true)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetAutoWrapText(false)
-	table.Render()
-
-}
-
-// compareInvalidUserFromDatabaseAndLog will compare users from database and log file
-func compareInvalidUserFromDatabaseAndLog(ctx context.Context, cnf *config.Config, postgresStore *sql.DB) ([][]string, error) {
-
-	baseParser := parselog.GetDynamicBaseParser(cnf.LogParser.PgSettings.LogLinePrefix)
-
-	userParser := parselog.NewUserParser(cnf, baseParser)
-	runner.RunFastParser(ctx, cnf, userParser.Feed, parselog.GetBaseParserValidator(baseParser))
-
-	uniqueUsers := userParser.GetUniqueUser()
-
-	usersFromLog := sort.StringSlice{}
-	for user := range uniqueUsers {
-		usersFromLog = append(usersFromLog, user)
-	}
-	usersFromLog.Sort()
-
-	if postgresStore == nil {
-		return [][]string{nil, usersFromLog, nil}, nil
-	}
-
-	usersFromDb, err := utils.GetPGUsers(ctx, postgresStore)
-	if err != nil {
-		fmt.Println("Error while fetching users from database: ", err)
-	}
-
-	inactiveUsers := sort.StringSlice{}
-	for _, user := range usersFromDb {
-		_, ok := uniqueUsers[user]
-		if !ok {
-			inactiveUsers = append(inactiveUsers, user)
-		}
-	}
-	inactiveUsers.Sort()
-
-	return [][]string{usersFromDb, usersFromLog, inactiveUsers}, nil
-}
-
-func runUniqueIPLogParser(ctx context.Context, cnf *config.Config) {
-
-	// check if postgres setting contains required variable or connection logs
-	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%h") && !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%r") && !cnf.LogParser.PgSettings.LogConnections {
-		fmt.Println("Please set log_line_prefix to '%h' or '%r' or enable log_connections")
-		return
-	}
-
-	baseParser := parselog.GetDynamicBaseParser(cnf.LogParser.PgSettings.LogLinePrefix)
-
-	uniqueIPparser := parselog.NewUniqueIPParser(cnf, baseParser)
-	runner.RunFastParser(ctx, cnf, uniqueIPparser.Feed, parselog.GetBaseParserValidator(baseParser))
-
-	if ctx.Err() != nil {
-		fmt.Println("file parsing is taking longer then expected, please check the file or errors in " + logger.GetLogFileName())
-		return
-	}
-
-	if len(uniqueIPparser.GetUniqueIPs()) == 0 {
-		fmt.Println("\nNo unique IPs found from given log file please check the file or errors in " + logger.GetLogFileName())
-		return
-	}
-
-	fmt.Println("\nUnique IPs found from given log file:")
-
-	ips := sort.StringSlice{}
-	for ip := range uniqueIPparser.GetUniqueIPs() {
-		ips = append(ips, ip)
-	}
-
-	ips.Sort()
-
-	if cnf.LogParser.OutputType == "json" {
-		out, _ := json.MarshalIndent(ips, "", "\t")
-		fmt.Println(string(out))
-		return
-	}
-
-	for _, ip := range ips {
-		fmt.Println("\t" + ip)
-	}
-
-}
-
-func saveResultInFile(result interface{}) {
-	jsonData, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		fmt.Println("Error marshaling list of results:", err)
-		return
-	}
-
-	err = os.WriteFile("report.json", []byte(jsonData), 0600)
-	if err != nil {
-		log.Error().Err(err).Msg("Unable to generate rdssecreport.json file: " + err.Error())
-		fmt.Println("**********listOfResults*************\n", string(jsonData))
+		fmt.Println("Error while saving result in file:", text.FgRed.Sprint(err))
+		fmt.Println("**********listOfResults*************\n", string(result))
 	}
 }
 
@@ -442,25 +376,7 @@ func runPostgresByControl(ctx context.Context, cnf *config.Config) {
 		color := text.FgRed
 		t.AppendRow(table.Row{"Status", color.Sprintf("%s", result.Status)})
 		t.AppendSeparator()
-		switch ty := result.FailReason.(type) {
-
-		case string:
-
-			t.AppendRow(table.Row{"Fail Reason", result.FailReason})
-		case []map[string]interface{}:
-			failReason := ""
-			for _, n := range ty {
-				for key, value := range n {
-					failReason += fmt.Sprintf("%s:%v, ", key, value)
-				}
-				failReason += "\n"
-
-			}
-			t.AppendRow(table.Row{"Fail Reason", failReason})
-		default:
-			var r = reflect.TypeOf(t)
-			fmt.Printf("Other:%v\n", r)
-		}
+		t.AppendRow(table.Row{"Fail Reason", result.FailReason})
 
 	}
 	t.AppendSeparator()
@@ -476,50 +392,57 @@ func runPostgresByControl(ctx context.Context, cnf *config.Config) {
 	t.SetStyle(table.StyleLight)
 	t.Render()
 }
-func runMySql(ctx context.Context, cnf *config.Config, resultMap map[string]interface{}) {
+func runMySql(ctx context.Context, cnf *config.Config, fileData *string) {
 	mysqlDatabase := cnf.MySQL
 	mysqlStore, _, err := mysqldb.Open(*mysqlDatabase)
 	if err != nil {
 		return
 	}
-	resultMap["mysql"] = mysql.PerformAllChecks(mysqlStore, ctx)
+	result := mysql.PerformAllChecks(mysqlStore, ctx)
+	*fileData += simpletextreport.PrintReportInFile(result, "", "MySQL Report")
 }
-func runPostgres(ctx context.Context, cnf *config.Config, h *htmlreport.HTMLHelper, resultMap map[string]interface{}) []*model.Result {
+func runPostgres(ctx context.Context, cnf *config.Config, resultPrintData *string) (map[int]*model.Status, error) {
 	postgresDatabase := cnf.Postgres
 	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	// Determine Postgres version
 	var postgresVersion string
 	err = postgresStore.QueryRow("SELECT version();").Scan(&postgresVersion)
 	if err != nil {
-		log.Error().Err(err).Msg(err.Error())
+		return nil, err
 	}
 	// Regular expression to find the version number.
 	re := regexp.MustCompile(`\d+`)
 	version := re.FindString(postgresVersion)
 
-	listOfResults, scoreMap, err := postgres.PerformAllChecks(postgresStore, ctx, version)
+	listOfResults, scoreMap, err := postgres.PerformAllChecks(postgresStore, ctx, version, cnf.PostgresCheckSet)
 	if err != nil {
-		log.Print(err)
-		return nil
+		return nil, err
 	}
-	resultMap["Postgres"] = listOfResults
 
-	data := htmlreport.RenderHTMLTemplate(listOfResults, scoreMap, version)
+	*resultPrintData += simpletextreport.PrintReportInFile(listOfResults, version, "Postgres Report")
 
-	h.AddTab("Postgres", data)
+	htmlreport.RegisterPostgresReportData(listOfResults, scoreMap, version)
 
-	return listOfResults
+	out := userlist.Run(postgresStore, ctx)
+	*resultPrintData += "\nUsers Report"
+
+	for _, data := range out {
+		*resultPrintData += "> " + data.Title + "\n"
+		*resultPrintData += data.Data.Text() + "\n"
+	}
+
+	return scoreMap, nil
 
 }
 
-func runRDS(ctx context.Context, _ *config.Config, resultMap map[string]interface{}) {
+func runRDS(ctx context.Context, _ *config.Config, resultMap *string) {
 	fmt.Println("running RDS ")
 	rds.Validate()
-	resultMap["RDS"] = rds.PerformAllChecks(ctx)
+	*resultMap = simpletextreport.PrintReportInFile(rds.PerformAllChecks(ctx), "", "RDS Report")
 	listOfResults := rds.PerformAllChecks(ctx)
 
 	tableData := rds.ConvertToMainTable(listOfResults)
@@ -535,21 +458,20 @@ func runRDS(ctx context.Context, _ *config.Config, resultMap map[string]interfac
 	// write output data to file
 	err := os.WriteFile("rdssecreport.json", []byte(output), 0600)
 	if err != nil {
-		log.Error().Err(err).Msg("Unable to generate rdssecreport.json file: " + err.Error())
+		fmt.Println("Error while saving result in file:", text.FgRed.Sprint(err))
 		fmt.Println("**********listOfResults*************\n", string(tableData))
 	}
 	fmt.Println("rdssecreport.json file generated")
 }
-func runHBAScanner(ctx context.Context, cnf *config.Config, h *htmlreport.HTMLHelper, resultMap map[string]interface{}) []*model.HBAScannerResult {
+func runHBAScanner(ctx context.Context, cnf *config.Config, resultMap *string) ([]*model.HBAScannerResult, error) {
 	postgresDatabase := cnf.Postgres
 	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	listOfResults := hbascanner.HBAScanner(postgresStore, ctx)
 
-	data := htmlreport.GenerateHTMLReportForHBA(listOfResults)
-	h.AddTab("HBA Scanner Report", data)
+	htmlreport.RegisterHBAReportData(listOfResults)
 
 	for i := 0; i < len(listOfResults); i++ {
 		listOfResults[i].Procedure = strings.ReplaceAll(listOfResults[i].Procedure, "\t", " ")
@@ -561,9 +483,9 @@ func runHBAScanner(ctx context.Context, cnf *config.Config, h *htmlreport.HTMLHe
 		}
 	}
 
-	resultMap["HBA Scanner"] = listOfResults
+	*resultMap += "\nHBA Report\n" + simpletextreport.PrintHBAReportInFile(listOfResults) + "\n"
 
-	return listOfResults
+	return listOfResults, nil
 }
 func runHBAScannerByControl(ctx context.Context, cnf *config.Config) {
 	postgresDatabase := cnf.Postgres
@@ -613,7 +535,7 @@ func runPostgresPasswordScanner(ctx context.Context, cnf *config.Config) {
 
 	var path string
 	fmt.Printf("Enter path to the passwords files (Default /etc/klouddbshield/passwords): ")
-	fmt.Scanln(&path)
+	fmt.Scanln(&path) //nolint:errcheck
 	if path == "" {
 		path = "/etc/klouddbshield/passwords"
 	}
@@ -639,35 +561,60 @@ func runPasswordGenerator(_ context.Context, cnf *config.Config) {
 	var passwordLength, digitsCount, uppercaseCount, specialCount int
 
 	fmt.Printf("Enter password length (Default %v): ", cnf.GeneratePassword.Length)
-	fmt.Scanln(&passwordLength)
+	fmt.Scanln(&passwordLength) //nolint:errcheck
 	if passwordLength == 0 {
 		passwordLength = cnf.GeneratePassword.Length
 	}
 
 	fmt.Printf("Enter number of digits (Default %v): ", cnf.GeneratePassword.NumberCount)
-	fmt.Scanln(&digitsCount)
+	fmt.Scanln(&digitsCount) //nolint:errcheck
 	if digitsCount == 0 {
 		digitsCount = cnf.GeneratePassword.NumberCount
 	}
 
 	fmt.Printf("Enter number of uppercase characters (Default %v): ", cnf.GeneratePassword.NumUppercase)
-	fmt.Scanln(&uppercaseCount)
+	fmt.Scanln(&uppercaseCount) //nolint:errcheck
 	if uppercaseCount == 0 {
 		uppercaseCount = cnf.GeneratePassword.NumUppercase
 	}
 
 	fmt.Printf("Enter number of special characters (Default %v): ", cnf.GeneratePassword.SpecialCharCount)
-	fmt.Scanln(&specialCount)
+	fmt.Scanln(&specialCount) //nolint:errcheck
 	if specialCount == 0 {
 		specialCount = cnf.GeneratePassword.SpecialCharCount
 	}
 
 	passwd := passwordmanager.GeneratePassword(passwordLength, digitsCount, uppercaseCount, specialCount)
 
-	fmt.Println("Here's the password:", passwd)
+	fmt.Println(text.Bold.Sprint("Here's the password:"), passwd)
+
+	encryptedPassword, err := passwordmanager.GenerateEncryptedPassword([]byte(passwd))
+	if err != nil {
+		return
+	}
+
+	fmt.Println(text.Bold.Sprint("Here's the encrypted password:"), encryptedPassword)
 }
 
-func runPwnedUsers(_ context.Context, cnf *config.Config) {
+func runEncryptedPasswordGenerator(_ context.Context, _ *config.Config) {
+
+	fmt.Print("Enter password: ")
+	passwd, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return
+	}
+	fmt.Print("\r                    \n")
+
+	encryptedPassword, err := passwordmanager.GenerateEncryptedPassword(passwd)
+	if err != nil {
+		return
+	}
+
+	fmt.Println(text.Bold.Sprint("Here's the encrypted password:"), encryptedPassword)
+	fmt.Println()
+}
+
+func runPwnedUsers(ctx context.Context, cnf *config.Config, fileData *string) error {
 	pgUsernameMap := map[string]struct{}{}
 	for _, userName := range passwordmanager.PGUsernameList {
 		pgUsernameMap[userName] = struct{}{}
@@ -676,8 +623,7 @@ func runPwnedUsers(_ context.Context, cnf *config.Config) {
 	postgresDatabase := cnf.Postgres
 	postgresStore, _, err := postgresdb.Open(*postgresDatabase)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return fmt.Errorf("error opening postgres connection: %v", err)
 	}
 
 	listOfUsers, _ := passwordmanager.GetPostgresUsers(postgresStore)
@@ -689,9 +635,25 @@ func runPwnedUsers(_ context.Context, cnf *config.Config) {
 		}
 	}
 
-	if len(commonUserNames) > 0 {
-		fmt.Printf("Found these common usernames in the database: %s\n", strings.Join(commonUserNames, ", "))
+	if cnf.App.PrintSummaryOnly {
+		fmt.Println(text.Bold.Sprint("Password Manager Report:"))
+
+		*fileData += fmt.Sprintln("Password Manager Report:")
+		if len(commonUserNames) > 0 {
+			*fileData += fmt.Sprintf("> Found these common usernames in the database: %s\n", strings.Join(commonUserNames, ", "))
+		} else {
+			*fileData += fmt.Sprintln("> No common usernames found in the database.")
+		}
 	}
+	if len(commonUserNames) > 0 {
+		fmt.Printf("> Found these common usernames in the database: %s\n", strings.Join(commonUserNames, ", "))
+	} else {
+		fmt.Println("> No common usernames found in the database.")
+	}
+	fmt.Println("")
+
+	htmlreport.RenderPasswordManagerReport(ctx, commonUserNames)
+	return nil
 }
 
 func runPwnedPassword(_ context.Context, cnf *config.Config) {
@@ -708,7 +670,7 @@ func runPwnedPassword(_ context.Context, cnf *config.Config) {
 
 	password := ""
 	fmt.Print("Enter password to be checked: ")
-	fmt.Scanln(&password)
+	fmt.Scanln(&password) //nolint:errcheck
 	if password == "" {
 		fmt.Println("Password cannot be blank")
 		return
@@ -719,7 +681,7 @@ func runPwnedPassword(_ context.Context, cnf *config.Config) {
 		if err == passwordmanager.ErrPasswordIsPwned {
 			fmt.Println("The password is pwned for", times, "times")
 		} else {
-			fmt.Println("Error:", err)
+			fmt.Println("Error:", text.FgRed.Sprint(err))
 		}
 	} else {
 		fmt.Println("Congratulations! The password is not pwned.")

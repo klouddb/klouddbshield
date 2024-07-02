@@ -1,0 +1,194 @@
+{{ define "postgresTab" }}
+    <div class="wrapper">
+        <div class="myContainer">
+            <div id="summaryStats">
+                <h3>Summary</h3>
+                {{ range .Summary.Data }}
+                    {{ template "progressBarTemplate" . }}
+                {{ end }}
+                {{ template "overallBarTemplate" .Summary.Overall }}
+            </div>
+
+            <h3>Control Details</h3>
+            <p>Postgres Version {{ .PostgresVersion }}</p>
+            {{ template "controlDetailTablePostgres" .PostgresResults }}
+        </div>
+    </div>
+{{ end }}
+
+
+{{ define "controlDetailTablePostgres" }}
+    {{ if and (.) (len .) }}
+       <div class="table-container" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <button class="toggleAll btn btn-primary" style="margin-right: 20px;">Expand All</button>
+                <table style="border: none; display: flex; align-items: center;">
+                    <tr>
+                        <td style="text-align:center; padding: 0 10px;">{{ template "tick" }}</td>
+                        <td style="padding: 0 10px;">Pass</td>
+                        <td style="text-align:center; padding: 0 10px;">{{ template "cross" }}</td>
+                        <td style="padding: 0 10px;">Fail</td>
+                        <td style="text-align:center; padding: 0 10px;">{{ template "manualCheckIcon" }}</td>
+                        <td style="padding: 0 10px;">Manual Check</td>
+                    </tr>
+                </table>
+            </div>
+            <table class="table maintable">
+                <thead>
+                    <tr>
+                        <th>Control</th>
+                        <th style="text-align:center;">Result</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                {{ range . }}
+                    {{ template "controlDetailTableBodyPostgres" . }}
+                {{ end }}
+            </table>
+        </div>
+    {{ end }}
+{{ end }}
+
+
+
+{{ define "controlDetailTableBodyPostgres" }}
+    <tr id="{{ .Control }}{{ .Title }}" class="toggleRow {{ if .Critical }} critical_row {{ end }} ">
+        <td>{{ .Control }} {{ .Title }}</td>
+        {{ if eq .Status "Pass" }}
+            {{ template "tick" }}
+        {{ else if eq .Status "Fail" }}
+            {{ template "cross" }}
+        {{ else }}
+            {{ template "manualCheckIcon" }}
+        {{ end }}
+        {{ template "infoIcon" }}
+    </tr>
+    <tr class="childTableRow" style="display:none;"> <!-- Initially hidden -->
+        <td colspan="3"> <!-- Adjust colspan as needed -->
+            <div class="scrollable-container">
+                <table class="table" id="innerTable">
+                    <tr>
+                        <th>Description</th>
+                        <td>{{ replace .Description "\n" "<br>" }}</td>
+                    </tr>
+                    {{ if .FailReason }}
+                        <tr>
+                            <th>Fail Reason</th>
+                            <td>{{ .FailReason }}</td>
+                        </tr>
+                    {{ end }}
+                    {{ if .ManualCheckData }}
+                        <tr>
+                            <th>Manual Check</th>
+                            <td>
+                                <div class="manualCheck">
+                                    {{ template "manualCheck" .ManualCheckData }}
+                                </div>
+                            </td>
+                        </tr>
+                    {{ end }}
+                    <tr>
+                        <th>Rationale</th>
+                        <td>{{ replace .Rationale "\n" "<br>" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Process to Validate</th>
+                        <td>{{ replace .Procedure "\n" "<br>" }}</td>
+                    </tr>
+                    <tr>
+                        <th>References</th>
+                        <td>{{ replace .References "\n" "<br>" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </td>
+    </tr>
+{{ end }}
+
+
+{{ define "overallBarTemplate" }}
+    <div class="overall-progress-bar">
+        <div class="progress-label">
+            <span>{{ .SectionName }}</span>
+            <span>{{ .Score }}/{{ .MaxScore }} - ({{ printf "%.2f%%" .Percentage }})</span>
+        </div>
+        <div class="progress">
+            <div class="progress-filled" style="width: {{ .Percentage }}%; background-color: {{ .Color }};"></div>
+        </div>
+    </div>
+{{ end }}
+
+
+{{ define "progressBarTemplate" }}
+    <div class="progress-bar" style="cursor: pointer;" onclick="location.href='#{{ .AnchorID }}'">
+        <div class="progress-label">
+            <span>{{ .SectionName }}</span>
+            <span>{{ .Score }}/{{ .MaxScore }} - ({{ printf "%.2f%%" .Percentage }})</span>
+        </div>
+        <div class="progress">
+            <div class="progress-filled" style="width: {{ .Percentage }}%; background-color: {{ .Color }};"></div>
+        </div>
+    </div>
+{{ end }}
+
+{{ define "manualCheck" }}
+    {{ if eq .Type "ManualCheckTableDescriptionAndList" }}
+        {{ template "manualCheckTableWithDescriptionAndList" . }}
+    {{ end }}
+{{ end }}
+
+{{ define "manualCheckTableWithDescriptionAndList" }}
+    {{ if .Description }}<h6> {{ .Description }} </h6>{{ end }}
+    {{ if len .List }}
+        <ul>
+            {{ range .List }}
+                <li>{{ . }}</li>
+            {{ end }}
+        </ul>
+    {{ end }}
+    {{ if .Table }}
+        <table class="table" id="manualCheckTable">
+            <tr>
+                {{ range .Table.Columns }}
+                    <th>{{ . }}</th>
+                {{ end }}
+            </tr>
+            {{ range .Table.Rows }}
+                <tr>
+                    {{ range . }}
+                        <td>{{ . }}</td>
+                    {{ end }}
+                </tr>
+            {{ end }}
+        </table>
+    {{ end }}
+{{ end }}
+
+{{ define "userlistTable" }}
+    {{ if and (.) (len .) }}
+        <div class="table-container">
+            <button class="toggleAll btn btn-primary">Expand All</button>
+            <table class="table maintable">
+                {{ range . }}
+                    {{ template "userListTableBodyPostgres" . }}
+                {{ end }}
+            </table>
+        </div>
+    {{ end }}
+{{ end }}
+
+{{ define "userListTableBodyPostgres" }}
+    <tr class="toggleRow">
+        <th>{{ .Title }}</th>
+        {{ template "infoIcon" }}
+    </tr>
+    <tr class="childTableRow" style="display:none;"> <!-- Initially hidden -->
+        <td colspan="3"> <!-- Adjust colspan as needed -->
+            {{ if .Data }}
+                <div class="manualCheck">
+                    {{ template "manualCheck" .Data }}
+                </div>
+            {{ end }}
+        </td>
+    </tr>
+{{ end }}

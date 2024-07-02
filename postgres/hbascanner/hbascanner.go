@@ -102,7 +102,6 @@ func HBAScanner(store *sql.DB, ctx context.Context) []*model.HBAScannerResult {
 		}
 	}
 
-	PrintSummary(listOfResult)
 	return listOfResult
 }
 func PrintVerbose(result *model.HBAScannerResult) {
@@ -139,32 +138,7 @@ func PrintVerbose(result *model.HBAScannerResult) {
 	t.Render()
 
 }
-func PrintSummary(listOfResult []*model.HBAScannerResult) {
 
-	t := table.NewWriter()
-	t.SetOutputMirror(os.Stdout)
-	// hba check 1 - Check Trust In Method" - FAIL
-	for _, result := range listOfResult {
-		if result.Status == "Pass" {
-
-			t.AppendSeparator()
-			color := text.FgGreen
-			row := fmt.Sprintf("HBA Check %d - %s", result.Control, result.Title)
-			t.AppendRow(table.Row{row, color.Sprintf("%s", result.Status)})
-
-		} else {
-			t.AppendSeparator()
-			color := text.FgRed
-			row := fmt.Sprintf("HBA Check %d - %s", result.Control, result.Title)
-			t.AppendRow(table.Row{row, color.Sprintf("%s", result.Status)})
-			t.AppendSeparator()
-
-		}
-	}
-	t.SetStyle(table.StyleLight)
-	t.Render()
-
-}
 func GetHBAFileData(store *sql.DB, ctx context.Context) ([]string, []int, error) {
 
 	result := []string{}
@@ -215,7 +189,7 @@ func CheckTrustInMethod(listOfHBA []string, listOfLineNums []int) *model.HBAScan
 		Control:     1,
 		Procedure: `
 		Method 1-
-		select count(*) from pg_hba_file_rules where 
+		select count(*) from pg_hba_file_rules where
 		auth_method='trust' or auth_method='TRUST';
 		If the count is greater than 0 this is a FAIL
 		Method 2-
@@ -252,12 +226,12 @@ func CheckAllInDatabase(listOfHBA []string, listOfLineNums []int) *model.HBAScan
 		Control:     2,
 		Title:       "Check if ‘all’ is used under database field ",
 		Procedure: `
-		Method 1 - 
-		select count(*) from pg_hba_file_rules where 
+		Method 1 -
+		select count(*) from pg_hba_file_rules where
 		database='all';
 		If the count is greater than 0 this is a FAIL
-		Method 2 - 
-		Manually check your hba file to see if it contains ‘all’ 
+		Method 2 -
+		Manually check your hba file to see if it contains ‘all’
 		under database`,
 	}
 	failedRows := []string{}
@@ -288,12 +262,12 @@ func CheckAllInUser(listOfHBA []string, listOfLineNums []int) *model.HBAScannerR
 		Control:     3,
 		Title:       "Check if ‘all’ is used under user column",
 		Procedure: `
-		Method 1 - 
-		select count(*) from pg_hba_file_rules where 
+		Method 1 -
+		select count(*) from pg_hba_file_rules where
 		user='all';
 		If the count is greater than 0 this is a FAIL
-		Method 2 - 
-		Manually check your hba file to see if it contains ‘all’ 
+		Method 2 -
+		Manually check your hba file to see if it contains ‘all’
 		under user`,
 	}
 	failedRows := []string{}
@@ -326,7 +300,7 @@ func CheckMD5InMethod(listOfHBA []string, listOfLineNums []int) *model.HBAScanne
 		Control:     4,
 		Procedure: `
 		Method 1-
-		select count(*) from pg_hba_file_rules where 
+		select count(*) from pg_hba_file_rules where
 		auth_method='md5';
 		If the count is greater than 0 this is a FAIL
 		Method 2-
@@ -363,7 +337,7 @@ func CheckPeerInMethod(listOfHBA []string, listOfLineNums []int) *model.HBAScann
 		Control:     5,
 		Procedure: `
 		Method 1-
-		select count(*) from pg_hba_file_rules where 
+		select count(*) from pg_hba_file_rules where
 		auth_method='peer';
 		If the count is greater than 0 this is a FAIL
 		Method 2-
@@ -401,7 +375,7 @@ func CheckIdentInMethod(listOfHBA []string, listOfLineNums []int) *model.HBAScan
 		Procedure: `
 		Method 1-
 		select count(*) from pg_hba_file_rules where auth_method='ident';
-		
+
 		If the count is greater than 0 this is a FAIL
 		Method 2-
 		Manually check your hba file to see if it contains ‘ident’ under auth-method
@@ -438,7 +412,7 @@ func CheckPasswordInMethod(listOfHBA []string, listOfLineNums []int) *model.HBAS
 		Procedure: `
 		Method 1-
 		select count(*) from pg_hba_file_rules where auth_method='password';
-		
+
 		If the count is greater than 0 this is a FAIL
 		Method 2-
 		Manually check your hba file to see if it contains ‘password’ under auth-method
@@ -475,7 +449,7 @@ func CheckType(listOfHBA []string, listOfLineNums []int) *model.HBAScannerResult
 		Procedure: `
 		Method 1-
 		select count(*) from pg_hba_file_rules where type='host';
-		
+
 		If the count is greater than 0 this is a FAIL
 		Method 2-
 		Manually check your hba file to see if it contains ‘host’ under type field
@@ -512,7 +486,7 @@ func CheckIPPrivilege(listOfHBA []string, listOfLineNums []int) *model.HBAScanne
 		Procedure: `
 		Method 1-
 		select count(*) from pg_hba_file_rules where address IN('0.0.0.0/0','::0/0');
-		
+
 		If the count is greater than 0 this is a FAIL
 		Method 2-
 		Manually check your hba file to see if it contains 0.0.0.0/0 (IPv4) and ::0/0 (IPv6) in address field

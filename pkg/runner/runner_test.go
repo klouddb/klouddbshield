@@ -20,7 +20,7 @@ func TestFastRunner(t *testing.T) {
 // 	testRunParser(t, RunParser)
 // }
 
-func testRunParser(t *testing.T, runner func(ctx context.Context, cnf *config.Config, fn, validator ParserFunc)) {
+func testRunParser(t *testing.T, runner func(ctx context.Context, cnf *config.Config, fn []ParserFunc, validator ParserFunc) (*FastRunnerResponse, error)) {
 	// Define the test cases as a table
 	testCases := []struct {
 		name         string
@@ -93,8 +93,10 @@ Line 5
 				return nil
 			}
 
+			runners := []ParserFunc{mockParserFunc, mockParserFunc}
+
 			// Run the parser
-			runner(context.TODO(), cnf, mockParserFunc, mockParserFunc)
+			runner(context.TODO(), cnf, runners, mockParserFunc) //nolint:errcheck
 
 			// Verify that all lines from the file are received in the mock function
 			if !stringSlicesEqual(receivedLogs, tc.expectedLogs) {

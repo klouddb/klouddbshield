@@ -1,0 +1,22 @@
+{{ define "tabMapping" }}
+    {{ if eq .Title "Postgres" }}
+        {{ template "postgresTab" .Body }}
+    {{ else if eq .Title "HBA Scanner Report" }}
+        {{ template "hbaTab" .Body }}
+    {{ else if eq .Title "Password Manager" }}
+        {{ template "passwordManager" .Body }}
+    {{ else if eq .Title "Log Parser" }}
+        {{ template "logparserbody" .Body }}
+    {{ else if eq .Title "All" }}
+        {{ template "allTab" .Body }}
+    {{ else if eq .Title "Users Report" }}
+        {{ template "userlistTable" .Body }}
+    {{ end }}
+{{ end }}
+
+{{ define "allTab" }}
+    {{ range $index, $tab := . }}
+        <h2>{{ $tab.Title }}</h2>
+        {{ template "tabMapping" $tab }}
+    {{ end }}
+{{ end }}
