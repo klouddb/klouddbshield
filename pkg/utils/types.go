@@ -67,6 +67,13 @@ func (l *LockedKeyValue[T]) ForEach(fn func(key string, val T)) {
 	}
 }
 
+func (l *LockedKeyValue[T]) Map() map[string]T {
+	l.mt.Lock()
+	defer l.mt.Unlock()
+
+	return l.m
+}
+
 type LockedCounter struct {
 	*LockedKeyValue[int]
 }

@@ -35,7 +35,7 @@ config.toml
 /kshieldconfig.toml
 /cmd/ciscollector/kshieldconfig.toml
 .vscode
-report.html
-report.json
+klouddbshield_report.html
+klouddbshield_report.txt
 
 docker_testing/pglog/*

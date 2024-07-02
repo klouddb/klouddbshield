@@ -1,7 +1,6 @@
 package rds
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -35,31 +34,9 @@ func (t *rdsPrinter) Print() string {
 		t.AppendSeparator()
 
 		if row.Status != "Pass" {
-			var ok bool
 			//nolint
-			var failReason string
 			failReasonHeader := "\n\nFailure Report\n\n" + row.Control + "        " + row.Title
-			switch ty := row.FailReason.(type) {
-			case string:
-				failReason, ok = row.FailReason.(string)
-				if !ok {
-					failReason = ""
-				}
-			case []map[string]interface{}:
-				failReason = ""
-				for _, n := range ty {
-					for key, value := range n {
-						failReason += fmt.Sprintf("%s:%v, ", key, value)
-					}
-					failReason += "\n"
-				}
-			default:
-				failReason = ""
-				// var r = reflect.TypeOf(sp)
-				// failReason = fmt.Sprintf("Other:%v\n", r)
-			}
-			t.failuresLines = append(t.failuresLines, failReasonHeader+failReason)
-
+			t.failuresLines = append(t.failuresLines, failReasonHeader+row.FailReason)
 		}
 	}
 	t.AppendSeparator()

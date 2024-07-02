@@ -1,8 +1,33 @@
 package model
 
 import (
+	"context"
 	"fmt"
 )
+
+func NewContextWithVersion(ctx context.Context, version string) context.Context {
+	return context.WithValue(ctx, "version", version) //nolint:staticcheck
+}
+
+func GetVersionFromContext(ctx context.Context) string {
+	ver := ctx.Value("version")
+	if ver == nil {
+		return ""
+	}
+
+	return ver.(string)
+}
+
+func IsFromVersion(ctx context.Context, versions []string) bool {
+	ver := GetVersionFromContext(ctx)
+	for _, v := range versions {
+		if ver == v {
+			return true
+		}
+	}
+
+	return false
+}
 
 type CaseResult struct {
 	Name   string
@@ -31,15 +56,17 @@ func NewCaseResult(name string) *CaseResult {
 // }
 
 type Result struct {
-	FailReason     interface{}            `json:"FailReason"`
-	Status         string                 `json:"Status"`
-	Description    string                 `json:"Description"`
-	Control        string                 `json:"Control"`
-	Title          string                 `json:"Title"`
-	Rationale      string                 `json:"Rationale"`
-	References     string                 `json:"References"`
-	Procedure      string                 `json:"Procedure"`
-	CaseFailReason map[string]*CaseResult `json:"CaseFailReason"`
+	FailReason      string                 `json:"FailReason"`
+	Status          string                 `json:"Status"`
+	Description     string                 `json:"Description"`
+	Control         string                 `json:"Control"`
+	Title           string                 `json:"Title"`
+	Rationale       string                 `json:"Rationale"`
+	References      string                 `json:"References"`
+	Procedure       string                 `json:"Procedure"`
+	CaseFailReason  map[string]*CaseResult `json:"CaseFailReason"`
+	ManualCheckData ManualCheckData        `json:"ManualCheckData"`
+	Critical        bool                   `json:"Critical"`
 }
 
 type Config struct {
@@ -79,4 +106,9 @@ type Section struct {
 	Score    int
 	MaxScore int
 	Color    string
+}
+
+type UserlistResult struct {
+	Title string
+	Data  ManualCheckData
 }

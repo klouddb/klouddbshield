@@ -353,7 +353,7 @@ func CheckClientCert(store *sql.DB, ctx context.Context) (*model.Result, error) 
 		result.FailReason = err.Error()
 		return result, nil
 	}
-	result.FailReason = data
+	result.FailReason = utils.GetFailReasonInString(data)
 	// if len(data) == 0 {
 	// 	result.Status = "Fail"
 	// 	result.FailReason = "No output for the query, expected binlog_encryption from performance_schema.global_variables"
@@ -368,7 +368,7 @@ func CheckClientCert(store *sql.DB, ctx context.Context) (*model.Result, error) 
 	for _, value := range sslType {
 		if value != "X509" || value == "SSL" {
 			result.Status = "Fail"
-			result.FailReason = data
+			result.FailReason = utils.GetFailReasonInString(data)
 			return result, nil
 		}
 	}

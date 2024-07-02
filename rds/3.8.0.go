@@ -21,13 +21,12 @@ func Execute380(ctx context.Context) (result *model.Result) {
 		}
 		result.Control = "3.8.0"
 		result.Title = "Ensure Relational Database Service backup retention policy is set"
-		result = fixFailReason(result)
 	}()
 
 	result, cmdOutput, err := ExecRdsCommand(ctx, `aws rds describe-db-instances --filters --query "DBInstances[*].{BackupRetentionPeriod:BackupRetentionPeriod,DBInstanceIdentifier:DBInstanceIdentifier}"`)
 	if err != nil {
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error executing command %s", err)
+		result.FailReason = fmt.Sprintf("error executing command %s", err)
 		return result
 	}
 
@@ -35,7 +34,7 @@ func Execute380(ctx context.Context) (result *model.Result) {
 	err = json.Unmarshal([]byte(cmdOutput.StdOut), &backupRetentionValues)
 	if err != nil {
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error un marshalling cmdOutput.StdOut: %s, error :%s", cmdOutput.StdOut, err)
+		result.FailReason = fmt.Sprintf("error un marshalling cmdOutput.StdOut: %s, error :%s", cmdOutput.StdOut, err)
 		return
 	}
 	printer := NewRDSInstancePrinter()

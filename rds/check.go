@@ -15,18 +15,6 @@ import (
 
 type Execute func(context.Context) *model.Result
 
-func fixFailReason(result *model.Result) *model.Result {
-	if result == nil {
-		return result
-	}
-	err, ok := result.FailReason.(error)
-	if !ok {
-		return result
-	}
-	result.FailReason = err.Error()
-	return result
-}
-
 func PerformAllChecks(ctx context.Context) []*model.Result {
 
 	listOfExecuteFuncs := [...]Execute{

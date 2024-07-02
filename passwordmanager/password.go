@@ -3,6 +3,8 @@ package passwordmanager
 import (
 	"math/rand"
 	"time"
+
+	"github.com/supercaracal/scram-sha-256/pkg/pgpasswd"
 )
 
 const (
@@ -26,6 +28,10 @@ func GeneratePassword(passwordLength, digitsCount, uppercaseCount, specialCount 
 	finalPassword := shuffle(rawPassword)
 
 	return finalPassword
+}
+
+func GenerateEncryptedPassword(rawPassword []byte) (string, error) {
+	return pgpasswd.Encrypt(rawPassword)
 }
 
 // extract returns random characters of input length from the input chars

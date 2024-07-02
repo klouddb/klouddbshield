@@ -76,7 +76,7 @@ func CheckLogFiles(store *sql.DB, ctx context.Context) (*model.Result, error) {
 			break
 		}
 	}
-	result.FailReason = data
+	result.FailReason = utils.GetFailReasonInString(data)
 	if strings.HasPrefix(logFiles, "/usr") || strings.HasPrefix(logFiles, "/var") || logFiles == "/" {
 		result.Status = "Fail"
 		result.FailReason = "Value of @@global.log_bin_basename is " + logFiles

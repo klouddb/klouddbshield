@@ -19,7 +19,6 @@ func Execute232(ctx context.Context) (result *model.Result) {
 		}
 		result.Control = "2.3.2"
 		result.Title = "Ensure that auto minor version upgrade is enabled for RDS instances"
-		result = fixFailReason(result)
 	}()
 
 	result, dbMap, err := GetDBMap(ctx)
@@ -72,7 +71,7 @@ func GetAutoMinorVersionOfDB(ctx context.Context, dbName string, printer *rdsIns
 	}
 	if !arrayOfBooleans[0] {
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("auto minor version upgrade is not enabled for instance %s", dbName)
+		result.FailReason = fmt.Sprintf("auto minor version upgrade is not enabled for instance %s", dbName)
 		printer.AddInstance(dbName, "Fail", fmt.Sprintf("%t", arrayOfBooleans[0]))
 	} else {
 		printer.AddInstance(dbName, "Pass", fmt.Sprintf("%t", arrayOfBooleans[0]))
