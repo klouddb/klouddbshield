@@ -72,7 +72,6 @@ func Execute231(ctx context.Context) (result *model.Result) {
 		result.Control = "2.3.1"
 		result.Title = "Ensure that encryption is enabled for RDS instances"
 
-		result = fixFailReason(result)
 	}()
 
 	result, dbMap, err := GetDBMap(ctx)

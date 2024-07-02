@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/klouddb/klouddbshield/model"
 )
@@ -36,6 +37,8 @@ func GetDatabaseAndHostForUSerFromHbaFileRules(ctx context.Context, store *sql.D
 		if netmask.Valid {
 			data.NetMask = netmask.String
 		}
+
+		data.Raw = fmt.Sprintf("From DB: database=%s, user=%s, address=%s, netmask=%s", data.Database, data.UserName, data.Address, data.NetMask)
 
 		data.Database = data.Database[1 : len(data.Database)-1]
 		data.UserName = data.UserName[1 : len(data.UserName)-1]

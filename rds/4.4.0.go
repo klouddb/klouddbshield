@@ -63,7 +63,7 @@ func Execute440(ctx context.Context) (result *model.Result) {
 	_, _, err := DataBaseGetter.GetDBMap(ctx)
 	if err != nil {
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error getting databases %s", err)
+		result.FailReason = fmt.Sprintf("error getting databases %s", err)
 		return result
 	}
 
@@ -72,7 +72,6 @@ func Execute440(ctx context.Context) (result *model.Result) {
 	defer func() {
 		result.Control = "4.4.0"
 		result.Title = "Ensure RDS event subscriptions are enabled for DB security groups"
-		result = fixFailReason(result)
 		result.FailReason = printer.Print()
 		if result.Status == Manual {
 			result.Status = Manual
@@ -85,7 +84,7 @@ func Execute440(ctx context.Context) (result *model.Result) {
 	arrayOfDescribeEventSubs, err := SubGetter.GetEventSubscription(ctx)
 	if err != nil || arrayOfDescribeEventSubs == nil {
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error getting subscriptions %s", err)
+		result.FailReason = fmt.Sprintf("error getting subscriptions %s", err)
 		return
 	}
 
@@ -104,7 +103,7 @@ func Execute440(ctx context.Context) (result *model.Result) {
 		if sourceIDListNil {
 			continue
 		}
-		finalSourceIDList = append(finalSourceIDList, arrayOfSourceIDList...)
+		finalSourceIDList = append(finalSourceIDList, arrayOfSourceIDList...) ////nolint:staticcheck
 	}
 
 	// if the number of subscriptions it is showing is greater than 1 but we know it hasn't passed before we need manual check

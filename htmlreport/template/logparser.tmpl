@@ -1,0 +1,111 @@
+{{ define "logparserbody" }}
+    <div class="wrapper">
+        <div class="myContainer">
+            {{ if .Error }}
+                <h3> Becuase of some error we were not able to generate the report for Log Parser.</h3>
+                <p>{{ .Error }}</p>
+            {{ end }}
+            {{ if .InactiveUsers }}
+                <div class="data-container">
+                    <h2>Inactive Users</h2>
+                    {{ template "inactiveUsers" .InactiveUsers }}
+                </div>
+            {{ end }}
+
+            {{ if .UniqueIPs }}
+                <div class="data-container">
+                    <h2>Unique IPs</h2>
+                    {{ template "uniqueIPs" .UniqueIPs }}
+                </div>
+            {{ end }}
+
+            {{ if .UnusedHBALines }}
+                <div class="data-container">
+                    <h2>Unused HBA Lines</h2>
+                    {{ template "unusedHBALines" .UnusedHBALines }}
+                </div>
+            {{ end }}
+            {{ if .LeakedPasswords }}
+                <div class="data-container">
+                    <h2>Leaked Password In Logfile</h2>
+                    {{ template "leakedPassword" .LeakedPasswords }}
+                </div>
+            {{ end }}
+        </div>
+    </div>
+{{ end }}
+
+
+{{ define "unusedHBALines" }}
+    {{ if eq (len .Lines) 0 }}
+        <div class="no-data-block">
+            <p>No unused HBA lines found from the given log file.</p>
+        </div>
+    {{ else }}
+        <div class="data-block">
+            <ul class="hba-lines-list">
+                {{ range .Lines }}
+                    <li class="hba-line"><span class="line-no">Line No: {{ .LineNo }}</span> <span class="line-content">{{ .Line }}</span></li>
+                {{ end }}
+            </ul>
+        </div>
+    {{ end }}
+{{ end }}
+
+{{ define "uniqueIPs" }}
+    {{ if eq (len .IPs) 0 }}
+        <div class="no-data-block">
+            <p>No unique IPs found from given log file.</p>
+        </div>
+    {{ else }}
+        <div class="data-block">
+            <ul class="tag-list">
+                {{ range .IPs }}
+                    <li class="tag">{{ . }}</li>
+                {{ end }}
+            </ul>
+        </div>
+    {{ end }}
+{{ end }}
+
+{{ define "inactiveUsers" }}
+    <table class="table">
+        {{if gt (len .UsersFromDB) 0}}
+        <tr>
+            <th class="db-users">Users from DB</th>
+            <td class="db-users">{{.UsersFromDB}}</td>
+        </tr>
+        {{end}}
+        <tr>
+            <th class="log-users">Users from Log</th>
+            <td class="log-users">{{.UsersFromLog}}</td>
+        </tr>
+        {{if gt (len .InactiveUsersInDB) 0}}
+        <tr>
+            <th class="inactive-db-users">Inactive Users in DB</th>
+            <td class="inactive-db-users">{{.InactiveUsersInDB}}</td>
+        </tr>
+        {{end}}
+    </table>
+{{ end }}
+
+{{ define "leakedPassword" }}
+    {{ if eq (len .LeakedPasswords) 0 }}
+        <div class="no-data-block">
+            <p>No Leaked Passwords found from given log file/s.</p>
+        </div>
+    {{ else }}
+    <table class="table">
+        <tr>
+            <th class="db-users">Password</th>
+            <th class="db-users">Query</th>
+        </tr>
+        {{ range .LeakedPasswords }}
+            <tr>
+                <td class="log-users">{{.Password}}</td>
+                <td class="log-users">{{.Query}}</td>
+            </tr>
+        {{ end }}
+    </table>
+    {{ end }}
+{{ end }}

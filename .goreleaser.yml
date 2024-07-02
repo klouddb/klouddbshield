@@ -1,6 +1,8 @@
 builds:
   - main: ./cmd/ciscollector
     binary: ciscollector
+    ldflags:
+      - -s -w -X 'github.com/klouddb/klouddbshield/pkg/config.Version={{.Version}}'
     goos:
       - darwin
       - linux

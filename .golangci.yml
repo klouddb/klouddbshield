@@ -2,9 +2,19 @@
 run:
   tests: true
   timeout: 10m
-  skip-files:
+
+issues:
+  exclude-use-default: true
+  exclude-case-sensitive: false
+  exclude-generated-strict: false
+  exclude-dirs-use-default: true
+  max-issues-per-linter: 50
+  max-same-issues: 3
+  new: false
+  fix: false
+  whole-files: false
+  exclude-files:
     - ".*\\.pb\\.go"
-  skip-dirs-use-default: true
 
 linters-settings:
   revive:

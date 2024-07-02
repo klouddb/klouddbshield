@@ -5,11 +5,20 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/klouddb/klouddbshield/pkg/config"
-	"github.com/rs/zerolog/log"
-
 	_ "github.com/lib/pq"
+	"github.com/rs/zerolog/log"
 )
+
+type Postgres struct {
+	Host     string `toml:"host"`
+	Port     string `toml:"port"`
+	User     string `toml:"user"`
+	Password string `toml:"password"`
+	DBName   string `toml:"dbname"`
+	// SSLmode     string `toml:"sslmode"`
+	MaxIdleConn int `toml:"maxIdleConn"`
+	MaxOpenConn int `toml:"maxOpenConn"`
+}
 
 // Open opens a the postgres database connection specified by its connection
 // url which can be of format:
@@ -17,7 +26,7 @@ import (
 
 var re = regexp.MustCompile(`(?m)(?:host=)([^\s]+)`)
 
-func Open(conf config.Postgres) (*sql.DB, string, error) {
+func Open(conf Postgres) (*sql.DB, string, error) {
 	// "host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable"
 	url := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", conf.Host, conf.Port, conf.User, conf.Password, conf.DBName)
 
@@ -31,7 +40,7 @@ func Open(conf config.Postgres) (*sql.DB, string, error) {
 	}
 	err = db.Ping()
 	if err != nil {
-		fmt.Printf("Failed to connect to database. Error:	%s", err.Error())
+		// fmt.Printf("Failed to connect to database. Error:	%s", err.Error())
 		return nil, "", err
 	}
 	if conf.MaxIdleConn > 0 {

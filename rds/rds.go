@@ -32,7 +32,7 @@ func ExecRdsCommand(ctx context.Context, cmd string) (result *model.Result, cmdO
 	if err != nil {
 		log.Println("error creating rds command", err)
 		result.Status = Fail
-		result.FailReason = fmt.Errorf("error creating command %s", err)
+		result.FailReason = fmt.Sprintf("error creating command %s", err)
 		return result, cmdOutPut, err
 	}
 	return rdsCmd.Run(ctx, cmd)

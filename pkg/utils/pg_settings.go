@@ -23,12 +23,41 @@ func GetPGSettings(ctx context.Context, store *sql.DB) (*model.PgSettings, error
 		if val["name"] == "log_connections" {
 			out.LogConnections = val["setting"] == "on"
 		}
-		// else if val["name"] == "log_line_prefix" {
-		// 	out.LogLinePrefix = fmt.Sprintf("%v", val["setting"])
-		// }
 	}
 
 	return out, nil
+}
+
+func GetLoglinePrefix(ctx context.Context, store *sql.DB) (string, error) {
+	query := `SELECT name, setting FROM pg_settings WHERE name IN ('log_line_prefix');`
+	data, err := GetJSON(store, query)
+	if err != nil {
+		return "", fmt.Errorf("error while getting pg_settings: %v", err)
+	}
+
+	for _, val := range data {
+		if val["name"] == "log_line_prefix" {
+			return fmt.Sprintf("%v", val["setting"]), nil
+		}
+	}
+
+	return "", nil
+}
+
+func GetDataDirectory(ctx context.Context, store *sql.DB) (string, error) {
+	query := `SHOW data_directory;`
+	data, err := GetJSON(store, query)
+	if err != nil {
+		return "", fmt.Errorf("error while getting data_directory: %v", err)
+	}
+
+	for _, val := range data {
+		if val["data_directory"] != nil {
+			return fmt.Sprintf("%v", val["data_directory"]), nil
+		}
+	}
+
+	return "", nil
 }
 
 func GetPGUsers(ctx context.Context, store *sql.DB) ([]string, error) {
@@ -47,4 +76,22 @@ func GetPGUsers(ctx context.Context, store *sql.DB) ([]string, error) {
 		}
 	}
 	return listOfPGUsers, nil
+}
+
+func GetHBAFilePath(ctx context.Context, store *sql.DB) (string, error) {
+	query := `SHOW hba_file;`
+	data, err := GetJSON(store, query)
+	if err != nil {
+		return "", fmt.Errorf("error while getting hba_file: %v", err)
+	}
+
+	hbaFilePath := ""
+	for _, val := range data {
+		if val["hba_file"] != nil {
+			hbaFilePath = fmt.Sprint(val["hba_file"])
+			break
+		}
+	}
+
+	return hbaFilePath, nil
 }
