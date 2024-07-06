@@ -71,22 +71,14 @@ export AWS_REGION="XXXXXXXXX"
 ## [Sample config file](https://github.com/klouddb/klouddbshield/blob/main/kshieldconfig_example.toml)
 Below is sample file - If you are checking for postgres comment out the mysql section or if you are only checking mysql part , comment out the postgres part. Location of the config file is /etc/klouddbshield
 
-NOTE - In old version you will have label in config file as "[database]" instead of "[mysql]"
 ```
-[mysql]
-host="localhost"
-port="3306"
-# user="root"
-# password="mysql111"
-maxIdleConn = 2
-maxOpenConn = 2
 
 [postgres]
 host="localhost" 
 port="5432" 
 user="postgres"
 dbname="postgres"
-password="postgres" 
+password="xxxxx" 
 maxIdleConn = 2
 maxOpenConn = 2
 
