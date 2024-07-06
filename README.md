@@ -107,7 +107,7 @@ debug = true
 
 ```
 	
-Section 1:	Installation and Patches	
+Section 1: Installation and Patches	
 1.2	Ensure systemd Service Files Are Enabled	
 1.3	Ensure Data Cluster Initialized Successfully
 
@@ -142,7 +142,7 @@ Sectioin 3: Logging Monitoring and Auditing
 3.1.26	Ensure 'log_timezone' is set correctly	
 3.2	Ensure the PostgreSQL Audit Extension (pgAudit) is enabled
 
-Section 4:	User Access and Authorization	
+Section 4: User Access and Authorization	
 4.2	Ensure excessive administrative privileges are revoked	
 4.3	Ensure excessive function privileges are revoked	
 4.4	Ensure excessive DML privileges are revoked	
@@ -150,12 +150,12 @@ Section 4:	User Access and Authorization
 4.6	Ensure the set_user extension is installed	
 4.7	Make use of predefined roles
 
-Section 5:	Connection and Login	
+Section 5: Connection and Login	
 5.1	Ensure login via "local" UNIX Domain Socket is configured correctly	
 5.2	Ensure login via "host" TCP/IP Socket is configured correctly	
 5.3	Ensure Password Complexity is configured
 
-Section 6:	Postgres Settings	
+Section 6: Postgres Settings	
 6.2	Ensure 'backend' runtime parameters are configured correctly	
 6.3	Ensure 'Postmaster' Runtime Parameters are Configured	
 6.4	Ensure 'SIGHUP' Runtime Parameters are Configured	
@@ -165,14 +165,14 @@ Section 6:	Postgres Settings
 6.8	Ensure SSL is enabled and configured correctly	
 6.9	Ensure the pgcrypto extension is installed and configured correctly
 
-Section 7:	Replication	
+Section 7: Replication	
 7.1	Ensure a replication-only user is created and used for streaming replication	
 7.2	Ensure logging of replication commands is configured	
 7.3	Ensure base backups are configured and functional	
 7.4	Ensure WAL archiving is configured and functional	
 7.5	Ensure streaming replication parameters are configured correctly	
 
-Section 8:	Special Configuration Considerations	
+Section 8: Special Configuration Considerations	
 8.1	Ensure PostgreSQL subdirectory locations are outside the data cluster	
 8.2	Ensure the backup and restore tool, 'pgBackRest', is installed and configured	
 8.3	Ensure miscellaneous configuration settings are correct
