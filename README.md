@@ -16,11 +16,27 @@
 
 ## !! IMPORTANT !! Please refer to https://klouddb.gitbook.io/klouddb_shield for detailed documentation
 
+KloudDB Shield serves as a comprehensive security tool designed specifically for Postgres databases, conducting around 100 essential security checks. KloudDB Shield also offers the following additional features:
 
+	* HBA Scanner
 
-Currently we check for 94 controls - 40 controls(Postgres) 46 controls(MySQL) and 8 controls(RDS) and we plan to add more checks soon. We tested this tool on CentOS and Ubuntu ( PG 14 and PG13)
+	* Inactive Users
 
-NOTE -  For some linux commands you might need root/sudo access 
+	* Unique IPs
+
+	* RDS/Aurora Security reports
+
+	* Password Generator
+
+	* Common Username detector
+
+	* Password attack simulator
+
+	* Pawned password detector
+
+	* Inactive hba lines detector
+
+        NOTE -  For some linux commands you might need root/sudo access 
 
 You can directly download the package from releases section of repo and install the package (for example - rpm for centos and deb package for Ubuntu etc..) . You also need to edit config file after installing the package(see above mentioned blog post for detailed walkthrough)
 
