@@ -14,7 +14,7 @@
 
 ## How to run this tool on my server ?
 
-## !! IMPORTANT !! Please refer to https://klouddb.gitbook.io/klouddb_shield for detailed documentation
+## !! Important !! Please refer to https://klouddb.gitbook.io/klouddb_shield for detailed documentation
 
 KloudDB Shield serves as a comprehensive security tool designed specifically for Postgres databases, conducting around 100 essential security checks. KloudDB Shield also offers the following additional features:
 
