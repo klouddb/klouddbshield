@@ -36,7 +36,7 @@ KloudDB Shield serves as a comprehensive security tool designed specifically for
 
 	* Inactive hba lines detector
 
-        NOTE -  For some linux commands you might need root/sudo access 
+        
 
 You can directly download the package from releases section of repo and install the package (for example - rpm for centos and deb package for Ubuntu etc..) . You also need to edit config file after installing the package(see above mentioned blog post for detailed walkthrough)
 
