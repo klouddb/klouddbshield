@@ -36,7 +36,7 @@ linters:
     - staticcheck
     # - gosec
     # - gocritic
-    - vet
+    - govet
     - errcheck
     - gosimple
     - govet

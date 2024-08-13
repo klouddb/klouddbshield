@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/klouddb/klouddbshield/model"
 	cons "github.com/klouddb/klouddbshield/pkg/const"
+	"github.com/klouddb/klouddbshield/pkg/piiscanner"
 	"github.com/klouddb/klouddbshield/pkg/postgresdb"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
@@ -26,12 +28,55 @@ type Config struct {
 	Postgres *postgresdb.Postgres `toml:"postgres"`
 	App      App                  `toml:"app"`
 
+	CustomTemplate string `toml:"customTemplate"`
+
 	PostgresCheckSet utils.Set[string]
 
 	LogParser          *LogParser
 	LogParserConfigErr error
 
 	GeneratePassword *GeneratePassword `toml:"generatePassword"`
+
+	Crons []Cron `toml:"crons"`
+	// RunCrons bool   `toml:"-"`
+
+	Email *AuthConfig `toml:"email"`
+
+	PiiScannerConfig *piiscanner.Config `toml:"-"`
+}
+
+func NewPiiInteractiveMode(pgConfig *postgresdb.Postgres, printAll, spacyOnly, summary bool) (*piiscanner.Config, error) {
+	if pgConfig == nil {
+		return nil, fmt.Errorf(cons.Err_PostgresConfig_Missing)
+	}
+
+	reader := newInputReader()
+
+	var readOption string
+	if !spacyOnly {
+		readOption = strings.TrimSpace(reader.Read("Please enter run option", piiscanner.RunOption_DataScan_String))
+		_, ok := piiscanner.RunOptionMap[readOption]
+		if !ok {
+			return nil, fmt.Errorf("invalid run option %s, valid options are %s", readOption, strings.Join(piiscanner.RunOptionSlice(), ", "))
+		}
+	}
+	readExcludeTable := strings.TrimSpace(reader.Read("Please enter exclude tables ( e.g table1,table2,table3 )", ""))
+	readIncludeTable := strings.TrimSpace(reader.Read("Please enter include tables ( e.g table1,table2,table3 )", ""))
+
+	readDatabase := strings.TrimSpace(reader.Read("Please enter database name", pgConfig.DBName))
+	readSchema := strings.TrimSpace(reader.Read("Please enter schema name", "public"))
+
+	fmt.Println()
+
+	return piiscanner.NewConfig(pgConfig, readOption, readExcludeTable,
+		readIncludeTable, readDatabase, readSchema, printAll, spacyOnly, summary)
+}
+
+type AuthConfig struct {
+	Host     string `toml:"host"`
+	Port     int    `toml:"port"`
+	Username string `toml:"username"`
+	Password string `toml:"password"`
 }
 
 type LogParser struct {
@@ -49,8 +94,6 @@ type LogParser struct {
 	HbaConfFile string
 
 	OutputType string
-
-	CPULimit int
 }
 
 func NewLogParser(logParser string, beginTime, endTime, prefix, logfile, hbaConfigFile string) (*LogParser, error) {
@@ -168,6 +211,10 @@ type MySQL struct {
 	MaxOpenConn int `toml:"maxOpenConn"`
 }
 
+func (p *MySQL) HtmlReportName() string {
+	return fmt.Sprintf("mysql_%s:%s", p.Host, p.Port)
+}
+
 type GeneratePassword struct {
 	Length           int `toml:"length"`
 	NumberCount      int `toml:"numberCount"`
@@ -177,7 +224,6 @@ type GeneratePassword struct {
 
 type App struct {
 	Debug              bool   `toml:"debug"`
-	DryRun             bool   `toml:"dryRun"`
 	Hostname           string `toml:"hostname"`
 	Run                bool
 	RunPostgres        bool
@@ -202,9 +248,11 @@ type App struct {
 	ThrottlerLIMIT               int
 
 	PrintSummaryOnly bool
-}
 
-var CONF *Config
+	TransactionWraparound bool
+
+	PrintProcessTime bool
+}
 
 var Version = "dev"
 
@@ -223,10 +271,14 @@ func NewConfig() (*Config, error) {
 	var printSummaryReport bool
 	var inputDirectory string
 	var allchecks bool
+	// var setupCron bool
+	var printProcessTime bool
 	flag.BoolVar(&verbose, "verbose", verbose, "As of today verbose only works for a specific control. Ex ciscollector -r --verbose --control 6.7")
 	flag.StringVar(&control, "control", control, "Check verbose detail for individual control.\nMake sure to use this with --verbose option.\nEx: ciscollector -r --verbose --control 6.7")
 	flag.BoolVar(&run, "r", run, "Run")
 	flag.BoolVar(&allchecks, "allchecks", allchecks, "Run all checks")
+	// flag.BoolVar(&setupCron, "setup-cron", setupCron, "Setup cron for ciscollector")
+	flag.BoolVar(&printProcessTime, "process-time", printProcessTime, "Print process time")
 
 	var customTemplatePath string
 	flag.StringVar(&customTemplatePath, "custom-template", customTemplatePath, "Custom template path for postgres checks")
@@ -264,7 +316,35 @@ func NewConfig() (*Config, error) {
 	flag.BoolVar(&help, "help", help, "Print help")
 	flag.BoolVar(&help, "h", help, "Print help")
 
+	var piiscannerRunOption, excludeTable, includeTable, database, schema string
+	var printAllResults, spacyOnly, printSummaryOnly bool
+	flag.StringVar(&piiscannerRunOption, "piiscanner", "", "Run pii scanner")
+	flag.StringVar(&excludeTable, "exclude-table", "", "Exclude table for pii scanner")
+	flag.StringVar(&includeTable, "include-table", "", "Include table for pii scanner")
+	flag.StringVar(&database, "database", "", "Database name for pii scanner")
+	flag.StringVar(&schema, "schema", "public", "Schema name for pii scanner")
+	flag.BoolVar(&printAllResults, "print-all", false, "Print all results for pii scanner")
+	flag.BoolVar(&spacyOnly, "spacy-only", false, "Run spacy only for pii scanner")
+	flag.BoolVar(&printSummaryOnly, "print-summary", false, "Print summary only for pii scanner")
+
+	var transactionWraparound bool
+	flag.BoolVar(&transactionWraparound, "transaction-wraparound", transactionWraparound, "Generate transaction wraparound report")
+
 	flag.Parse()
+
+	if cpuLimit != 0 {
+		runtime.GOMAXPROCS(cpuLimit)
+	}
+
+	// if setupCron {
+	// 	c, err := LoadConfig()
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// 	c.RunCrons = true
+	// 	return c, nil
+	// }
 
 	if version {
 		log.Debug().Str("version", Version).Send()
@@ -275,9 +355,31 @@ func NewConfig() (*Config, error) {
 		os.Exit(0)
 	}
 
-	if !run && !verbose && !allchecks && logParser == "" {
+	if !run && !verbose && !allchecks && logParser == "" && piiscannerRunOption == "" && !spacyOnly {
 		fmt.Println("> For Help: " + text.FgGreen.Sprint("ciscollector --help"))
 		os.Exit(0)
+	}
+
+	c := &Config{}
+	if !runRds {
+		var err error
+		c, err = LoadConfig()
+		if err != nil && logParser == "" {
+			return nil, fmt.Errorf("loading config: %v", err)
+		}
+	}
+
+	c.App.PrintProcessTime = printProcessTime
+
+	var piiConfig *piiscanner.Config
+	if piiscannerRunOption != "" || (spacyOnly && !run) {
+		var err error
+		piiConfig, err = piiscanner.NewConfig(c.Postgres, piiscannerRunOption, excludeTable,
+			includeTable, database, schema, printAllResults, spacyOnly, printSummaryOnly)
+		if err != nil {
+			fmt.Println("Error in creating pii scanner config: ", text.FgHiRed.Sprint(err))
+			os.Exit(1)
+		}
 	}
 
 	// if controlVerbose != "" {
@@ -289,8 +391,13 @@ func NewConfig() (*Config, error) {
 		logParser = cons.LogParserCMD_All
 		runPwnedUsers = true
 		printSummaryReport = true
+		transactionWraparound = true
 	} else if run && !verbose {
-		fmt.Print(cons.MSG_Choise)
+		if customTemplatePath != "" {
+			fmt.Print(cons.MSG_ChoiseCustomTemplate)
+		} else {
+			fmt.Print(cons.MSG_Choise)
+		}
 		choice := 0
 		fmt.Scanln(&choice) //nolint:errcheck
 		switch choice {
@@ -300,6 +407,7 @@ func NewConfig() (*Config, error) {
 			logParser = cons.LogParserCMD_All
 			runPwnedUsers = true
 			printSummaryReport = true
+			transactionWraparound = true
 
 		case 2: // Postgres CIS and User Security checks
 			runPostgres = true
@@ -313,15 +421,23 @@ func NewConfig() (*Config, error) {
 		case 3: // HBA Scanner
 			hbaScanner = true
 
-		case 4: // Inactive user report
+		case 4: // PII Db Scanner
+			var err error
+			piiConfig, err = NewPiiInteractiveMode(c.Postgres, printAllResults, spacyOnly, printSummaryOnly)
+			if err != nil {
+				fmt.Println("Error in creating pii scanner config: ", text.FgHiRed.Sprint(err))
+				os.Exit(1)
+			}
+
+		case 5: // Inactive user report
 			logParser = cons.LogParserCMD_InactiveUsr
 
-		case 5: // Client ip report
+		case 6: // Client ip report
 			logParser = cons.LogParserCMD_UniqueIPs
-		case 6: // HBA unused lines report
+		case 7: // HBA unused lines report
 			logParser = cons.LogParserCMD_HBAUnusedLines
 
-		case 7: // Password Manager
+		case 8: // Password Manager
 			fmt.Println("1. Password attack simulator")
 			fmt.Println("2. Password generator")
 			fmt.Println("3. Encrypt a password(scram-sha-256)")
@@ -346,18 +462,22 @@ func NewConfig() (*Config, error) {
 				os.Exit(1)
 			}
 
-		case 8: // Password leak scanner
+		case 9: // Password leak scanner
 			logParser = cons.LogParserCMD_PasswordLeakScanner
 
-		case 9: // AWS RDS Sec Report
+		case 10: // AWS RDS Sec Report
 			runRds = true
 
-		case 10: // AWS Aurora Sec Report
+		case 11: // AWS Aurora Sec Report
 			runRds = true
 
-		case 11: // MySQL Report
+		case 12: // MySQL Report
 			runMySql = true
-		case 13: // Exit
+
+		case 13: // Transaction Wraparound
+			transactionWraparound = true
+
+		case 14: // Exit
 			os.Exit(0)
 
 		default:
@@ -366,23 +486,20 @@ func NewConfig() (*Config, error) {
 		}
 	}
 
-	c := &Config{}
-	if !runRds {
-		var err error
-		c, err = loadConfig()
-		if err != nil && logParser == "" {
-			return nil, fmt.Errorf("loading config: %v", err)
-		}
+	c.PiiScannerConfig = piiConfig
+	c.PostgresCheckSet = utils.NewDummyContainsAllSet[string]()
+
+	if customTemplatePath != "" {
+		c.CustomTemplate = customTemplatePath
 	}
 
-	c.PostgresCheckSet = utils.NewDummyContainsAllSet[string]()
-	if customTemplatePath != "" {
+	if c.CustomTemplate != "" {
 		var checkNumbers []string
 		var err error
-		if strings.HasSuffix(customTemplatePath, ".json") {
-			checkNumbers, err = utils.LoadJsonTemplate(customTemplatePath)
-		} else if strings.HasSuffix(customTemplatePath, ".csv") {
-			checkNumbers, err = utils.LoadCSVTemplate(customTemplatePath)
+		if strings.HasSuffix(c.CustomTemplate, ".json") {
+			checkNumbers, err = utils.LoadJsonTemplate(c.CustomTemplate)
+		} else if strings.HasSuffix(c.CustomTemplate, ".csv") {
+			checkNumbers, err = utils.LoadCSVTemplate(c.CustomTemplate)
 		} else {
 			return nil, fmt.Errorf("Invalid file format. Supported formats are json and csv")
 		}
@@ -409,9 +526,15 @@ func NewConfig() (*Config, error) {
 	c.App.UseDefaults = userDefaults
 	c.App.InputDirectory = inputDirectory
 	c.App.PrintSummaryOnly = printSummaryReport
+	c.App.TransactionWraparound = transactionWraparound
+	c.PiiScannerConfig = piiConfig
 
 	if run && verbose {
-		fmt.Print(cons.MSG_Choise)
+		if customTemplatePath != "" {
+			fmt.Print(cons.MSG_ChoiseCustomTemplate)
+		} else {
+			fmt.Print(cons.MSG_Choise)
+		}
 		choice := 0
 		fmt.Scanln(&choice) //nolint:errcheck
 
@@ -420,26 +543,27 @@ func NewConfig() (*Config, error) {
 			if c.App.Verbose && c.Postgres != nil {
 				c.App.VerbosePostgres = true
 			} else {
-				fmt.Println("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
+				fmt.Println(cons.Err_PostgresConfig_Missing)
 				os.Exit(1)
 			}
 
 			if c.App.Verbose && c.Postgres != nil {
 				c.App.VerboseHBASacanner = true
 			} else {
-				fmt.Println("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
+				fmt.Println(cons.Err_PostgresConfig_Missing)
 				os.Exit(1)
 			}
 
 			c.App.PrintSummaryOnly = true
 			logParser = cons.LogParserCMD_All
-			runPwnedUsers = true
+			c.App.RunPwnedUsers = true
+			c.App.TransactionWraparound = true
 
 		case 2: // Postgres checks
 			if c.App.Verbose && c.Postgres != nil {
 				c.App.VerbosePostgres = true
 			} else {
-				fmt.Println("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
+				fmt.Println(cons.Err_PostgresConfig_Missing)
 				os.Exit(1)
 			}
 
@@ -447,19 +571,21 @@ func NewConfig() (*Config, error) {
 			if c.App.Verbose && c.Postgres != nil {
 				c.App.VerboseHBASacanner = true
 			} else {
-				fmt.Println("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
+				fmt.Println(cons.Err_PostgresConfig_Missing)
 				os.Exit(1)
 			}
-		case 4: // Inactive user report
+		case 4: // PII DB Scanner
+			fmt.Println("Verbose feature is not available for PII DB Scanner yet .. Will be added in future releases")
+		case 5: // Inactive user report
 			fmt.Println("Verbose feature is not available for Inactive user yet .. Will be added in future releases")
 			os.Exit(1)
-		case 5: // Client ip report
+		case 6: // Client ip report
 			fmt.Println("Verbose feature is not available for Client IP user yet .. Will be added in future releases")
 			os.Exit(1)
-		case 6: // HBA unused lines report
+		case 7: // HBA unused lines report
 			fmt.Println("Verbose feature is not available for HBA Unused lines yet .. Will be added in future releases")
 			os.Exit(1)
-		case 7: // Password Manager
+		case 8: // Password Manager
 			fmt.Println("1. Password attack simulator")
 			fmt.Println("2. Password generator")
 			fmt.Println("3. Encrypt a password(scram-sha-256)")
@@ -483,22 +609,26 @@ func NewConfig() (*Config, error) {
 				fmt.Println("Invalid Choice, Please Try Again.")
 				os.Exit(1)
 			}
-		case 8: // Password leak scanner
+		case 9: // Password leak scanner
 			fmt.Println("Verbose feature is not available for Password Leak lines yet .. Will be added in future releases")
 			os.Exit(1)
 
-		case 9: // AWS RDS Sec Report
+		case 10: // AWS RDS Sec Report
 			fmt.Println("Verbose feature is not available for MySQL and RDS yet .. Will be added in future releases")
 			os.Exit(1)
 
-		case 10: // AWS Aurora Sec Report
+		case 11: // AWS Aurora Sec Report
 			fmt.Println("Verbose feature is not available for MySQL and RDS yet .. Will be added in future releases")
 			os.Exit(1)
-		case 11: // MySQL Report
+		case 12: // MySQL Report
 			fmt.Println("Verbose feature is not available for MySQL and RDS yet .. Will be added in future releases")
 			os.Exit(1)
 
-		case 12:
+		case 13: // Transaction Wraparound
+			fmt.Println("Verbose feature is not available for Transactions yet .. Will be added in future releases")
+			os.Exit(1)
+
+		case 14:
 			os.Exit(0)
 
 		default:
@@ -515,18 +645,18 @@ func NewConfig() (*Config, error) {
 		}
 	}
 	if c.MySQL == nil && c.Postgres == nil && !runRds && c.LogParser == nil {
-		return nil, fmt.Errorf("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
+		return nil, fmt.Errorf(cons.Err_PostgresConfig_Missing)
 	}
 	if c.MySQL != nil && c.Postgres != nil && !runRds {
-		return nil, fmt.Errorf("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate either mysql or postgres at a time. For additional details please check github readme.")
+		return nil, fmt.Errorf(cons.Err_MysqlConfig_Missing)
 	}
 	if c.MySQL == nil && runMySql {
-		return nil, fmt.Errorf("In older version we used [database] label and in current version we are changing it to [mysql] and kindly update your kshieldconfig file(/etc/klouddbshield/kshieldconfig.toml) - See sample entry in readme.")
+		return nil, fmt.Errorf(cons.Err_OldversionSuggestion_Postgres)
 	}
 
-	postgresConfigNeeded := runPostgres || c.App.HBASacanner
+	postgresConfigNeeded := runPostgres || c.App.HBASacanner || c.PiiScannerConfig != nil || c.App.TransactionWraparound
 	if c.Postgres == nil && postgresConfigNeeded {
-		return nil, fmt.Errorf("In older version we used [database] label and in current version we are changing it to [postgres] and kindly update your kshieldconfig file(/etc/klouddbshield/kshieldconfig.toml) - See sample entry in readme.")
+		return nil, fmt.Errorf(cons.Err_OldversionSuggestion_Mysql)
 	}
 	if c.MySQL != nil && c.MySQL.User == "" && runMySql {
 		fmt.Printf("Enter Your MySQL DB User: ")
@@ -558,29 +688,23 @@ func NewConfig() (*Config, error) {
 	if logParser != "" {
 		if run || allchecks {
 			c.LogParser, c.LogParserConfigErr = getLogParserInputs(c.Postgres, logParser)
-			if c.LogParser != nil {
-				c.LogParser.OutputType = outputType
-				c.LogParser.CPULimit = cpuLimit
-			}
 		} else {
 			var err error
 			c.LogParser, err = NewLogParser(logParser, beginTime, endTime, prefix, logfile, hbaConfigFile)
 			if err != nil {
 				c.LogParserConfigErr = fmt.Errorf("Invalid input for logparser: %v", err)
 			}
+		}
 
-			if c.LogParser != nil {
-				c.LogParser.OutputType = outputType
-				c.LogParser.CPULimit = cpuLimit
-			}
+		if c.LogParser != nil {
+			c.LogParser.OutputType = outputType
 		}
 	}
 
-	CONF = c
 	return c, nil
 }
 
-func loadConfig() (*Config, error) {
+func LoadConfig() (*Config, error) {
 	v := viper.New()
 	v.SetConfigType("toml")
 	v.SetConfigName("kshieldconfig")
@@ -645,6 +769,7 @@ func getLogParserInputs(postgresConf *postgresdb.Postgres, command string) (*Log
 	logfileSuggestion := ""
 	store, _, err := postgresdb.Open(*postgresConf)
 	if err == nil {
+		defer store.Close()
 		prefixSuggestion, _ = utils.GetLoglinePrefix(context.Background(), store)
 		dataDir, _ := utils.GetDataDirectory(context.Background(), store)
 		if dataDir != "" {
@@ -689,7 +814,7 @@ func MustNewConfig() *Config {
 	if err != nil {
 		fmt.Println("Can't create config")
 		fmt.Println(err)
-		fmt.Println("Please check the config file /etc/klouddbshield/kshieldconfig.toml . You need to populate it with your dbname,username etc.. before using this utility. For additional details please check github readme.")
+		fmt.Println(cons.Err_PostgresConfig_Missing)
 		os.Exit(1)
 	}
 

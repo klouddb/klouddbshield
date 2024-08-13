@@ -22,22 +22,22 @@ func NewUnusedHBALineHelper(store *sql.DB) *UnusedHBALineHelper {
 	return &UnusedHBALineHelper{store: store}
 }
 
-func (i *UnusedHBALineHelper) Init(ctx context.Context, cnf *config.Config, baseParser parselog.BaseParser) error {
+func (i *UnusedHBALineHelper) Init(ctx context.Context, logParserCnf *config.LogParser, baseParser parselog.BaseParser) error {
 	// check if postgres setting contains required variable or connection logs
-	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%h") && !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%r") {
+	if !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%h") && !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%r") {
 		return fmt.Errorf("Please set log_line_prefix to '%%h' or '%%r' or enable log_connections")
 	}
 
-	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%u") || !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%d") {
+	if !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%u") || !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%d") {
 		return fmt.Errorf("In logline prefix, please set '%s' and '%s'\n", "%u", "%d") // using printf to avoid the warning for %d in println
 	}
 
 	var hbaRules []model.HBAFIleRules
 
 	// if user is passing hba conf file manually then he or she are expecting that file to be scanned
-	if cnf.LogParser.HbaConfFile != "" {
+	if logParserCnf.HbaConfFile != "" {
 		var err error
-		hbaRules, err = hbarules.ScanHBAFile(ctx, i.store, cnf.LogParser.HbaConfFile)
+		hbaRules, err = hbarules.ScanHBAFile(ctx, i.store, logParserCnf.HbaConfFile)
 		if err != nil {
 			return fmt.Errorf("Got error while scanning hba file: %v", err)
 		}
@@ -56,7 +56,7 @@ func (i *UnusedHBALineHelper) Init(ctx context.Context, cnf *config.Config, base
 		return fmt.Errorf("Got error while parsing hba rules: %v", err)
 	}
 
-	i.HbaUnusedLineParser = parselog.NewHbaUnusedLines(cnf, baseParser, hbaValidator)
+	i.HbaUnusedLineParser = parselog.NewHbaUnusedLines(logParserCnf, baseParser, hbaValidator)
 	return nil
 }
 

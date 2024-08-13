@@ -1,0 +1,13 @@
+[Unit]
+Description=Cis Collector
+After=network.target
+Wants=network-online.target
+
+[Service]
+Restart=always
+Type=simple
+ExecStart=/usr/bin/ciscollector --setup-cron
+User=root
+
+[Install]
+WantedBy=multi-user.target

@@ -1,13 +1,15 @@
 {{ define "postgresTab" }}
     <div class="wrapper">
         <div class="myContainer">
-            <div id="summaryStats">
-                <h3>Summary</h3>
-                {{ range .Summary.Data }}
-                    {{ template "progressBarTemplate" . }}
-                {{ end }}
-                {{ template "overallBarTemplate" .Summary.Overall }}
-            </div>
+            {{ if .Summary }}
+                <div id="summaryStats">
+                    <h3>Summary</h3>
+                    {{ range .Summary.Data }}
+                        {{ template "progressBarTemplate" . }}
+                    {{ end }}
+                    {{ template "overallBarTemplate" .Summary.Overall }}
+                </div>
+            {{ end }}
 
             <h3>Control Details</h3>
             <p>Postgres Version {{ .PostgresVersion }}</p>
@@ -21,7 +23,7 @@
     {{ if and (.) (len .) }}
        <div class="table-container" style="margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <button class="toggleAll btn btn-primary" style="margin-right: 20px;">Expand All</button>
+                <button class="toggleAll btn">Expand All</button>
                 <table style="border: none; display: flex; align-items: center;">
                     <tr>
                         <td style="text-align:center; padding: 0 10px;">{{ template "tick" }}</td>
@@ -37,8 +39,8 @@
                 <thead>
                     <tr>
                         <th>Control</th>
-                        <th style="text-align:center;">Result</th>
-                        <th>Details</th>
+                        <th class="icon_column">Result</th>
+                        <th class="icon_column">Details</th>
                     </tr>
                 </thead>
                 {{ range . }}
@@ -167,7 +169,7 @@
 {{ define "userlistTable" }}
     {{ if and (.) (len .) }}
         <div class="table-container">
-            <button class="toggleAll btn btn-primary">Expand All</button>
+            <button class="toggleAll btn">Expand All</button>
             <table class="table maintable">
                 {{ range . }}
                     {{ template "userListTableBodyPostgres" . }}

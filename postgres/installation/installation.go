@@ -129,7 +129,6 @@ func CheckSystemdServiceFiles_v16() helper.CheckHelper {
 		$ systemctl is-enabled postgresql-16.service`,
 		References: `CIS PostgreSQL 16
 		v1.0.0 - 11-07-2023`,
-		Critical: true,
 	}
 	return helper.NewCheckHelper(result, func(store *sql.DB, ctx context.Context) (*model.Result, error) {
 
@@ -196,7 +195,7 @@ v1.0.0 - 02-26-2021`,
 		}
 		if version == "" {
 			result.Status = "Fail"
-			result.FailReason = "Unable to determine Postgres version. Error:	" + err.Error()
+			result.FailReason = "Unable to determine Postgres version."
 			return result, nil
 		}
 

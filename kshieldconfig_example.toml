@@ -15,5 +15,7 @@
 # maxIdleConn = 2
 # maxOpenConn = 2
 
+# customTemplate="<static path for custom template here>"
+
 # [app]
 # debug = true

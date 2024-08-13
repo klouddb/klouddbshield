@@ -1,0 +1,124 @@
+column,"NHSNumber",NHSNumber
+column,"nhsnumber",NHSNumber
+column,"NHS Number",NHSNumber
+column,"nhs number",NHSNumber
+column,"NHS_Number",NHSNumber
+column,"nhs_number",NHSNumber
+column,"NHSNum",NHSNumber
+column,"nhsnum",NHSNumber
+column,"NHS_Num",NHSNumber
+column,"nhs_num",NHSNumber
+column,"NHS_ID",NHSNumber
+column,"nhs_id",NHSNumber
+column,"NHS ID",NHSNumber
+column,"nhs id",NHSNumber
+column,"NHS_Identification",NHSNumber
+column,"nhs_identification",NHSNumber
+column,"NHS Identification",NHSNumber
+column,"nhs identification",NHSNumber
+column,"NationalHealthServiceNumber",NHSNumber
+column,"nationalhealthservicenumber",NHSNumber
+column,"National_Health_Service_Number",NHSNumber
+column,"national_health_service_number",NHSNumber
+column,"National Health Service Number",NHSNumber
+column,"national health service number",NHSNumber
+column,"NHSRegNumber",NHSNumber
+column,"nhsregnumber",NHSNumber
+column,"NHS_Reg_Number",NHSNumber
+column,"nhs_reg_number",NHSNumber
+column,"NHS Reg Number",NHSNumber
+column,"nhs reg number",NHSNumber
+column,"NHSPatientNumber",NHSNumber
+column,"nhspatientnumber",NHSNumber
+column,"NHS_Patient_Number",NHSNumber
+column,"nhs_patient_number",NHSNumber
+column,"NHS Patient Number",NHSNumber
+column,"nhs patient number",NHSNumber
+column,"NHS_Record_Number",NHSNumber
+column,"nhs_record_number",NHSNumber
+column,"NHS Record Number",NHSNumber
+column,"nhs record number",NHSNumber
+column,"HealthServiceNumber",NHSNumber
+column,"healthservicenumber",NHSNumber
+column,"Health_Service_Number",NHSNumber
+column,"health_service_number",NHSNumber
+column,"Health Service Number",NHSNumber
+column,"health service number",NHSNumber
+column,"NHS_Healthcare_Number",NHSNumber
+column,"nhs_healthcare_number",NHSNumber
+column,"NHS Healthcare Number",NHSNumber
+column,"nhs healthcare number",NHSNumber
+column,"NHS_Reference_Number",NHSNumber
+column,"nhs_reference_number",NHSNumber
+column,"NHS Reference Number",NHSNumber
+column,"nhs reference number",NHSNumber
+column,"NHS_ID_Number",NHSNumber
+column,"nhs_id_number",NHSNumber
+column,"NHS ID Number",NHSNumber
+column,"nhs id number",NHSNumber
+column,"NHServiceNumber",NHSNumber
+column,"nhservicenumber",NHSNumber
+column,"NH_Service_Number",NHSNumber
+column,"nh_service_number",NHSNumber
+column,"NH Service Number",NHSNumber
+column,"nh service number",NHSNumber
+column,"Health_Service_ID",NHSNumber
+column,"health_service_id",NHSNumber
+column,"Health Service ID",NHSNumber
+column,"health service id",NHSNumber
+column,"National_Health_Number",NHSNumber
+column,"national_health_number",NHSNumber
+column,"National Health Number",NHSNumber
+column,"national health number",NHSNumber
+column,"NHS_Healthcare_ID",NHSNumber
+column,"nhs_healthcare_id",NHSNumber
+column,"NHS Healthcare ID",NHSNumber
+column,"nhs healthcare id",NHSNumber
+column,"Healthcare_Number",NHSNumber
+column,"healthcare_number",NHSNumber
+column,"Healthcare Number",NHSNumber
+column,"healthcare number",NHSNumber
+column,"Patient_NHS_Number",NHSNumber
+column,"patient_nhs_number",NHSNumber
+column,"Patient NHS Number",NHSNumber
+column,"patient nhs number",NHSNumber
+column,"National_Health_Service_ID",NHSNumber
+column,"national_health_service_id",NHSNumber
+column,"National Health Service ID",NHSNumber
+column,"national health service id",NHSNumber
+column,"NHS_Healthcare_Identification",NHSNumber
+column,"nhs_healthcare_identification",NHSNumber
+column,"NHS Healthcare Identification",NHSNumber
+column,"nhs healthcare identification",NHSNumber
+column,"NationalHealthServiceID",NHSNumber
+column,"nationalhealthserviceid",NHSNumber
+column,"National_Health_Service_ID",NHSNumber
+column,"national_health_service_id",NHSNumber
+column,"National Health Service ID",NHSNumber
+column,"national health service id",NHSNumber
+column,"NHSPatientID",NHSNumber
+column,"nhspatientid",NHSNumber
+column,"NHS_Patient_ID",NHSNumber
+column,"nhs_patient_id",NHSNumber
+column,"NHS Patient ID",NHSNumber
+column,"nhs patient id",NHSNumber
+column,"NHS_ID_Identification",NHSNumber
+column,"nhs_id_identification",NHSNumber
+column,"NHS ID Identification",NHSNumber
+column,"nhs id identification",NHSNumber
+column,"NHSRecordNumber",NHSNumber
+column,"nhsrecordnumber",NHSNumber
+column,"NHS_Record_Number",NHSNumber
+column,"nhs_record_number",NHSNumber
+column,"NHS Record Number",NHSNumber
+column,"nhs record number",NHSNumber
+column,"NHS_Healthcare_Record",NHSNumber
+column,"nhs_healthcare_record",NHSNumber
+column,"NHS Healthcare Record",NHSNumber
+column,"nhs healthcare record",NHSNumber
+column,"HealthcareRecordNumber",NHSNumber
+column,"healthcarerecordnumber",NHSNumber
+column,"Healthcare_Record_Number",NHSNumber
+column,"healthcare_record_number",NHSNumber
+column,"Healthcare Record Number",NHSNumber
+column,"healthcare record number",NHSNumber

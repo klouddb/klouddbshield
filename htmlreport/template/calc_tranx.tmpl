@@ -1,0 +1,156 @@
+{{ define "transactionWraparound" }}
+    {{ $Id1 := randomString }}
+    <div class="wrapper">
+        <div class="myContainer">
+            <div class="report_card">
+                {{ if isGreater (.ClusterStats).PercentTowardsWraparound 0.0 }}
+                    <div class="row">
+                        <div class="chart_info">
+                            <p>For given database cluster the percentage towards wraparound is {{ (.ClusterStats
+                                ).PercentTowardsWraparound }} %</p>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="{{ $Id1 }}2"></canvas>
+                        </div>
+                    </div>
+                {{ else }}
+                    <h4 class="chart_title"> ✅ Percentage towards wraparound is 0 %,
+                            Your database cluster is in good state.</h4>
+                {{end}}
+
+                {{ if isGreater (.ClusterStats).PercentTowardsEmergencyAutovac 0.0 }}
+                    <div class="cluster_stats row">
+                        <div class="chart_info">
+                            <p>For given database cluster the percentage towards emergency autovaccum is {{ (.ClusterStats
+                                ).PercentTowardsEmergencyAutovac }} %</p>
+                            <br>
+
+                            {{if isGreater (.ClusterStats).PercentTowardsEmergencyAutovac 70.0 }}
+                            <p class="danger_text">⚠️ Percent Towards Emergency Autovac is > 70% <br>
+                                your database cluster state is in danger.</p>
+                            {{end}}
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="{{ $Id1 }}"></canvas>
+                        </div>
+                    </div>
+                {{ else }}
+                    <h4 class="chart_title"> ✅ Percentage towards emergency autovacum is 0 %,
+                            Your database cluster is in good state.</h4>
+                {{end}}
+
+                <div>
+                    <h4>📉 Top 5 Database Statistics</h4>
+                    <table class="table maintable">
+                        <thead>
+                            <tr>
+                                <th>Datname</th>
+                                <th>Age</th>
+                                <th>CurrentSetting</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{ range .DatabaseStats }}
+                                <tr>
+                                    <td>{{ .Datname }}</td>
+                                    <td>{{ .Age }}</td>
+                                    <td>{{ .CurrentSetting }}</td>
+                                </tr>
+                            {{ end }}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div>
+                    <div>
+                        <h4> ⏳ Transactions Per Seconds Vs Time to hit wraparound point (Reference table)</h4>
+                        <table class="table maintable">
+                            <thead>
+                                <tr>
+                                    <th>Transactions Per Second</th>
+                                    <th>Time to exhaust 2 Billion Transactions</th>
+
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>100</td>
+                                    <td>231 days, 1 Hour, 46 Minutes, 40 Seconds.</td>
+                                </tr>
+                                <tr>
+                                    <td>500</td>
+                                    <td>46 Days, 5 Hours, 40 Minutes.</td>
+                                </tr>
+                                <tr>
+                                    <td>1000</td>
+                                    <td>23 Days, 3 Hours, 20 Minutes.</td>
+                                </tr>
+                                <tr>
+                                    <td>5000</td>
+                                    <td>4 Days, 15 Hours, 40 Minutes.</td>
+                                </tr>
+                                <tr>
+                                    <td>10,000</td>
+                                    <td>2 days, 7 Hour, 20 Minutes.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div>
+                        <h4> ⏳ Wraparound Stats</h4>
+                        <table class="table maintable">
+                            <tbody>
+                                <tr>
+                                    <td>OldestRunningXactAge</td>
+                                    <td>{{ ((.TxIDAgeDetails
+                                        ).OldestRunningXactAge).Float64 }}</td>
+                                </tr>
+                                <tr>
+                                    <td>OldestPreparedXactAge</td>
+                                    <td>{{ ((.TxIDAgeDetails
+                                        ).OldestPreparedXactAge).Float64 }}</td>
+                                </tr>
+                                <tr>
+                                    <td>OldestReplicationSlotAge</td>
+                                    <td>{{ ((.TxIDAgeDetails
+                                        ).OldestReplicationSlotAge).Float64 }}</td>
+                                </tr>
+                                <tr>
+                                    <td>OldestReplicaXactAge</td>
+                                    <td>{{ ((.TxIDAgeDetails
+                                        ).OldestReplicaXactAge).Float64 }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td>OldestRunningXactLeft</td>
+                                    <td>{{ ((.TxIDAgeDetails
+                                        ).OldestRunningXactLeft).Float64 }}</td>
+                                </tr>
+                                <tr>
+                                    <td>OldestPreparedXactLeft</td>
+                                    <td>{{ ((.TxIDAgeDetails
+                                        ).OldestPreparedXactLeft).Float64 }}</td>
+                                </tr>
+                                <tr>
+                                    <td>OldestReplicationSlotLeft</td>
+                                    <td>{{((.TxIDAgeDetails
+                                        ).OldestReplicationSlotLeft).Float64 }}</td>
+                                </tr>
+                                <tr>
+                                    <td>OldestReplicaXactLeft</td>
+                                    <td>{{ ((.TxIDAgeDetails
+                                        ).OldestReplicaXactLeft).Float64 }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        renderChart({{ .ClusterStats | toJson }}, {{ $Id1 }});
+    </script>
+
+{{ end }}

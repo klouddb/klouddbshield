@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
 
@@ -326,18 +325,13 @@ filePasswordLoop:
 }
 
 // connectAuth performs an authentication for a user and password
-func connectAuth(ctx context.Context, user, pass, host, port string) error {
+func connectAuth(_ context.Context, user, pass, host, port string) error {
 	connStr := fmt.Sprintf("user=%s password=%s host=%s port=%s database=postgres", user, pass, host, port)
 
-	config, err := pgx.ParseConfig(connStr)
-	if err != nil {
-		return err
-	}
-
-	conn, err := pgx.ConnectConfig(ctx, config)
+	conn, err := sql.Open("postgres", connStr)
 
 	if err == nil && conn != nil {
-		conn.Close(ctx)
+		conn.Close() //nolint:errcheck
 	}
 
 	return err

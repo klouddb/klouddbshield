@@ -230,6 +230,24 @@ func LoadCSVTemplate(filename string) ([]string, error) {
 	return out, nil
 }
 
+func SchemaExists(store *sql.DB, schemaName string) (bool, error) {
+	var schemaExists bool
+	err := store.QueryRow("SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = $1)", schemaName).Scan(&schemaExists)
+	if err != nil {
+		return false, err
+	}
+	return schemaExists, nil
+}
+
+func TableRowCount(store *sql.DB, tableName string) (int, error) {
+	var count int
+	err := store.QueryRow(fmt.Sprintf(`SELECT COUNT(*) FROM %s`, tableName)).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func GetListFromQuery(store *sql.DB, sqlString string) ([]string, error) {
 	list := []string{}
 	rows, err := store.Query(sqlString)
