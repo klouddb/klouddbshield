@@ -41,10 +41,10 @@ func init() {
 	setupCmd.Flags().StringVarP(&filesize, "size", "s", "10MB", "to update log file size")
 	setupCmd.Flags().IntVarP(&index, "index", "i", 0, "to handle mutiple prefix at once")
 	setupCmd.Flags().IntVarP(&timeForPgExecution, "time", "t", 1, "how much time we should execute pgbench command")
-	rootCmd.PersistentFlags().StringVarP(&prefix, "prefix", "p", "", "prefix for setup")
-	err := rootCmd.MarkPersistentFlagRequired("prefix")
+	setupCmd.PersistentFlags().StringVarP(&prefix, "prefix", "p", "", "prefix for setup")
+	err := setupCmd.MarkPersistentFlagRequired("prefix")
 	if err != nil {
-		fmt.Println("Got error while marking flag required:", err)
+		fmt.Println("Got error while marking flag required in setup command:", err)
 		return
 	}
 

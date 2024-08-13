@@ -83,7 +83,10 @@ func PrintHelp() {
 		fmt.Println(text.FgCyan.Sprint(`maxIdleConn = 2`))
 		fmt.Println(text.FgCyan.Sprint(`maxOpenConn = 2`))
 
-	case 4: // Inactive user report
+	case 4: // Pii Scanner
+		// help command is not implemented yet. Refer to the detailed guide at 'https://klouddb.gitbook.io/klouddb_shield'
+
+	case 5: // Inactive user report
 		fmt.Println(text.Bold.Sprint("inactive_users") + ": To get inactive users from log file")
 
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -103,7 +106,7 @@ func PrintHelp() {
 		fmt.Println("$ " + mainCommand + " " + fileRegexFlag + " " + beginTimeFlag + " " + endTimeFlag + " " + prefixFlag)
 		fmt.Println("$ " + mainCommand + " " + fileRegexFlag + " " + prefixFlag)
 		fmt.Println("\n> " + text.Bold.Sprint("NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser=inactive_users"))
-	case 5: // Client ip report
+	case 6: // Client ip report
 		fmt.Println(text.Bold.Sprint("unique_ip") + ": To get client IPs from log file")
 
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -124,7 +127,7 @@ func PrintHelp() {
 		fmt.Println("$ " + mainCommand + " " + fileRegexFlag + " " + prefixFlag)
 		fmt.Println("\n> " + text.Bold.Sprint("NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser=unique_ip"))
 
-	case 6: // HBA unused lines report
+	case 7: // HBA unused lines report
 		fmt.Println(text.Bold.Sprint("unused_lines") + ": To get unused lines from pg_hba.conf file by comparing that with log file")
 
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -146,7 +149,7 @@ func PrintHelp() {
 		fmt.Println("$ " + mainCommand + " " + fileRegexFlag + " " + prefixFlag + " " + hbaFileFlag)
 		fmt.Println("\n> " + text.Bold.Sprint("NOTE: --begin-time and --end-time are optional flags and --prefix, --file-path and --hba-file are required flags if you are using --logparser=unused_lines"))
 
-	case 7: // Password Manager
+	case 8: // Password Manager
 		fmt.Println("This module has 3 different active features 1) Password generator 2) Password attack simulator 3) Common usernames detector")
 
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -157,7 +160,7 @@ func PrintHelp() {
 		fmt.Println("\t" + text.FgCyan.Sprint("2. Password attack simulator"))
 		fmt.Println("\t" + text.FgCyan.Sprint("3. Common usernames detector"))
 
-	case 8: // Password leak scanner
+	case 9: // Password leak scanner
 		fmt.Println(text.Bold.Sprint("password_leak_scanner") + ": To get password leak scanner from log file")
 
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -178,7 +181,7 @@ func PrintHelp() {
 		fmt.Println("$ " + mainCommand + " " + fileRegexFlag + " " + prefixFlag)
 		fmt.Println("\n> " + text.Bold.Sprint("NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser=password_leak_scanner"))
 
-	case 9, 10: // AWS RDS Sec Report
+	case 10, 11: // AWS RDS Sec Report
 		fmt.Println("> Make sure you have properly configured your AWS-CLI with a valid Access Key and Region or declare AWS variables properly.")
 		fmt.Println("> NOTE: Please run this tool from a bastion host or another location where you have access to your RDS instances. It only requires basic AWS RDS 'describe' privileges and SNS 'read' privileges.")
 
@@ -191,7 +194,7 @@ func PrintHelp() {
 		option := text.FgMagenta.Sprint(`"AWS RDS Sec Report"`)
 		fmt.Printf("> Once above is done please run %s and pick option for %s.\n", command, option)
 
-	case 11: // MySQL Report
+	case 12: // MySQL Report
 		filePath := text.FgMagenta.Sprint("/etc/klouddbshield/kshieldconfig.toml")
 		dirPath := text.FgMagenta.Sprint("/etc/klouddbshield")
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -206,7 +209,10 @@ func PrintHelp() {
 		fmt.Println(text.FgCyan.Sprint(`maxIdleConn = 2`))
 		fmt.Println(text.FgCyan.Sprint(`maxOpenConn = 2`))
 
-	case 12: // Exit
+	case 13: // Transaction Wraparound Report
+		// TODO: help command is not created for this module. Refer to the detailed guide at 'https://klouddb.gitbook.io/klouddb_shield'
+
+	case 14: // Exit
 		os.Exit(0)
 
 	default:

@@ -40,3 +40,6 @@ nfpms:
       - src: passwords/*
         dst: /etc/klouddbshield/passwords
         type: config
+      - src: python/*
+        dst: /etc/klouddbshield/python
+        type: config

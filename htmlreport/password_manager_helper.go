@@ -12,13 +12,10 @@ type CommonUsernamesRenderData struct {
 	Usernames []string
 }
 
-func RenderPasswordManagerReport(ctx context.Context, commonUsernames []string) {
-	templateData = append(templateData, Tab{
-		Title: "Password Manager",
-		Body: PasswordManagerHTMLReport{
-			CommanUsernames: &CommonUsernamesRenderData{
-				Usernames: commonUsernames,
-			},
+func (h *HtmlReportHelper) RenderPasswordManagerReport(ctx context.Context, commonUsernames []string) {
+	h.AddTab("Password Manager", PasswordManagerHTMLReport{
+		CommanUsernames: &CommonUsernamesRenderData{
+			Usernames: commonUsernames,
 		},
 	})
 }

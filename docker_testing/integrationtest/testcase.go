@@ -27,7 +27,13 @@ func init() {
 	}
 
 	testCmd.Flags().StringVarP(&filename, "file", "f", "", "pass file for testing")
-	err := testCmd.MarkFlagRequired("file")
+	testCmd.PersistentFlags().StringVarP(&prefix, "prefix", "p", "", "prefix for setup")
+	err := testCmd.MarkPersistentFlagRequired("prefix")
+	if err != nil {
+		fmt.Println("Got error while marking flag required in test command:", err)
+		return
+	}
+	err = testCmd.MarkFlagRequired("file")
 	if err != nil {
 		fmt.Println("error while setting required flag:", err)
 		os.Exit(1)

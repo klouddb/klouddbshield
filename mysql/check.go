@@ -19,12 +19,7 @@ import (
 	"github.com/klouddb/klouddbshield/mysql/replication"
 )
 
-type Status struct {
-	Pass int
-	Fail int
-}
-
-func PerformAllChecks(store *sql.DB, ctx context.Context) []*model.Result {
+func PerformAllChecks(store *sql.DB, ctx context.Context) ([]*model.Result, map[int]*model.Status) {
 	var listOfResult []*model.Result
 	// 1.1
 	result, err := oslevelconfig.IsDBOnNPS(store, ctx)
@@ -346,24 +341,24 @@ func PerformAllChecks(store *sql.DB, ctx context.Context) []*model.Result {
 		log.Error().Err(err).Msg(err.Error())
 	}
 	listOfResult = append(listOfResult, result)
-	CalculateScore(listOfResult)
-	return listOfResult
+
+	return listOfResult, CalculateScore(listOfResult)
 }
 
-func CalculateScore(listOfResult []*model.Result) map[int]*Status {
+func CalculateScore(listOfResult []*model.Result) map[int]*model.Status {
 
-	score := make(map[int]*Status)
-	score[0] = new(Status)
-	score[1] = new(Status)
-	score[2] = new(Status)
-	score[3] = new(Status)
-	score[4] = new(Status)
-	score[5] = new(Status)
-	score[6] = new(Status)
-	score[7] = new(Status)
-	score[8] = new(Status)
-	score[9] = new(Status)
-	score[10] = new(Status)
+	score := make(map[int]*model.Status)
+	score[0] = &model.Status{}
+	score[1] = &model.Status{}
+	score[2] = &model.Status{}
+	score[3] = &model.Status{}
+	score[4] = &model.Status{}
+	score[5] = &model.Status{}
+	score[6] = &model.Status{}
+	score[7] = &model.Status{}
+	score[8] = &model.Status{}
+	score[9] = &model.Status{}
+	score[10] = &model.Status{}
 	for _, result := range listOfResult {
 		if strings.HasPrefix(result.Control, "1") {
 			if result.Status == "Pass" {
@@ -460,7 +455,7 @@ func CalculateScore(listOfResult []*model.Result) map[int]*Status {
 	PrintScore(score)
 	return score
 }
-func PrintScore(score map[int]*Status) {
+func PrintScore(score map[int]*model.Status) {
 	format := []string{"Section 1  - Operating system          - %d/%d  - %.2f%%\n",
 		"Section 2  - Installation and Planning - %d/%d - %.2f%%\n",
 		"Section 3  - File Permissions          - %d/%d  - %.2f%%\n",

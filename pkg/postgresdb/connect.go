@@ -20,6 +20,13 @@ type Postgres struct {
 	MaxOpenConn int `toml:"maxOpenConn"`
 }
 
+func (p *Postgres) HtmlReportName() string {
+	if p == nil {
+		return ""
+	}
+	return fmt.Sprintf("postgres_%s:%s_%s", p.Host, p.Port, p.DBName)
+}
+
 // Open opens a the postgres database connection specified by its connection
 // url which can be of format:
 // https://pkg.go.dev/github.com/lib/pq#hdr-Connection_String_Parameters

@@ -119,7 +119,7 @@ func PrintVerbose(result *model.HBAScannerResult) {
 
 	} else {
 		t.AppendSeparator()
-		color := text.FgRed
+		color := text.FgHiRed
 		// row := fmt.Sprintf("HBA Check %d - %s", result.Control, result.Description)
 		t.AppendRow(table.Row{"Status", color.Sprintf("%s", result.Status)})
 		t.AppendSeparator()

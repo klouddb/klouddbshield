@@ -35,7 +35,7 @@ type Parser interface {
 type ParserFunc func(string) error
 
 // RunFastParser runs the log parser using fast processing.
-func RunFastParser(ctx context.Context, cnf *config.Config, fns []ParserFunc, validator ParserFunc) (*FastRunnerResponse, error) {
+func RunFastParser(ctx context.Context, runCmd bool, logParserCnf *config.LogParser, fns []ParserFunc, validator ParserFunc) (*FastRunnerResponse, error) {
 	// Read log file path from user
 	defer func() {
 		if r := recover(); r != nil {
@@ -43,7 +43,7 @@ func RunFastParser(ctx context.Context, cnf *config.Config, fns []ParserFunc, va
 		}
 	}()
 
-	printSuggestion(cnf)
+	printSuggestion(runCmd)
 
 	start := time.Now()
 	h := &ProcessHelper{
@@ -56,7 +56,7 @@ func RunFastParser(ctx context.Context, cnf *config.Config, fns []ParserFunc, va
 	g, groupCTX := errgroup.WithContext(ctx)
 	g.SetLimit(10)
 
-	bar := progressbar.NewOptions(len(cnf.LogParser.LogFiles),
+	bar := progressbar.NewOptions(len(logParserCnf.LogFiles),
 		progressbar.OptionSetDescription("Processing Log Files"),
 		progressbar.OptionShowCount(),
 		progressbar.OptionFullWidth(),
@@ -71,7 +71,7 @@ func RunFastParser(ctx context.Context, cnf *config.Config, fns []ParserFunc, va
 	// 	}
 	// }()
 
-	for _, file := range cnf.LogParser.LogFiles {
+	for _, file := range logParserCnf.LogFiles {
 		// handle parallel processing of files\
 		func(file string) {
 			g.Go(func() error {
@@ -379,11 +379,11 @@ func mergeContinueLines(lines []string) []string {
 	return mergedLines
 }
 
-func printSuggestion(cnf *config.Config) {
+func printSuggestion(runCommand bool) {
 	fmt.Println(text.FgCyan.Sprint(`NOTE: Scanning large files may cause a spike in CPU usage. If you are using this in a production environment, please take this into consideration. Additionally, large files will take some time to process, so consider processing them in parts`))
 	fmt.Println(text.FgCyan.Sprint(`> To control the resource usage, you can limit the number of lines to be processed in a single run. You can do this by using the -cpu-limit flag`))
 
-	if cnf.App.Run {
+	if runCommand {
 		fmt.Println("\t" + text.FgCyan.Sprint("$ ciscollector -r -cpu-limit 1"))
 	} else {
 		fmt.Println("\t" + text.FgCyan.Sprint("$ ciscollector --logparser -cpu-limit 1"))

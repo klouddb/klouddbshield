@@ -125,11 +125,22 @@ func PrintTerminalResultsForLogParser(ctx context.Context, runners []runner.Pars
 			table.SetAlignment(tablewriter.ALIGN_LEFT)
 			table.SetAutoWrapText(false)
 			table.Render()
+		case *QueryParseHelper:
+			fmt.Println("PII data found in the query log file")
+			for label, v := range r.GetResult(ctx) {
+				fmt.Println("label: ", label)
+				for _, queryData := range v {
+					fmt.Println("\t Column:", queryData.Col, "\t Value:", queryData.Val)
+				}
+			}
+
+			fmt.Println("Successfully parsed the query log file")
+
 		}
 	}
 }
 
-func PrintFastRunnerReport(cnf *config.Config, fastRunnerResp *runner.FastRunnerResponse) {
+func PrintFastRunnerReport(logParserCnf *config.LogParser, fastRunnerResp *runner.FastRunnerResponse) {
 	PrintFileParsingError(fastRunnerResp.FileErrors)
 
 	if fastRunnerResp.TotalLines == 0 {
@@ -138,7 +149,7 @@ func PrintFastRunnerReport(cnf *config.Config, fastRunnerResp *runner.FastRunner
 	}
 
 	for i, successLines := range fastRunnerResp.SuccessLines {
-		command := cnf.LogParser.Commands[i]
+		command := logParserCnf.Commands[i]
 
 		perc := float64(successLines) * 100 / float64(fastRunnerResp.TotalLines)
 		switch perc {
@@ -152,13 +163,13 @@ func PrintFastRunnerReport(cnf *config.Config, fastRunnerResp *runner.FastRunner
 		}
 	}
 
-	fmt.Printf("Parsed %d files which took: %s\n", len(cnf.LogParser.LogFiles), time.Since(fastRunnerResp.StartTime))
+	fmt.Printf("Parsed %d files which took: %s\n", len(logParserCnf.LogFiles), time.Since(fastRunnerResp.StartTime))
 
 }
 
-func PrintSummary(ctx context.Context, runners []runner.Parser, cnf *config.Config, fastRunnerResp *runner.FastRunnerResponse, fileData *string) {
+func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *config.LogParser, fastRunnerResp *runner.FastRunnerResponse, builder *strings.Builder) {
 
-	*fileData += "\n\nLog Parser Summary:\n"
+	builder.WriteString("\n\nLog Parser Summary:\n")
 
 	PrintFileParsingError(fastRunnerResp.FileErrors)
 
@@ -168,7 +179,7 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, cnf *config.Conf
 
 	table := tablewriter.NewWriter(mult)
 
-	for i, cmd := range cnf.LogParser.Commands {
+	for i, cmd := range logParserCnf.Commands {
 		parseStatus := "All lines parsed successfully"
 		if fastRunnerResp.SuccessLines[i] == 0 {
 			parseStatus = "No lines parsed successfully"
@@ -225,7 +236,7 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, cnf *config.Conf
 	}
 
 	table.Append([]string{
-		fmt.Sprintf("Parsed %d files which took: %s", len(cnf.LogParser.LogFiles), time.Since(fastRunnerResp.StartTime)),
+		fmt.Sprintf("Parsed %d files which took: %s", len(logParserCnf.LogFiles), time.Since(fastRunnerResp.StartTime)),
 		"",
 		"",
 	})
@@ -236,7 +247,7 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, cnf *config.Conf
 	table.Render()
 	fmt.Println("")
 
-	*fileData += buffer.String() + "\n"
+	builder.Write(buffer.Bytes())
 }
 
 func PrintFileParsingError(fileError map[string]string) {

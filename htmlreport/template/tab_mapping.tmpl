@@ -1,5 +1,7 @@
 {{ define "tabMapping" }}
-    {{ if eq .Title "Postgres" }}
+    {{ if eq .Title "Postgres Security Report" }}
+        {{ template "postgresTab" .Body }}
+    {{ else if eq .Title "Mysql" }}
         {{ template "postgresTab" .Body }}
     {{ else if eq .Title "HBA Scanner Report" }}
         {{ template "hbaTab" .Body }}
@@ -11,12 +13,16 @@
         {{ template "allTab" .Body }}
     {{ else if eq .Title "Users Report" }}
         {{ template "userlistTable" .Body }}
+    {{ else if eq .Title "PII Scanner Report" }}
+        {{ template "piireport" .Body }}
+    {{ else if eq .Title "Wraparound Report" }}
+        {{ template "transactionWraparound" .Body }}
     {{ end }}
 {{ end }}
 
 {{ define "allTab" }}
     {{ range $index, $tab := . }}
-        <h2>{{ $tab.Title }}</h2>
+        <h3 class="all-title" >{{ $tab.Title }}</h3>
         {{ template "tabMapping" $tab }}
     {{ end }}
 {{ end }}

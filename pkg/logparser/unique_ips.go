@@ -18,13 +18,13 @@ func NewUniqueIPHelper() *UniqueIPHelper {
 	return &UniqueIPHelper{}
 }
 
-func (i *UniqueIPHelper) Init(ctx context.Context, cnf *config.Config, baseParser parselog.BaseParser) error {
+func (i *UniqueIPHelper) Init(ctx context.Context, logParserCnf *config.LogParser, baseParser parselog.BaseParser) error {
 	// check if postgres setting contains required variable or connection logs
-	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%h") && !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%r") && !cnf.LogParser.PgSettings.LogConnections {
+	if !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%h") && !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%r") && !logParserCnf.PgSettings.LogConnections {
 		return fmt.Errorf(`Please set log_line_prefix to '%%h' or '%%r' or enable log_connections`)
 	}
 
-	i.UniqueIPParser = parselog.NewUniqueIPParser(cnf, baseParser)
+	i.UniqueIPParser = parselog.NewUniqueIPParser(logParserCnf, baseParser)
 	return nil
 }
 

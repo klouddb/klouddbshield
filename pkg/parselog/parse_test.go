@@ -12,18 +12,16 @@ import (
 func TestUniqueIPParser_Feed(t *testing.T) {
 	tests := []struct {
 		name        string
-		cnf         *config.Config
+		cnf         *config.LogParser
 		lines       []string
 		expectedIPs []string
 		err         error
 	}{
 		{
 			name: "basic valid case",
-			cnf: &config.Config{
-				LogParser: &config.LogParser{
-					PgSettings: &model.PgSettings{
-						LogLinePrefix: "%t [%p]: [%l-1] [trx_id=%x] user=%u,db=%d %r",
-					},
+			cnf: &config.LogParser{
+				PgSettings: &model.PgSettings{
+					LogLinePrefix: "%t [%p]: [%l-1] [trx_id=%x] user=%u,db=%d %r",
 				},
 			},
 
@@ -45,12 +43,10 @@ func TestUniqueIPParser_Feed(t *testing.T) {
 		},
 		{
 			name: "with connection log",
-			cnf: &config.Config{
-				LogParser: &config.LogParser{
-					PgSettings: &model.PgSettings{
-						LogLinePrefix:  "%t [%p]: [%l-1] [trx_id=%x] user=%u,db=%d ",
-						LogConnections: true,
-					},
+			cnf: &config.LogParser{
+				PgSettings: &model.PgSettings{
+					LogLinePrefix:  "%t [%p]: [%l-1] [trx_id=%x] user=%u,db=%d ",
+					LogConnections: true,
 				},
 			},
 
@@ -63,7 +59,7 @@ func TestUniqueIPParser_Feed(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			baseParser := GetDynamicBaseParser(tt.cnf.LogParser.PgSettings.LogLinePrefix)
+			baseParser := GetDynamicBaseParser(tt.cnf.PgSettings.LogLinePrefix)
 			u := NewUniqueIPParser(tt.cnf, baseParser)
 
 			for _, line := range tt.lines {
@@ -97,18 +93,16 @@ func TestUniqueIPParser_Feed(t *testing.T) {
 func TestUniqueUsers_Feed(t *testing.T) {
 	tests := []struct {
 		name          string
-		cnf           *config.Config
+		cnf           *config.LogParser
 		lines         []string
 		expectedUsers []string
 		err           error
 	}{
 		{
 			name: "basic valid case",
-			cnf: &config.Config{
-				LogParser: &config.LogParser{
-					PgSettings: &model.PgSettings{
-						LogLinePrefix: "%t [%p]: [%l-1] [trx_id=%x] user=%u,db=%d %r",
-					},
+			cnf: &config.LogParser{
+				PgSettings: &model.PgSettings{
+					LogLinePrefix: "%t [%p]: [%l-1] [trx_id=%x] user=%u,db=%d %r",
 				},
 			},
 
@@ -130,12 +124,10 @@ func TestUniqueUsers_Feed(t *testing.T) {
 		},
 		{
 			name: "with connection log",
-			cnf: &config.Config{
-				LogParser: &config.LogParser{
-					PgSettings: &model.PgSettings{
-						LogLinePrefix:  "%t [%p]: [%l-1] [trx_id=%x] db=%d ",
-						LogConnections: true,
-					},
+			cnf: &config.LogParser{
+				PgSettings: &model.PgSettings{
+					LogLinePrefix:  "%t [%p]: [%l-1] [trx_id=%x] db=%d ",
+					LogConnections: true,
 				},
 			},
 
@@ -148,7 +140,7 @@ func TestUniqueUsers_Feed(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			baseParser := GetDynamicBaseParser(tt.cnf.LogParser.PgSettings.LogLinePrefix)
+			baseParser := GetDynamicBaseParser(tt.cnf.PgSettings.LogLinePrefix)
 			u := NewUserParser(tt.cnf, baseParser)
 
 			for _, line := range tt.lines {

@@ -276,7 +276,7 @@ var specialChecks = map[string][]helper.CheckHelper{
 	},
 }
 
-func createPreLMACheckList(version string) []helper.CheckHelper {
+func CreatePreLMACheckList(version string) []helper.CheckHelper {
 	var listOfChecks []helper.CheckHelper
 
 	// 1.0
@@ -292,7 +292,7 @@ func createPreLMACheckList(version string) []helper.CheckHelper {
 	return listOfChecks
 }
 
-func createPostLMACheckList(version string) []helper.CheckHelper {
+func CreatePostLMACheckList(version string) []helper.CheckHelper {
 	var listOfChecks []helper.CheckHelper
 
 	// Append checks from each category based on the version
@@ -365,8 +365,8 @@ func PerformAllChecks(store *sql.DB, ctx context.Context, version string, contro
 
 	// version = "16"
 
-	preLMA_checks := helper.FilterCheckHelpers(createPreLMACheckList(version), controlSet)
-	postLMA_checks := helper.FilterCheckHelpers(createPostLMACheckList(version), controlSet)
+	preLMA_checks := helper.FilterCheckHelpers(CreatePreLMACheckList(version), controlSet)
+	postLMA_checks := helper.FilterCheckHelpers(CreatePostLMACheckList(version), controlSet)
 
 	// Run pre-LMA checks
 	// fmt.Println("Running pre-LMA checks...")

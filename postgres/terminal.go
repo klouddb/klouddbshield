@@ -7,6 +7,7 @@ import (
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/klouddb/klouddbshield/model"
+	cons "github.com/klouddb/klouddbshield/pkg/const"
 )
 
 func PrintScore(score map[int]*model.Status) {
@@ -60,7 +61,7 @@ func PrintSummary(listOfResult []*model.HBAScannerResult) {
 
 		} else {
 			t.AppendSeparator()
-			color := text.FgRed
+			color := text.FgHiRed
 			row := fmt.Sprintf("HBA Check %d - %s", result.Control, result.Title)
 			t.AppendRow(table.Row{row, color.Sprintf("%s", result.Status)})
 			t.AppendSeparator()
@@ -77,7 +78,7 @@ func PrintShortSummary(score map[int]*model.Status, listOfResult []*model.HBASca
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 
-	if err := errorMap["All Postgres checks(Recommended)"]; err != nil {
+	if err := errorMap[cons.RootCMD_PostgresCIS]; err != nil {
 		fmt.Println("Error from \"All Postgres checks\": ", err)
 	} else {
 
@@ -90,7 +91,7 @@ func PrintShortSummary(score map[int]*model.Status, listOfResult []*model.HBASca
 		})
 	}
 
-	if err := errorMap["HBA Scanner"]; err != nil {
+	if err := errorMap[cons.RootCMD_HBAScanner]; err != nil {
 		fmt.Println("Error from HBA Scanner: ", err)
 	} else {
 

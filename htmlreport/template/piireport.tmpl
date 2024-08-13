@@ -1,0 +1,111 @@
+{{ define "piireport" }}
+    <div class="wrapper">
+        <div class="myContainer">
+            {{ if eq (len .Data) 0 }}
+                <div class="no-data-block">
+                    <p>No PII data found.</p>
+                </div>
+            {{ else }}
+                <h3 class="all-title">{{ .ScanType }} Report</h3>
+                <div class="table-container" style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div></div>
+                        <table style="border: none; display: flex; align-items: center;">
+                            <tr>
+                                <td style="text-align:center; padding: 0 10px;">🔴</td>
+                                <td style="padding: 0 10px;">High</td>
+                                <td style="text-align:center; padding: 0 10px;">🟡</td>
+                                <td style="padding: 0 10px;">Medium</td>
+                                <td style="text-align:center; padding: 0 10px;">🔵</td>
+                                <td style="padding: 0 10px;">Low</td>
+                            </tr>
+                        </table>
+                    </div>
+                    {{ range $levelIndex, $level := .SupportedLevels }}
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th colspan="2" style="background-color: #f3f3f3;">{{ $level }} Confidence PII entities</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{ range $tableName, $tableDetail := $.Data }}
+                                    {{ $piiColumns := 0 }}
+                                    {{ range $columnName, $piiArray := $tableDetail }}
+                                        {{ $piiEntities := 0 }}
+                                        {{ range $piiIndex, $piiData := $piiArray }}
+                                            {{ if eq $piiData.Confidence $level }}
+                                                {{ $piiEntities = add $piiEntities 1 }}
+                                            {{ end }}
+                                        {{ end }}
+                                        {{ if gt $piiEntities 0 }}
+                                            {{ $piiColumns = add $piiColumns 1 }}
+                                        {{ end }}
+                                    {{ end }}
+                                    {{ if gt $piiColumns 0 }}
+                                        <tr>
+                                            <td>
+                                                <h5 class="pii-table-name">{{ $tableName }}</h5>
+                                            </td>
+                                            <td>{{ $piiColumns }} PII Columns</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2">
+                                            <table class="pii-table table">
+                                                <tbody>
+                                                    {{ range $columnName, $piiArray := $tableDetail }}
+                                                        {{ $firstRowForThisColumn := true }}
+                                                        {{ $piiEntities := 0 }}
+                                                        {{ range $piiIndex, $piiData := $piiArray }}
+                                                            {{ if eq $piiData.Confidence $level }}
+                                                                {{ $piiEntities = add $piiEntities 1 }}
+                                                            {{ end }}
+                                                        {{ end }}
+                                                        {{ range $piiIndex, $piiData := $piiArray }}
+                                                            {{ if eq $piiData.Confidence $level }}
+                                                                <tr>
+                                                                    {{ if $firstRowForThisColumn }}
+                                                                        <td rowspan="{{ $piiEntities }}">{{ $piiData.ConfidenceIcon }} {{ $columnName }}</td>
+                                                                        {{ $firstRowForThisColumn = false }}
+                                                                    {{ end }}
+                                                                    <td
+                                                                        {{ if eq $piiData.Confidence "High" }} style="background-color: #ffefef;"
+                                                                        {{ else if eq $piiData.Confidence "Medium" }} style="background-color: #fffdec;"
+                                                                        {{ else if eq $piiData.Confidence "Low" }} style="background-color: #f3f8ff;"
+                                                                        {{ end }}
+                                                                    >
+                                                                        {{ $piiData.Label }}
+                                                                    </td>
+                                                                    <td
+                                                                        {{ if eq $piiData.DetectorType "column detector" }} style="color: #655107;"
+                                                                        {{ else if eq $piiData.DetectorName "spacy" }} style="color: #650707;"
+                                                                        {{ else if eq $piiData.DetectorType "value detector" }} style="color: #076557;"
+                                                                        {{ end }}
+                                                                    >
+                                                                        {{ if eq $piiData.DetectorName "" }}
+                                                                            {{ $piiData.DetectorType }}
+                                                                        {{ else }}
+                                                                            {{ $piiData.DetectorType }} - {{ $piiData.DetectorName }}
+                                                                        {{ end }}
+                                                                        {{ if ne $piiData.ScanedValueCount 0 }}
+                                                                            ({{ $piiData.MatchedCount }}/{{ $piiData.ScanedValueCount }})
+                                                                        {{ end }}
+                                                                    </td>
+                                                                </tr>
+                                                            {{ end }}
+                                                        {{ end }}
+                                                    {{ end }}
+                                                </tbody>
+                                            </table>
+                                            </td>
+                                        </tr>
+                                    {{ end }}
+                                {{ end }}
+                            </tbody>
+                        </table>
+                    {{ end }}
+                </div>
+            {{ end }}
+        </div>
+    </div>
+{{ end }}

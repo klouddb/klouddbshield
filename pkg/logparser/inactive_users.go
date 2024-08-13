@@ -23,13 +23,13 @@ func NewInactiveUsersHelper(store *sql.DB) *InactiveUsersHelper {
 	return &InactiveUsersHelper{store: store}
 }
 
-func (i *InactiveUsersHelper) Init(ctx context.Context, cnf *config.Config, baseParser parselog.BaseParser) error {
+func (i *InactiveUsersHelper) Init(ctx context.Context, logParserCnf *config.LogParser, baseParser parselog.BaseParser) error {
 	// check if postgres setting contains required variable or connection logs
-	if !strings.Contains(cnf.LogParser.PgSettings.LogLinePrefix, "%u") && !cnf.LogParser.PgSettings.LogConnections {
+	if !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%u") && !logParserCnf.PgSettings.LogConnections {
 		return fmt.Errorf("Please set log_line_prefix to '%%u' or enable log_connections")
 	}
 
-	i.UniqueUserParser = parselog.NewUserParser(cnf, baseParser)
+	i.UniqueUserParser = parselog.NewUserParser(logParserCnf, baseParser)
 	return nil
 }
 

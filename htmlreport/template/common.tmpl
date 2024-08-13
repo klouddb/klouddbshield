@@ -74,6 +74,83 @@
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" />
             <title>KloudDBShield Report</title>
             {{ template "styles" }}
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+            <script>
+                function getProgressColor(value) {
+                    if (value > 70) {
+                        return {
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)', // red
+                            borderColor: 'rgba(255, 99, 132, 1)'
+                        };
+                    } else if (value > 50 && value < 70) {
+                        return {
+                            backgroundColor: 'rgba(255, 206, 86, 0.2)', // yellow
+                            borderColor: 'rgba(255, 206, 86, 1)'
+                        };
+                    } else if (value <= 25) {
+                        return {
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)', // green
+                            borderColor: 'rgba(75, 192, 192, 1)'
+                        };
+                    } else if (value > 25 && value <= 50) {
+                        return {
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)', // blue
+                            borderColor: 'rgba(54, 162, 235, 1)'
+                        };
+                    }
+                }
+
+                function getchartconfig(value) {
+                    var colors = getProgressColor(value);
+                    return {
+                        type: 'bar',
+                        data: {
+                            labels: ['Progress'],
+                            datasets: [{
+                                label: 'Percentage towards emergency auto vaccum.',
+                                data: [value],
+                                backgroundColor: colors.backgroundColor,
+                                borderColor: colors.borderColor,
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    max: 100
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    };
+                }
+
+                function renderChart(clusterStats, id) {
+
+                    // progress bar for PercentTowardsEmergencyAutovac
+                    if (clusterStats.PercentTowardsEmergencyAutovac) {
+                        var ctx = document.getElementById(id).getContext('2d');
+                        var progressValue = clusterStats.PercentTowardsEmergencyAutovac// Set the progress value here
+                        var progressChart = new Chart(ctx, getchartconfig(progressValue));
+                    }
+
+                    // progress bar for PercentTowardsWraparound
+                    if (clusterStats.PercentTowardsWraparound) {
+
+                        var ctx1 = document.getElementById(id + '2').getContext('2d');
+                        var progressValue = clusterStats.PercentTowardsWraparound// Set the progress value here
+                        var progressChart = new Chart(ctx1, getchartconfig(progressValue));
+                    }
+                }
+            </script>
         </head>
 
         <body>
@@ -88,12 +165,12 @@
                 <div class="subcontainer">
                     <ul class="nav nav-tabs">
                         {{ range $index, $tab := . }}
-                            <li class="nav-item"><a class="nav-link{{ if eq $index 0 }} active{{ end }}" href="#{{ replace $tab.Title " " "" }}">{{ $tab.Title }}</a></li>
+                            <li class="nav-item"><a class="nav-link{{ if eq $index 0 }} active{{ end }}" href="#{{ replace $tab.Title " " "" }}_{{ $index }}">{{ $tab.Title }}</a></li>
                         {{ end }}
                     </ul>
                     <div class="tab-content active-tab">
                         {{ range $index, $tab := . }}
-                            <div id="{{ replace .Title " " "" }}" class="tab-pane {{ if eq $index 0 }}active{{ end }}">
+                            <div id="{{ replace .Title " " "" }}_{{ $index }}" class="tab-pane {{ if eq $index 0 }}active{{ end }}">
                                 {{ template "tabMapping" $tab }}
                             </div>
                         {{ end }}

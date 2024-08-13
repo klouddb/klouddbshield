@@ -54,16 +54,13 @@ func GetSimplifiedInactiveUsers(userdata [][]string) *SimplifiedInactiveUserData
 	return out
 }
 
-func RanderLogParserError(err error) {
-	templateData = append(templateData, Tab{
-		Title: "Log Parser",
-		Body: LogparserHTMLReport{
-			Error: err.Error(),
-		},
+func (h *HtmlReportHelper) RanderLogParserError(err error) {
+	h.AddTab("Log Parser", LogparserHTMLReport{
+		Error: err.Error(),
 	})
 }
 
-func RenderLogparserResponse(ctx context.Context, store *sql.DB, parsers []runner.Parser) {
+func (h *HtmlReportHelper) RenderLogparserResponse(ctx context.Context, store *sql.DB, parsers []runner.Parser) {
 	data := LogparserHTMLReport{}
 
 	for _, r := range parsers {
@@ -89,8 +86,5 @@ func RenderLogparserResponse(ctx context.Context, store *sql.DB, parsers []runne
 		}
 	}
 
-	templateData = append(templateData, Tab{
-		Title: "Log Parser",
-		Body:  data,
-	})
+	h.AddTab("Log Parser", data)
 }

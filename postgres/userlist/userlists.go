@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/klouddb/klouddbshield/htmlreport"
 	"github.com/klouddb/klouddbshield/model"
 )
 
@@ -67,13 +66,11 @@ var runner = []UserlistHelper{
 	},
 }
 
-func Run(db *sql.DB, ctx context.Context) []model.UserlistResult {
+func Run(ctx context.Context, db *sql.DB) []model.UserlistResult {
 	out := []model.UserlistResult{}
 	for _, r := range runner {
 		out = append(out, *r.Process(db, ctx))
 	}
-
-	htmlreport.RegisterUserlistData(out)
 
 	return out
 }

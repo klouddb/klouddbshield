@@ -14,16 +14,16 @@ var LogPrefixPostgresIpsRegexp = regexp.MustCompile(`(\s*)connection received:(\
 var UserConnAuthRegexp = regexp.MustCompile(`(\s*)connection authorized:(\s+)user=(\S*)(\s+)database=(\S*)(\s+)application_name=(\S*)`)
 
 type UniqueIPParser struct {
-	uniqueIPs  *utils.LockSet
-	cnf        *config.Config
-	baseParser BaseParser
+	uniqueIPs    *utils.LockSet
+	logParserCnf *config.LogParser
+	baseParser   BaseParser
 }
 
-func NewUniqueIPParser(cnf *config.Config, baseParser BaseParser) *UniqueIPParser {
+func NewUniqueIPParser(logParserCnf *config.LogParser, baseParser BaseParser) *UniqueIPParser {
 	return &UniqueIPParser{
-		uniqueIPs:  utils.NewLockSet(),
-		cnf:        cnf,
-		baseParser: baseParser,
+		uniqueIPs:    utils.NewLockSet(),
+		logParserCnf: logParserCnf,
+		baseParser:   baseParser,
 	}
 }
 
@@ -35,12 +35,12 @@ func (u *UniqueIPParser) Feed(line string) error {
 	}
 
 	// if time is not valid then return
-	if !u.cnf.LogParser.IsValidTime(parsedData.GetTime()) {
+	if !u.logParserCnf.IsValidTime(parsedData.GetTime()) {
 		return nil
 	}
 
 	// if logline prefix contains %h then use base parser then try parsing loglineprefix
-	if strings.Contains(u.cnf.LogParser.PgSettings.LogLinePrefix, "%h") || strings.Contains(u.cnf.LogParser.PgSettings.LogLinePrefix, "%r") {
+	if strings.Contains(u.logParserCnf.PgSettings.LogLinePrefix, "%h") || strings.Contains(u.logParserCnf.PgSettings.LogLinePrefix, "%r") {
 		if host, err := parsedData.GetHost(); err == nil {
 			u.uniqueIPs.Add(host)
 			return nil
@@ -49,7 +49,7 @@ func (u *UniqueIPParser) Feed(line string) error {
 
 	// if logConnection is not enabled then return as below logic
 	// is dependent on logConnection
-	if !u.cnf.LogParser.PgSettings.LogConnections {
+	if !u.logParserCnf.PgSettings.LogConnections {
 		return nil
 	}
 
@@ -69,17 +69,17 @@ func (u *UniqueIPParser) GetUniqueIPs() map[string]bool {
 }
 
 type UniqueUserParser struct {
-	uniqueUsers *utils.LockSet
-	cnf         *config.Config
+	uniqueUsers  *utils.LockSet
+	logParserCnf *config.LogParser
 
 	baseParser BaseParser
 }
 
-func NewUserParser(cnf *config.Config, baseParser BaseParser) *UniqueUserParser {
+func NewUserParser(logParserCnf *config.LogParser, baseParser BaseParser) *UniqueUserParser {
 	return &UniqueUserParser{
-		uniqueUsers: utils.NewLockSet(),
-		cnf:         cnf,
-		baseParser:  baseParser,
+		uniqueUsers:  utils.NewLockSet(),
+		logParserCnf: logParserCnf,
+		baseParser:   baseParser,
 	}
 }
 
@@ -90,18 +90,18 @@ func (u *UniqueUserParser) Feed(line string) error {
 		return err
 	}
 
-	if !u.cnf.LogParser.IsValidTime(parsedData.GetTime()) {
+	if !u.logParserCnf.IsValidTime(parsedData.GetTime()) {
 		return nil
 	}
 
-	if strings.Contains(u.cnf.LogParser.PgSettings.LogLinePrefix, "%u") {
+	if strings.Contains(u.logParserCnf.PgSettings.LogLinePrefix, "%u") {
 		if user, err := parsedData.GetUser(); err == nil {
 			u.uniqueUsers.Add(user)
 			return nil
 		}
 	}
 
-	if !u.cnf.LogParser.PgSettings.LogConnections {
+	if !u.logParserCnf.PgSettings.LogConnections {
 		return nil
 	}
 
@@ -122,7 +122,7 @@ func (u *UniqueUserParser) GetUniqueUser() map[string]bool {
 }
 
 type HbaUnusedLineParser struct {
-	cnf *config.Config
+	logParserCnf *config.LogParser
 
 	baseParser BaseParser
 
@@ -130,9 +130,9 @@ type HbaUnusedLineParser struct {
 	mt                    sync.Mutex
 }
 
-func NewHbaUnusedLines(cnf *config.Config, baseParser BaseParser, hbafileRulesValidator hbarules.HbaRuleValidator) *HbaUnusedLineParser {
+func NewHbaUnusedLines(logParserCnf *config.LogParser, baseParser BaseParser, hbafileRulesValidator hbarules.HbaRuleValidator) *HbaUnusedLineParser {
 	return &HbaUnusedLineParser{
-		cnf: cnf,
+		logParserCnf: logParserCnf,
 
 		baseParser: baseParser,
 
@@ -146,7 +146,7 @@ func (u *HbaUnusedLineParser) Feed(line string) error {
 		return err
 	}
 
-	if !u.cnf.LogParser.IsValidTime(parsedData.GetTime()) {
+	if !u.logParserCnf.IsValidTime(parsedData.GetTime()) {
 		return nil
 	}
 
@@ -182,8 +182,8 @@ type LeakedPasswordResponse struct {
 }
 
 type PasswordLeakParser struct {
-	cnf        *config.Config
-	baseParser BaseParser
+	logParserCnf *config.LogParser
+	baseParser   BaseParser
 
 	passwordRegex *regexp.Regexp
 
@@ -193,9 +193,9 @@ type PasswordLeakParser struct {
 	supportedEncryptionAlgorithms []string
 }
 
-func NewPasswordLeakParser(cnf *config.Config, baseParser BaseParser) *PasswordLeakParser {
+func NewPasswordLeakParser(logParserCnf *config.LogParser, baseParser BaseParser) *PasswordLeakParser {
 	return &PasswordLeakParser{
-		cnf:           cnf,
+		logParserCnf:  logParserCnf,
 		baseParser:    baseParser,
 		passwordRegex: regexp.MustCompile(`(?i)PASSWORD\s+'([^']+)'`),
 
@@ -209,7 +209,7 @@ func (u *PasswordLeakParser) Feed(line string) error {
 		return err
 	}
 
-	if !u.cnf.LogParser.IsValidTime(parsedData.GetTime()) {
+	if !u.logParserCnf.IsValidTime(parsedData.GetTime()) {
 		return nil
 	}
 
