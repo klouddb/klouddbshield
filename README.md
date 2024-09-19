@@ -21,9 +21,9 @@ KloudDB Shield serves as a comprehensive security tool designed specifically for
 
 	* PII Scanner
  
-        * HBA Scanner
+	* HBA Scanner
 
-        * Transaction wraparound detector
+	* Transaction wraparound detector
 
 	* Inactive Users
 
