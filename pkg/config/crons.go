@@ -24,5 +24,5 @@ type LogParserCronInput struct {
 	Prefix      string `toml:"prefix"`
 	LogFile     string `toml:"logfile"`
 	HbaConfFile string `toml:"hbaconffile"`
-	CPULimit    int    `toml:"cpulimit"`
+	// CPULimit    int    `toml:"cpulimit"`
 }

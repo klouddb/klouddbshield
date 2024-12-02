@@ -15,7 +15,7 @@ type Test struct {
 func QueryTesterHelper(t *testing.T, tests *[]Test) {
 	for _, test := range *tests {
 
-		helper := NewQueryParser(nil, nil)
+		helper := NewQueryParser(nil)
 
 		err := func() error {
 
@@ -76,7 +76,7 @@ func QueryPercentageTesterHelper(t *testing.T, tests *[]Test) {
 			total_values += len(expectedOutputs)
 		}
 
-		helper := NewQueryParser(nil, nil)
+		helper := NewQueryParser(nil)
 
 		err := func() error {
 

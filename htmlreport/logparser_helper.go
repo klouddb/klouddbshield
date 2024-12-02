@@ -17,10 +17,15 @@ type LogparserHTMLReport struct {
 	UniqueIPs       *UniqueIPRenderData
 	UnusedHBALines  *UnusedHBALinesRenderData
 	LeakedPasswords *PasswordLeakRenderData
+	SQLInjection    *SQLInjectionRenderData
 }
 
 type PasswordLeakRenderData struct {
 	LeakedPasswords []parselog.LeakedPasswordResponse
+}
+
+type SQLInjectionRenderData struct {
+	Logs []string
 }
 
 type UniqueIPRenderData struct {
@@ -82,6 +87,10 @@ func (h *HtmlReportHelper) RenderLogparserResponse(ctx context.Context, store *s
 		case *logparser.PasswordLeakHelper:
 			data.LeakedPasswords = &PasswordLeakRenderData{
 				LeakedPasswords: r.GetResult(ctx),
+			}
+		case *logparser.SQLInjectionHelper:
+			data.SQLInjection = &SQLInjectionRenderData{
+				Logs: r.GetResult(ctx),
 			}
 		}
 	}

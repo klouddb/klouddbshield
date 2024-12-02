@@ -130,17 +130,12 @@ func GetDynamicBaseParser(logPattern string) BaseParser {
 			b.SetHostIndex(v)
 		case "%r":
 			b.SetHostIndex(v)
+		case "%e":
+			b.SetErrorCodeIndex(v)
 		}
 	}
 
 	b.SetLogLevelIndex(len(indexMap) + 3)
 
 	return b
-}
-
-func GetBaseParserValidator(b BaseParser) func(string) error {
-	return func(line string) error {
-		_, err := b.Parse(line)
-		return err
-	}
 }

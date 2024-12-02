@@ -37,12 +37,21 @@ type Config struct {
 
 	GeneratePassword *GeneratePassword `toml:"generatePassword"`
 
-	Crons []Cron `toml:"crons"`
-	// RunCrons bool   `toml:"-"`
+	Crons    []Cron `toml:"crons"`
+	RunCrons bool   `toml:"-"`
 
 	Email *AuthConfig `toml:"email"`
 
 	PiiScannerConfig *piiscanner.Config `toml:"-"`
+
+	OutputType           string `toml:"outputType"`
+	CreatePostgresConfig bool   `toml:"-"`
+	ConfigAudit          bool   `toml:"-"`
+	SSLCheck             bool   `toml:"-"`
+	// CompareConfig is an array of connection strings for multiple PostgreSQL servers
+	CompareConfig []string `toml:"compare-config"`
+
+	CompareConfigBaseServer string `toml:"compare-config-base-server"`
 }
 
 func NewPiiInteractiveMode(pgConfig *postgresdb.Postgres, printAll, spacyOnly, summary bool) (*piiscanner.Config, error) {
@@ -92,8 +101,6 @@ type LogParser struct {
 	// IpFilePath string
 
 	HbaConfFile string
-
-	OutputType string
 }
 
 func NewLogParser(logParser string, beginTime, endTime, prefix, logfile, hbaConfigFile string) (*LogParser, error) {
@@ -261,23 +268,39 @@ func NewConfig() (*Config, error) {
 	var version bool
 	var help bool
 	var run bool
+	flag.BoolVar(&run, "r", run, "Run")
+
 	var runPostgres bool
+	flag.BoolVar(&runPostgres, "run-postgres", runPostgres, "Run Postgres")
+
 	var runMySql bool
+	flag.BoolVar(&runMySql, "run-mysql", runMySql, "Run MySQL")
+
 	var runRds bool
-	var control string
+	flag.BoolVar(&runRds, "run-rds", runRds, "Run AWS RDS")
+	flag.BoolVar(&runRds, "run-aurora", runRds, "Run AWS Aurora")
+
 	var hbaScanner bool
+	flag.BoolVar(&hbaScanner, "hba-scanner", hbaScanner, "Run HBA Scanner")
+
 	var runPostgresConnTest, runGeneratePassword, runGenerateEncryptedPassword, runPwnedUsers, runPwnedPassword bool
+	flag.BoolVar(&runPostgresConnTest, "run-password-attack-simulator", runPostgresConnTest, "Run Postgres Connection Test")
+	flag.BoolVar(&runGeneratePassword, "run-password-generator", runGeneratePassword, "Run Generate Password")
+	flag.BoolVar(&runGenerateEncryptedPassword, "run-encrypt-password", runGenerateEncryptedPassword, "Run Generate Encrypted Password")
+	flag.BoolVar(&runPwnedUsers, "run-pwned-users", runPwnedUsers, "Run Pwned Users")
+	flag.BoolVar(&runPwnedPassword, "run-pwned-password", runPwnedPassword, "Run Pwned Password")
+
+	var control string
 	var userDefaults bool
 	var printSummaryReport bool
 	var inputDirectory string
 	var allchecks bool
-	// var setupCron bool
+	var setupCron bool
 	var printProcessTime bool
 	flag.BoolVar(&verbose, "verbose", verbose, "As of today verbose only works for a specific control. Ex ciscollector -r --verbose --control 6.7")
 	flag.StringVar(&control, "control", control, "Check verbose detail for individual control.\nMake sure to use this with --verbose option.\nEx: ciscollector -r --verbose --control 6.7")
-	flag.BoolVar(&run, "r", run, "Run")
 	flag.BoolVar(&allchecks, "allchecks", allchecks, "Run all checks")
-	// flag.BoolVar(&setupCron, "setup-cron", setupCron, "Setup cron for ciscollector")
+	flag.BoolVar(&setupCron, "setup-cron", setupCron, "Setup cron for ciscollector")
 	flag.BoolVar(&printProcessTime, "process-time", printProcessTime, "Print process time")
 
 	var customTemplatePath string
@@ -327,8 +350,26 @@ func NewConfig() (*Config, error) {
 	flag.BoolVar(&spacyOnly, "spacy-only", false, "Run spacy only for pii scanner")
 	flag.BoolVar(&printSummaryOnly, "print-summary", false, "Print summary only for pii scanner")
 
+	var config string
+	flag.StringVar(&config, "config", "/etc/klouddbshield", "Config file path")
+
 	var transactionWraparound bool
 	flag.BoolVar(&transactionWraparound, "transaction-wraparound", transactionWraparound, "Generate transaction wraparound report")
+
+	var createPostgresConfig bool
+	// flag.BoolVar(&createPostgresConfig, "create-postgres-config", false, "Create postgres config")
+
+	var configAudit bool
+	// flag.BoolVar(&configAudit, "config-audit", configAudit, "Config audit")
+
+	var sslCheck bool
+	flag.BoolVar(&sslCheck, "ssl-check", sslCheck, "SSL check")
+
+	var compareConfig compareConfigFlag
+	// flag.Var(&compareConfig, "compare-config", "Connection strings for multiple PostgreSQL servers to compare (can be specified multiple times)")
+
+	// var compareConfigBaseServer string
+	// flag.StringVar(&compareConfigBaseServer, "compare-config-base-server", "", "Base server for comparison")
 
 	flag.Parse()
 
@@ -336,15 +377,15 @@ func NewConfig() (*Config, error) {
 		runtime.GOMAXPROCS(cpuLimit)
 	}
 
-	// if setupCron {
-	// 	c, err := LoadConfig()
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
+	if setupCron {
+		c, err := LoadConfig(config)
+		if err != nil {
+			return nil, err
+		}
 
-	// 	c.RunCrons = true
-	// 	return c, nil
-	// }
+		c.RunCrons = true
+		return c, nil
+	}
 
 	if version {
 		log.Debug().Str("version", Version).Send()
@@ -355,7 +396,12 @@ func NewConfig() (*Config, error) {
 		os.Exit(0)
 	}
 
-	if !run && !verbose && !allchecks && logParser == "" && piiscannerRunOption == "" && !spacyOnly {
+	if !run && !verbose && !allchecks && logParser == "" && piiscannerRunOption == "" &&
+		!spacyOnly && !configAudit && !sslCheck && !transactionWraparound &&
+		!runPostgres && !runMySql && !runRds && !hbaScanner &&
+		!runPostgresConnTest && !runGeneratePassword && !runGenerateEncryptedPassword &&
+		!runPwnedUsers && !runPwnedPassword &&
+		!createPostgresConfig && len(compareConfig) == 0 {
 		fmt.Println("> For Help: " + text.FgGreen.Sprint("ciscollector --help"))
 		os.Exit(0)
 	}
@@ -363,13 +409,14 @@ func NewConfig() (*Config, error) {
 	c := &Config{}
 	if !runRds {
 		var err error
-		c, err = LoadConfig()
+		c, err = LoadConfig(config)
 		if err != nil && logParser == "" {
 			return nil, fmt.Errorf("loading config: %v", err)
 		}
 	}
 
 	c.App.PrintProcessTime = printProcessTime
+	c.OutputType = outputType
 
 	var piiConfig *piiscanner.Config
 	if piiscannerRunOption != "" || (spacyOnly && !run) {
@@ -392,6 +439,7 @@ func NewConfig() (*Config, error) {
 		runPwnedUsers = true
 		printSummaryReport = true
 		transactionWraparound = true
+		sslCheck = true
 	} else if run && !verbose {
 		if customTemplatePath != "" {
 			fmt.Print(cons.MSG_ChoiseCustomTemplate)
@@ -401,15 +449,16 @@ func NewConfig() (*Config, error) {
 		choice := 0
 		fmt.Scanln(&choice) //nolint:errcheck
 		switch choice {
-		case 1: // All Postgres checks(Recommended)
+		case cons.SelectionIndex_AllCommands: // All Postgres checks(Recommended)
 			runPostgres = true
 			hbaScanner = true
 			logParser = cons.LogParserCMD_All
 			runPwnedUsers = true
 			printSummaryReport = true
 			transactionWraparound = true
+			sslCheck = true
 
-		case 2: // Postgres CIS and User Security checks
+		case cons.SelectionIndex_PostgresChecks: // Postgres CIS and User Security checks
 			runPostgres = true
 			response := "N"
 			fmt.Print("Do you also want to run HBA Scanner?(y/N):")
@@ -418,10 +467,10 @@ func NewConfig() (*Config, error) {
 				hbaScanner = true
 			}
 
-		case 3: // HBA Scanner
+		case cons.SelectionIndex_HBAScanner: // HBA Scanner
 			hbaScanner = true
 
-		case 4: // PII Db Scanner
+		case cons.SelectionIndex_PIIScanner: // PII Db Scanner
 			var err error
 			piiConfig, err = NewPiiInteractiveMode(c.Postgres, printAllResults, spacyOnly, printSummaryOnly)
 			if err != nil {
@@ -429,15 +478,15 @@ func NewConfig() (*Config, error) {
 				os.Exit(1)
 			}
 
-		case 5: // Inactive user report
-			logParser = cons.LogParserCMD_InactiveUsr
+		case cons.SelectionIndex_InactiveUsers: // Inactive user report
+			logParser = cons.LogParserCMD_InactiveUser
 
-		case 6: // Client ip report
+		case cons.SelectionIndex_UniqueIPs: // Client ip report
 			logParser = cons.LogParserCMD_UniqueIPs
-		case 7: // HBA unused lines report
+		case cons.SelectionIndex_HBAUnusedLines: // HBA unused lines report
 			logParser = cons.LogParserCMD_HBAUnusedLines
 
-		case 8: // Password Manager
+		case cons.SelectionIndex_PasswordManager: // Password Manager
 			fmt.Println("1. Password attack simulator")
 			fmt.Println("2. Password generator")
 			fmt.Println("3. Encrypt a password(scram-sha-256)")
@@ -462,23 +511,32 @@ func NewConfig() (*Config, error) {
 				os.Exit(1)
 			}
 
-		case 9: // Password leak scanner
+		case cons.SelectionIndex_PasswordLeakScanner: // Password leak scanner
 			logParser = cons.LogParserCMD_PasswordLeakScanner
 
-		case 10: // AWS RDS Sec Report
+		case cons.SelectionIndex_AWSRDS: // AWS RDS Sec Report
 			runRds = true
 
-		case 11: // AWS Aurora Sec Report
+		case cons.SelectionIndex_AWSAurora: // AWS Aurora Sec Report
 			runRds = true
 
-		case 12: // MySQL Report
+		case cons.SelectionIndex_MySQL: // MySQL Report
 			runMySql = true
 
-		case 13: // Transaction Wraparound
+		case cons.SelectionIndex_TransactionWraparound: // Transaction Wraparound
 			transactionWraparound = true
 
-		case 14: // Exit
+		case cons.SelectionIndex_Exit: // Exit
 			os.Exit(0)
+
+		// case cons.SelectionIndex_CreatePostgresConfig:
+		// 	createPostgresConfig = true
+
+		// case cons.SelectionIndex_ConfigAudit:
+		// 	configAudit = true
+
+		case cons.SelectionIndex_SSLCheck:
+			sslCheck = true
 
 		default:
 			fmt.Println("Invalid Choice, Please Try Again.")
@@ -488,11 +546,9 @@ func NewConfig() (*Config, error) {
 
 	c.PiiScannerConfig = piiConfig
 	c.PostgresCheckSet = utils.NewDummyContainsAllSet[string]()
-
-	if customTemplatePath != "" {
-		c.CustomTemplate = customTemplatePath
-	}
-
+	// c.CreatePostgresConfig = createPostgresConfig
+	// c.ConfigAudit = configAudit
+	c.SSLCheck = sslCheck
 	if c.CustomTemplate != "" {
 		var checkNumbers []string
 		var err error
@@ -528,6 +584,9 @@ func NewConfig() (*Config, error) {
 	c.App.PrintSummaryOnly = printSummaryReport
 	c.App.TransactionWraparound = transactionWraparound
 	c.PiiScannerConfig = piiConfig
+	if customTemplatePath != "" {
+		c.CustomTemplate = customTemplatePath
+	}
 
 	if run && verbose {
 		if customTemplatePath != "" {
@@ -539,7 +598,7 @@ func NewConfig() (*Config, error) {
 		fmt.Scanln(&choice) //nolint:errcheck
 
 		switch choice {
-		case 1: // All Postgres checks(Recommended)
+		case cons.SelectionIndex_AllCommands: // All Postgres checks(Recommended)
 			if c.App.Verbose && c.Postgres != nil {
 				c.App.VerbosePostgres = true
 			} else {
@@ -559,7 +618,7 @@ func NewConfig() (*Config, error) {
 			c.App.RunPwnedUsers = true
 			c.App.TransactionWraparound = true
 
-		case 2: // Postgres checks
+		case cons.SelectionIndex_PostgresChecks: // Postgres checks
 			if c.App.Verbose && c.Postgres != nil {
 				c.App.VerbosePostgres = true
 			} else {
@@ -567,25 +626,25 @@ func NewConfig() (*Config, error) {
 				os.Exit(1)
 			}
 
-		case 3: // HBA Scanner
+		case cons.SelectionIndex_HBAScanner: // HBA Scanner
 			if c.App.Verbose && c.Postgres != nil {
 				c.App.VerboseHBASacanner = true
 			} else {
 				fmt.Println(cons.Err_PostgresConfig_Missing)
 				os.Exit(1)
 			}
-		case 4: // PII DB Scanner
+		case cons.SelectionIndex_PIIScanner: // PII DB Scanner
 			fmt.Println("Verbose feature is not available for PII DB Scanner yet .. Will be added in future releases")
-		case 5: // Inactive user report
+		case cons.SelectionIndex_InactiveUsers: // Inactive user report
 			fmt.Println("Verbose feature is not available for Inactive user yet .. Will be added in future releases")
 			os.Exit(1)
-		case 6: // Client ip report
+		case cons.SelectionIndex_UniqueIPs: // Client ip report
 			fmt.Println("Verbose feature is not available for Client IP user yet .. Will be added in future releases")
 			os.Exit(1)
-		case 7: // HBA unused lines report
+		case cons.SelectionIndex_HBAUnusedLines: // HBA unused lines report
 			fmt.Println("Verbose feature is not available for HBA Unused lines yet .. Will be added in future releases")
 			os.Exit(1)
-		case 8: // Password Manager
+		case cons.SelectionIndex_PasswordManager: // Password Manager
 			fmt.Println("1. Password attack simulator")
 			fmt.Println("2. Password generator")
 			fmt.Println("3. Encrypt a password(scram-sha-256)")
@@ -609,27 +668,37 @@ func NewConfig() (*Config, error) {
 				fmt.Println("Invalid Choice, Please Try Again.")
 				os.Exit(1)
 			}
-		case 9: // Password leak scanner
+		case cons.SelectionIndex_PasswordLeakScanner: // Password leak scanner
 			fmt.Println("Verbose feature is not available for Password Leak lines yet .. Will be added in future releases")
 			os.Exit(1)
 
-		case 10: // AWS RDS Sec Report
+		case cons.SelectionIndex_AWSRDS: // AWS RDS Sec Report
 			fmt.Println("Verbose feature is not available for MySQL and RDS yet .. Will be added in future releases")
 			os.Exit(1)
 
-		case 11: // AWS Aurora Sec Report
+		case cons.SelectionIndex_AWSAurora: // AWS Aurora Sec Report
 			fmt.Println("Verbose feature is not available for MySQL and RDS yet .. Will be added in future releases")
 			os.Exit(1)
-		case 12: // MySQL Report
+		case cons.SelectionIndex_MySQL: // MySQL Report
 			fmt.Println("Verbose feature is not available for MySQL and RDS yet .. Will be added in future releases")
 			os.Exit(1)
 
-		case 13: // Transaction Wraparound
+		case cons.SelectionIndex_TransactionWraparound: // Transaction Wraparound
 			fmt.Println("Verbose feature is not available for Transactions yet .. Will be added in future releases")
 			os.Exit(1)
 
-		case 14:
+		case cons.SelectionIndex_Exit:
 			os.Exit(0)
+
+		// case cons.SelectionIndex_CreatePostgresConfig:
+		// 	createPostgresConfig = true
+
+		// case cons.SelectionIndex_ConfigAudit:
+		// 	configAudit = true
+
+		case cons.SelectionIndex_SSLCheck:
+			fmt.Println("Verbose feature is not available for SSL Check yet .. Will be added in future releases")
+			os.Exit(1)
 
 		default:
 			fmt.Println("Invalid Choice, Please Try Again.")
@@ -654,7 +723,7 @@ func NewConfig() (*Config, error) {
 		return nil, fmt.Errorf(cons.Err_OldversionSuggestion_Postgres)
 	}
 
-	postgresConfigNeeded := runPostgres || c.App.HBASacanner || c.PiiScannerConfig != nil || c.App.TransactionWraparound
+	postgresConfigNeeded := runPostgres || c.App.HBASacanner || c.PiiScannerConfig != nil || c.App.TransactionWraparound || c.SSLCheck
 	if c.Postgres == nil && postgresConfigNeeded {
 		return nil, fmt.Errorf(cons.Err_OldversionSuggestion_Mysql)
 	}
@@ -686,7 +755,7 @@ func NewConfig() (*Config, error) {
 	}
 
 	if logParser != "" {
-		if run || allchecks {
+		if run || (allchecks && prefix == "") {
 			c.LogParser, c.LogParserConfigErr = getLogParserInputs(c.Postgres, logParser)
 		} else {
 			var err error
@@ -695,21 +764,28 @@ func NewConfig() (*Config, error) {
 				c.LogParserConfigErr = fmt.Errorf("Invalid input for logparser: %v", err)
 			}
 		}
-
-		if c.LogParser != nil {
-			c.LogParser.OutputType = outputType
-		}
 	}
+
+	// c.CompareConfig = compareConfig
+	// c.CompareConfigBaseServer = compareConfigBaseServer
+	// if compareConfigBaseServer != "" && len(compareConfig) == 0 {
+	// 	return nil, fmt.Errorf("compare-config flag requires at least one connection string")
+	// } else if compareConfigBaseServer == "" && len(compareConfig) > 1 {
+	// 	return nil, fmt.Errorf("compare-config flag requires only one connection string when compare-config-base-server is not provided")
+	// }
 
 	return c, nil
 }
 
-func LoadConfig() (*Config, error) {
+func LoadConfig(configPath string) (*Config, error) {
 	v := viper.New()
 	v.SetConfigType("toml")
 	v.SetConfigName("kshieldconfig")
-	v.AddConfigPath("./")
-	v.AddConfigPath("/etc/klouddbshield")
+
+	if configPath == "" {
+		configPath = "."
+	}
+	v.AddConfigPath(configPath)
 
 	c := &Config{}
 
@@ -814,9 +890,34 @@ func MustNewConfig() *Config {
 	if err != nil {
 		fmt.Println("Can't create config")
 		fmt.Println(err)
-		fmt.Println(cons.Err_PostgresConfig_Missing)
 		os.Exit(1)
 	}
 
 	return config
+}
+
+// Add this helper type and methods for handling multiple string flags
+type compareConfigFlag []string
+
+func (s *compareConfigFlag) String() string {
+	return fmt.Sprintf("%v", *s)
+}
+
+func (s *compareConfigFlag) Set(value string) error {
+	if s == nil {
+		return fmt.Errorf("compareConfigFlag is nil")
+	}
+
+	if value == "" {
+		return fmt.Errorf("empty string is not allowed")
+	}
+
+	for _, v := range *s {
+		if v == value {
+			return fmt.Errorf("duplicate connection string: %s", value)
+		}
+	}
+
+	*s = append(*s, value)
+	return nil
 }

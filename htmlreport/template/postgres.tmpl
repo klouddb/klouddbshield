@@ -12,7 +12,9 @@
             {{ end }}
 
             <h3>Control Details</h3>
-            <p>Postgres Version {{ .PostgresVersion }}</p>
+            {{ if .PostgresVersion }}
+                <p>Postgres Version {{ .PostgresVersion }}</p>
+            {{ end }}
             {{ template "controlDetailTablePostgres" .PostgresResults }}
         </div>
     </div>
@@ -171,6 +173,12 @@
         <div class="table-container">
             <button class="toggleAll btn">Expand All</button>
             <table class="table maintable">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th class="icon_column">Details</th>
+                    </tr>
+                </thead>
                 {{ range . }}
                     {{ template "userListTableBodyPostgres" . }}
                 {{ end }}
@@ -181,11 +189,11 @@
 
 {{ define "userListTableBodyPostgres" }}
     <tr class="toggleRow">
-        <th>{{ .Title }}</th>
+        <td>{{ .Title }}</td>
         {{ template "infoIcon" }}
     </tr>
     <tr class="childTableRow" style="display:none;"> <!-- Initially hidden -->
-        <td colspan="3"> <!-- Adjust colspan as needed -->
+        <td colspan="2"> <!-- Adjust colspan as needed -->
             {{ if .Data }}
                 <div class="manualCheck">
                     {{ template "manualCheck" .Data }}

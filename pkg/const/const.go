@@ -32,6 +32,26 @@ After installing, run below command to check if spacy is installed properly. for
 	LogParserTitle_PasswordLeakScanner = "Password Leak Scanner"
 )
 
+const (
+	SelectionIndex_AllCommands = iota + 1
+	SelectionIndex_PostgresChecks
+	SelectionIndex_HBAScanner
+	SelectionIndex_PIIScanner
+	SelectionIndex_InactiveUsers
+	SelectionIndex_UniqueIPs
+	SelectionIndex_HBAUnusedLines
+	SelectionIndex_PasswordManager
+	SelectionIndex_PasswordLeakScanner
+	SelectionIndex_AWSRDS
+	SelectionIndex_AWSAurora
+	SelectionIndex_MySQL
+	SelectionIndex_TransactionWraparound
+	// SelectionIndex_CreatePostgresconfig
+	// SelectionIndex_ConfigAuditing
+	SelectionIndex_SSLCheck
+	SelectionIndex_Exit
+)
+
 type CommandTitle struct {
 	Title, CMD string
 }
@@ -54,7 +74,7 @@ var CommandList = []CommandTitle{
 		Title: "Postgres PII report",
 	},
 	{ // 5
-		CMD:   LogParserCMD_InactiveUsr,
+		CMD:   LogParserCMD_InactiveUser,
 		Title: "Inactive user report",
 	},
 	{ // 6
@@ -90,6 +110,10 @@ var CommandList = []CommandTitle{
 		Title: "Transaction Wraparound Report",
 	},
 	{ // 14
+		CMD:   RootCMD_SSLCheck,
+		Title: "SSL Check",
+	},
+	{ // 15
 		CMD:   RootCMD_Exit,
 		Title: "Exit",
 	},
@@ -121,17 +145,22 @@ const (
 	RootCMD_PostgresCIS           = "postgres_cis"
 	RootCMD_HBAScanner            = "hba_scanner"
 	RootCMD_PasswordManager       = "password_manager"
+	RootCMD_CompareConfig         = "compare_config"
 	RootCMD_AWSRDS                = "aws_rds"
 	RootCMD_AWSAurora             = "aws_aurora"
 	RootCMD_MySQL                 = "mysql"
 	RootCMD_PiiScanner            = "pii_scanner"
 	RootCMD_TransactionWraparound = "transaction_wraparound"
+	RootCMD_CreatePostgresconfig  = "create_postgresconfig"
+	RootCMD_ConfigAuditing        = "config_auditing"
+	RootCMD_SSLCheck              = "ssl_check"
 	RootCMD_Exit                  = "exit"
 
 	// LogParserCMD_MismatchIPs         = "mismatch_ips"
 	LogParserCMD_UniqueIPs           = "unique_ip"
-	LogParserCMD_InactiveUsr         = "inactive_users"
+	LogParserCMD_InactiveUser        = "inactive_users"
 	LogParserCMD_HBAUnusedLines      = "unused_lines"
+	LogParserCMD_SqlInjectionScan    = "sql_injection_scan"
 	LogParserCMD_All                 = "all"
 	LogParserCMD_PasswordLeakScanner = "password_leak_scanner"
 	// _LogParserCMD_QueryParser        = "pii_query_parser"
@@ -139,14 +168,12 @@ const (
 	PasswordManager_CommonUsers = "common_users"
 )
 
-var (
-	LogParserChoiseMapping = map[int]string{
-		// 1: LogParserCMD_MismatchIPs,
-		1: LogParserCMD_InactiveUsr,
-		2: LogParserCMD_UniqueIPs,
-		3: LogParserCMD_HBAUnusedLines,
-		// 4: LogParserCMD_QueryParser,
-		4: LogParserCMD_PasswordLeakScanner,
-		5: LogParserCMD_All,
-	}
-)
+var LogParserChoiseMapping = map[int]string{
+	// 1: LogParserCMD_MismatchIPs,
+	1: LogParserCMD_InactiveUser,
+	2: LogParserCMD_UniqueIPs,
+	3: LogParserCMD_HBAUnusedLines,
+	// 4: LogParserCMD_QueryParser,
+	4: LogParserCMD_PasswordLeakScanner,
+	5: LogParserCMD_All,
+}

@@ -1,0 +1,130 @@
+{{ define "sslAuditTab" }}
+<div class="wrapper">
+    <div class="myContainer">
+        <h3 class="all-title">PostgreSQL SSL Configuration Audit</h3>
+
+        <div class="data-container">
+            <h6 class="flaged-title">SSL Status</h6>
+            <div class="table-container" style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div></div>
+                    <table style="border: none; display: flex; align-items: center;">
+                        <tr>
+                            <td style="text-align:center; padding: 0 10px;">{{ template "tick" }}</td>
+                            <td style="padding: 0 10px;">Pass</td>
+                            <td style="text-align:center; padding: 0 10px;">{{ template "cross" }}</td>
+                            <td style="padding: 0 10px;">Fail</td>
+                            <td style="text-align:center; padding: 0 10px;">{{ template "warning" }}</td>
+                            <td style="padding: 0 10px;">Warning</td>
+                            <td style="text-align:center; padding: 0 10px;">{{ template "critical" }}</td>
+                            <td style="padding: 0 10px;">Critical</td>
+                        </tr>
+                    </table>
+                </div>
+                <table class="table maintable">
+                    <thead>
+                        <tr>
+                            <th>Check</th>
+                            <th class="icon_column">Status</th>
+                            <th class="icon_column">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range .Cells }}
+                        <tr class="toggleRow">
+                            <td>{{ .Title }}</td>
+                            {{ if eq .Status "Pass" }}
+                                {{ template "tick" }}
+                            {{ else if eq .Status "Fail" }}
+                                {{ template "cross" }}
+                            {{ else if eq .Status "Critical" }}
+                                {{ template "critical" }}
+                            {{ else }}
+                                {{ template "warning" }}
+                            {{ end }}
+                            {{ template "infoIcon" }}
+                        </tr>
+                        <tr class="childTableRow" style="display:none;">
+                            <td colspan="3">
+                                <div class="scrollable-container">
+                                    <table class="table" id="innerTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {{ if .Message }}
+                                            <tr>
+                                                <td>{{ .Message }}</td>
+                                            </tr>
+                                            {{ else }}
+                                            <tr>
+                                                <td>No issues found</td>
+                                            </tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{ if .HBALines }}
+        <div class="data-container">
+            <h6 class="flaged-title">HBA Lines without SSL</h6>
+            {{ if eq (len .HBALines) 0 }}
+                <div class="no-data-block">
+                    <p>No HBA lines found without SSL requirement.</p>
+                </div>
+            {{ else }}
+                <table class="table">
+                    <tr>
+                        <th style="width:100px;" class="db-users">Line No</th>
+                        <th class="db-users">Line</th>
+                    </tr>
+                    {{ range .HBALines }}
+                        <tr>
+                            <td class="log-users">{{ index (split . ":") 0 }}</td>
+                            <td class="log-users">{{ index (split . ":") 1 }}</td>
+                        </tr>
+                    {{ end }}
+                </table>
+            {{ end }}
+        </div>
+        {{ end }}
+
+        {{ if .SSLParams }}
+        <div class="data-container">
+            <h6 class="flaged-title">SSL Parameters</h6>
+            <div class="danger_text">
+                Note: These parameters should be manually reviewed according to your security requirements.
+                Default values may not be suitable for production environments.
+            </div>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range $key, $value := .SSLParams }}
+                        <tr>
+                            <td>{{ $key }}</td>
+                            <td>{{ $value }}</td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {{ end }}
+    </div>
+</div>
+{{ end }} 

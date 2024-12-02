@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/klouddb/klouddbshield/htmlreport"
@@ -21,20 +20,22 @@ import (
 
 type logParserRunner struct {
 	postgresConfig   *postgresdb.Postgres
-	builder          *strings.Builder
+	fileData         map[string]interface{}
 	logParserCnf     *config.LogParser
 	isRunCmd         bool
 	htmlReportHelper *htmlreport.HtmlReportHelper
+	outputType       string
 }
 
 func newLogParserRunnerFromConfig(postgresConfig *postgresdb.Postgres, logParserCnf *config.LogParser, isRunCmd bool,
-	builder *strings.Builder, htmlReportHelper *htmlreport.HtmlReportHelper) *logParserRunner {
+	fileData map[string]interface{}, htmlReportHelper *htmlreport.HtmlReportHelper, outputType string) *logParserRunner {
 	return &logParserRunner{
 		postgresConfig:   postgresConfig,
-		builder:          builder,
+		fileData:         fileData,
 		logParserCnf:     logParserCnf,
 		isRunCmd:         isRunCmd,
 		htmlReportHelper: htmlReportHelper,
+		outputType:       outputType,
 	}
 }
 
@@ -52,7 +53,7 @@ func (l *logParserRunner) run(ctx context.Context) error {
 		}
 	}
 	updatePgSettings(ctx, store, l.logParserCnf.PgSettings)
-	return runLogParserWithMultipleParser(ctx, l.isRunCmd, l.logParserCnf, store, l.htmlReportHelper, l.builder)
+	return runLogParserWithMultipleParser(ctx, l.isRunCmd, l.logParserCnf, store, l.htmlReportHelper, l.fileData, l.outputType)
 }
 
 func updatePgSettings(ctx context.Context, store *sql.DB, pgSettings *model.PgSettings) {
@@ -68,20 +69,22 @@ func updatePgSettings(ctx context.Context, store *sql.DB, pgSettings *model.PgSe
 	pgSettings.LogConnections = ps.LogConnections
 }
 
-func runLogParserWithMultipleParser(ctx context.Context, runCmd bool, logParserCnf *config.LogParser, store *sql.DB, htmlReportHelper *htmlreport.HtmlReportHelper, builder *strings.Builder) error {
-	baseParser := parselog.GetDynamicBaseParser(logParserCnf.PgSettings.LogLinePrefix)
-	allParser, err := getAllParser(ctx, logParserCnf, store, baseParser)
+func runLogParserWithMultipleParser(ctx context.Context, runCmd bool, logParserCnf *config.LogParser,
+	store *sql.DB, htmlReportHelper *htmlreport.HtmlReportHelper, fileData map[string]interface{}, outputType string) error {
+
+	allParser, err := getAllParser(ctx, logParserCnf, store)
 	if err != nil {
 		return fmt.Errorf("Error while getting all parser: %v", err)
 	}
 
-	validatorFunc := parselog.GetBaseParserValidator(baseParser)
 	runnerFunctions := []runner.ParserFunc{}
 	for _, parser := range allParser {
 		runnerFunctions = append(runnerFunctions, parser.Feed)
 	}
 
-	fastRunnerResp, err := runner.RunFastParser(ctx, runCmd, logParserCnf, runnerFunctions, validatorFunc)
+	baseParser := parselog.GetDynamicBaseParser(logParserCnf.PgSettings.LogLinePrefix)
+
+	fastRunnerResp, err := runner.RunFastParser(ctx, runCmd, baseParser, logParserCnf, runnerFunctions)
 	if err != nil {
 		return fmt.Errorf("Error while running fast parser: %v", err)
 	}
@@ -103,24 +106,24 @@ func runLogParserWithMultipleParser(ctx context.Context, runCmd bool, logParserC
 	}
 
 	if runCmd {
-		logparser.PrintSummary(ctx, allParser, logParserCnf, fastRunnerResp, builder)
+		logparser.PrintSummary(ctx, allParser, logParserCnf, fastRunnerResp, fileData, outputType)
 	} else {
 		logparser.PrintFastRunnerReport(logParserCnf, fastRunnerResp)
-		logparser.PrintTerminalResultsForLogParser(ctx, allParser, logParserCnf.OutputType)
+		logparser.PrintTerminalResultsForLogParser(ctx, allParser, outputType)
 	}
 
 	htmlReportHelper.RenderLogparserResponse(ctx, store, allParser)
 	return nil
 }
 
-func getAllParser(ctx context.Context, logParserCnf *config.LogParser, store *sql.DB, baseParser parselog.BaseParser) ([]runner.Parser, error) {
+func getAllParser(ctx context.Context, logParserCnf *config.LogParser, store *sql.DB) ([]runner.Parser, error) {
 	allParser := []runner.Parser{}
 
 	for _, command := range logParserCnf.Commands {
 		switch command {
 		case cons.LogParserCMD_HBAUnusedLines:
 			unusedLinesHelper := logparser.NewUnusedHBALineHelper(store)
-			err := unusedLinesHelper.Init(ctx, logParserCnf, baseParser)
+			err := unusedLinesHelper.Init(ctx, logParserCnf)
 			if err != nil {
 				allParser = append(allParser, logparser.NewErrorHelper(command, "warning", err.Error()))
 			} else {
@@ -129,15 +132,15 @@ func getAllParser(ctx context.Context, logParserCnf *config.LogParser, store *sq
 
 		case cons.LogParserCMD_UniqueIPs:
 			uniqueIPs := logparser.NewUniqueIPHelper()
-			err := uniqueIPs.Init(ctx, logParserCnf, baseParser)
+			err := uniqueIPs.Init(ctx, logParserCnf)
 			if err != nil {
 				allParser = append(allParser, logparser.NewErrorHelper(command, "warning", err.Error()))
 			} else {
 				allParser = append(allParser, uniqueIPs)
 			}
-		case cons.LogParserCMD_InactiveUsr:
+		case cons.LogParserCMD_InactiveUser:
 			inactiveUser := logparser.NewInactiveUsersHelper(store)
-			err := inactiveUser.Init(ctx, logParserCnf, baseParser)
+			err := inactiveUser.Init(ctx, logParserCnf)
 			if err != nil {
 				allParser = append(allParser, logparser.NewErrorHelper(command, "warning", err.Error()))
 			} else {
@@ -145,11 +148,19 @@ func getAllParser(ctx context.Context, logParserCnf *config.LogParser, store *sq
 			}
 		case cons.LogParserCMD_PasswordLeakScanner:
 			passwordLeakScanner := logparser.NewPasswordLeakHelper()
-			err := passwordLeakScanner.Init(ctx, logParserCnf, baseParser)
+			err := passwordLeakScanner.Init(ctx, logParserCnf)
 			if err != nil {
 				allParser = append(allParser, logparser.NewErrorHelper(command, "warning", err.Error()))
 			} else {
 				allParser = append(allParser, passwordLeakScanner)
+			}
+		case cons.LogParserCMD_SqlInjectionScan:
+			sqlInjectionScan := logparser.NewSQLInjectionHelper()
+			err := sqlInjectionScan.Init(ctx, logParserCnf)
+			if err != nil {
+				allParser = append(allParser, logparser.NewErrorHelper(command, "warning", err.Error()))
+			} else {
+				allParser = append(allParser, sqlInjectionScan)
 			}
 		default:
 			return nil, fmt.Errorf("Invalid command: %s", command)

@@ -15,9 +15,9 @@ func NewPasswordLeakHelper() *PasswordLeakHelper {
 	return &PasswordLeakHelper{}
 }
 
-func (i *PasswordLeakHelper) Init(ctx context.Context, logParserCnf *config.LogParser, baseParser parselog.BaseParser) error {
+func (i *PasswordLeakHelper) Init(ctx context.Context, logParserCnf *config.LogParser) error {
 
-	i.PasswordLeakParser = parselog.NewPasswordLeakParser(logParserCnf, baseParser)
+	i.PasswordLeakParser = parselog.NewPasswordLeakParser(logParserCnf)
 	return nil
 }
 

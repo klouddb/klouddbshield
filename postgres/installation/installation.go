@@ -195,7 +195,7 @@ v1.0.0 - 02-26-2021`,
 		}
 		if version == "" {
 			result.Status = "Fail"
-			result.FailReason = "Unable to determine Postgres version."
+			result.FailReason = "Unable to determine Postgres version. Error:	" + err.Error()
 			return result, nil
 		}
 

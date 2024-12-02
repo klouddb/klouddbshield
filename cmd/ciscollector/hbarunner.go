@@ -15,15 +15,18 @@ import (
 
 type hbaRunner struct {
 	postgresConfig   *postgresdb.Postgres
-	builder          *strings.Builder
+	fileData         map[string]interface{}
 	htmlReportHelper *htmlreport.HtmlReportHelper
+	outputType       string
 }
 
-func newHBARunnerFromConfig(postgresConfig *postgresdb.Postgres, builder *strings.Builder, htmlReportHelper *htmlreport.HtmlReportHelper) *hbaRunner {
+func newHBARunnerFromConfig(postgresConfig *postgresdb.Postgres, fileData map[string]interface{},
+	htmlReportHelper *htmlreport.HtmlReportHelper, outputType string) *hbaRunner {
 	return &hbaRunner{
 		postgresConfig:   postgresConfig,
-		builder:          builder,
+		fileData:         fileData,
 		htmlReportHelper: htmlReportHelper,
+		outputType:       outputType,
 	}
 }
 
@@ -54,7 +57,11 @@ func (h *hbaRunner) run(ctx context.Context) ([]*model.HBAScannerResult, error) 
 		}
 	}
 
-	h.builder.WriteString("\nHBA Report\n" + simpletextreport.PrintHBAReportInFile(listOfResults) + "\n")
+	if h.outputType == "json" {
+		h.fileData["HBA Report"] = listOfResults
+	} else {
+		h.fileData["HBA Report"] = simpletextreport.PrintHBAReportInFile(listOfResults)
+	}
 
 	return listOfResults, nil
 }

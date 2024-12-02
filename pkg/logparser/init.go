@@ -1,6 +1,10 @@
 package logparser
 
-import "context"
+import (
+	"context"
+
+	"github.com/klouddb/klouddbshield/pkg/parselog"
+)
 
 type ResultCalculator interface {
 	CalculateResult(ctx context.Context) error
@@ -19,6 +23,6 @@ func NewErrorHelper(command, status, message string) *ErrorHelper {
 	}
 }
 
-func (d *ErrorHelper) Feed(line string) error {
+func (d *ErrorHelper) Feed(parsedData parselog.ParsedData) error {
 	return nil
 }

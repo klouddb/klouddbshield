@@ -274,6 +274,11 @@ func (p *PIIDataWithWeightString) SetScanedValueAndMatchCount(matchCount, scaned
 }
 
 func (d *databasePiiScanner) GetResults() (*DatabasePIIScanOutput, error) {
+	if d.tableScanManager == nil {
+		// this handles the case when no table is scanned
+		return nil, nil
+	}
+
 	data, err := d.tableScanManager.Output()
 	if err != nil {
 		return nil, err

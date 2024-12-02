@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"strings"
 
 	"github.com/klouddb/klouddbshield/htmlreport"
 	"github.com/klouddb/klouddbshield/mysql"
@@ -13,12 +12,19 @@ import (
 
 type mysqlRunner struct {
 	mysqlDatabase    *config.MySQL
-	builder          *strings.Builder
+	fileData         map[string]interface{}
 	htmlReportHelper *htmlreport.HtmlReportHelper
+	outputType       string
 }
 
-func newMySqlRunner(mysqlDatabase *config.MySQL, builder *strings.Builder, htmlReportHelper *htmlreport.HtmlReportHelper) *mysqlRunner {
-	return &mysqlRunner{mysqlDatabase: mysqlDatabase, builder: builder, htmlReportHelper: htmlReportHelper}
+func newMySqlRunner(mysqlDatabase *config.MySQL, fileData map[string]interface{},
+	htmlReportHelper *htmlreport.HtmlReportHelper, outputType string) *mysqlRunner {
+	return &mysqlRunner{
+		mysqlDatabase:    mysqlDatabase,
+		fileData:         fileData,
+		htmlReportHelper: htmlReportHelper,
+		outputType:       outputType,
+	}
 }
 
 func (m *mysqlRunner) cronProcess(ctx context.Context) error {
@@ -33,10 +39,13 @@ func (m *mysqlRunner) run(ctx context.Context) error {
 	defer mysqlStore.Close()
 
 	result, score := mysql.PerformAllChecks(mysqlStore, ctx)
-	m.builder.WriteString(simpletextreport.PrintReportInFile(result, "", "MySQL Report"))
-
-	// b, _ := json.Marshal(result)
-	// fmt.Println(string(b))
+	if m.outputType == "json" {
+		m.fileData["MySQL Report"] = map[string]interface{}{
+			"mysql": result, "score": score,
+		}
+	} else {
+		m.fileData["MySQL Report"] = simpletextreport.PrintReportInFile(result, "")
+	}
 
 	m.htmlReportHelper.RegisterMysqlReportData(result, score)
 

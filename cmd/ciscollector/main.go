@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/klouddb/klouddbshield/pkg/config"
 	cons "github.com/klouddb/klouddbshield/pkg/const"
 	"github.com/klouddb/klouddbshield/pkg/logger"
+	"github.com/klouddb/klouddbshield/postgresconfig"
 
 	"github.com/klouddb/klouddbshield/postgres"
 )
@@ -38,30 +40,30 @@ func main() {
 		}()
 	}
 
-	// if cnf.RunCrons {
+	if cnf.RunCrons {
 
-	// 	// Create a new context and cancel function
-	// 	ctx, cancel := context.WithCancel(context.Background())
+		// Create a new context and cancel function
+		ctx, cancel := context.WithCancel(context.Background())
 
-	// 	// Create a new CronHelper instance with the context and configuration
-	// 	cronHelper := NewCronHelper(ctx, cnf)
+		// Create a new CronHelper instance with the context and configuration
+		cronHelper := NewCronHelper(ctx, cnf)
 
-	// 	err := cronHelper.SetupCron()
-	// 	if err != nil {
-	// 		fmt.Println("cron setup failed: ", text.FgHiRed.Sprint(err))
-	// 		return
-	// 	}
+		err := cronHelper.SetupCron()
+		if err != nil {
+			fmt.Println("cron setup failed: ", text.FgHiRed.Sprint(err))
+			return
+		}
 
-	// 	cronHelper.Run(cancel)
-	// 	return
-	// }
+		cronHelper.Run(cancel)
+		return
+	}
 
 	htmlReportHelper := htmlreport.NewHtmlReportHelper()
 
-	builder := &strings.Builder{}
+	fileData := map[string]interface{}{}
 	defer func() {
-		if builder.Len() != 0 {
-			saveResultInFile(builder.String())
+		if len(fileData) > 0 {
+			saveResultInFile(fileData, cnf.OutputType)
 		}
 		filePath, err := htmlReportHelper.RenderInfile("klouddbshield_report.html", 0600)
 		if err != nil {
@@ -69,7 +71,6 @@ func main() {
 		} else if filePath != "" {
 			fmt.Println("For Detailed report please open HTML report in your browser [" + filePath + "]")
 		}
-
 	}()
 
 	if cnf.App.PrintSummaryOnly {
@@ -82,18 +83,18 @@ func main() {
 		return
 	}
 	if cnf.App.RunMySql {
-		newMySqlRunner(cnf.MySQL, builder, htmlReportHelper).run(ctx) //nolint:errcheck
+		newMySqlRunner(cnf.MySQL, fileData, htmlReportHelper, cnf.OutputType).run(ctx) //nolint:errcheck
 	}
 
 	var postgresSummary map[int]*model.Status
-	var overviewErrorMap = map[string]error{}
+	overviewErrorMap := map[string]error{}
 	var hbaResult []*model.HBAScannerResult
 	if cnf.App.RunPostgres {
 		postgresSummary, overviewErrorMap[cons.RootCMD_PostgresCIS] = newPostgresRunnerFromConfig(cnf.Postgres,
-			builder, cnf.PostgresCheckSet, htmlReportHelper).run(ctx)
+			fileData, cnf.PostgresCheckSet, htmlReportHelper, cnf.OutputType).run(ctx)
 	}
 	if cnf.App.HBASacanner {
-		hbaResult, overviewErrorMap[cons.RootCMD_HBAScanner] = newHBARunnerFromConfig(cnf.Postgres, builder, htmlReportHelper).run(ctx)
+		hbaResult, overviewErrorMap[cons.RootCMD_HBAScanner] = newHBARunnerFromConfig(cnf.Postgres, fileData, htmlReportHelper, cnf.OutputType).run(ctx)
 	}
 
 	if cnf.App.PrintSummaryOnly {
@@ -104,7 +105,7 @@ func main() {
 	}
 
 	if cnf.App.RunRds {
-		newRDSRunner(builder).run(ctx)
+		newRDSRunner(cnf.OutputType).run(ctx)
 	}
 	if cnf.App.VerboseHBASacanner {
 		newHBARunnerByControlFromConfig(cnf).run(ctx)
@@ -112,9 +113,9 @@ func main() {
 
 	if cnf.LogParser != nil {
 		err := newLogParserRunnerFromConfig(cnf.Postgres, cnf.LogParser, cnf.App.Run,
-			builder, htmlReportHelper).run(ctx)
+			fileData, htmlReportHelper, cnf.OutputType).run(ctx)
 		if cnf.App.PrintSummaryOnly {
-			overviewErrorMap[cons.LogParserCMD_InactiveUsr] = err
+			overviewErrorMap[cons.LogParserCMD_InactiveUser] = err
 			overviewErrorMap[cons.LogParserCMD_UniqueIPs] = err
 			overviewErrorMap[cons.LogParserCMD_HBAUnusedLines] = err
 			overviewErrorMap[cons.LogParserCMD_PasswordLeakScanner] = err
@@ -123,7 +124,7 @@ func main() {
 		}
 	} else if cnf.LogParserConfigErr != nil {
 		if cnf.App.PrintSummaryOnly {
-			overviewErrorMap[cons.LogParserCMD_InactiveUsr] = cnf.LogParserConfigErr
+			overviewErrorMap[cons.LogParserCMD_InactiveUser] = cnf.LogParserConfigErr
 			overviewErrorMap[cons.LogParserCMD_UniqueIPs] = cnf.LogParserConfigErr
 			overviewErrorMap[cons.LogParserCMD_HBAUnusedLines] = cnf.LogParserConfigErr
 			overviewErrorMap[cons.LogParserCMD_PasswordLeakScanner] = cnf.LogParserConfigErr
@@ -147,11 +148,15 @@ func main() {
 
 	if cnf.App.RunPwnedUsers {
 		overviewErrorMap[cons.RootCMD_PasswordManager] = newPwnedUserRunner(cnf.Postgres, cnf.App.Run,
-			builder, htmlReportHelper).run(ctx)
+			fileData, htmlReportHelper, cnf.OutputType).run(ctx)
 	}
 
 	if cnf.App.RunPwnedPasswords {
 		newPwnedPasswordRunner(cnf.App.InputDirectory).run(ctx) //nolint:errcheck
+	}
+
+	if len(cnf.CompareConfig) > 0 {
+		overviewErrorMap[cons.RootCMD_CompareConfig] = newCompareConfigRunner(cnf.CompareConfigBaseServer, cnf.CompareConfig, htmlReportHelper).run(ctx)
 	}
 
 	if cnf.App.TransactionWraparound {
@@ -178,6 +183,21 @@ func main() {
 		}
 	}
 
+	if cnf.CreatePostgresConfig {
+		overviewErrorMap[cons.RootCMD_CreatePostgresconfig] = postgresconfig.NewProcessor(".").Run(context.TODO())
+		if overviewErrorMap[cons.RootCMD_CreatePostgresconfig] != nil {
+			fmt.Println("> Error while generating postgresql.conf file: ", text.FgHiRed.Sprint(overviewErrorMap[cons.RootCMD_CreatePostgresconfig]))
+		}
+	}
+
+	if cnf.ConfigAudit {
+		overviewErrorMap[cons.RootCMD_ConfigAuditing] = newConfigAuditor(cnf.Postgres, htmlReportHelper).run(ctx)
+	}
+
+	if cnf.SSLCheck {
+		overviewErrorMap[cons.RootCMD_SSLCheck] = newSslAuditor(cnf.Postgres, htmlReportHelper).run(ctx)
+	}
+
 	if cnf.App.PrintSummaryOnly {
 		htmlReportHelper.CreateAllTab()
 	}
@@ -196,7 +216,6 @@ func main() {
 
 		fmt.Println(tick, text.Bold.Sprint(cmd.Title), err)
 	}
-
 }
 
 // func runQueryParser(ctx context.Context, cnf *config.Config) {
@@ -297,7 +316,28 @@ func main() {
 // 	return nil
 // }
 
-func saveResultInFile(result string) {
+func saveResultInFile(data map[string]interface{}, outputType string) {
+	if outputType == "json" {
+		result, err := json.MarshalIndent(data, "", "\t")
+		if err != nil {
+			fmt.Println("Error while converting data to json:", text.FgHiRed.Sprint(err))
+		}
+
+		err = os.WriteFile("klouddbshield_report.json", result, 0600)
+		if err != nil {
+			fmt.Println("Error while saving result in file:", text.FgHiRed.Sprint(err))
+			fmt.Println("**********listOfResults*************\n", string(result))
+		}
+		return
+	}
+
+	builder := &strings.Builder{}
+	for k, v := range data {
+		builder.WriteString(k + ":\n")
+		builder.WriteString(fmt.Sprintf("%v\n", v))
+	}
+
+	result := builder.String()
 	err := os.WriteFile("klouddbshield_report.txt", []byte(result), 0600)
 	if err != nil {
 		fmt.Println("Error while saving result in file:", text.FgHiRed.Sprint(err))

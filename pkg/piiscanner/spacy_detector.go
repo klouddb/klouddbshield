@@ -251,7 +251,7 @@ func (u *spacyDetector) detectWorkingDir() (string, error) {
 		return w, nil
 	}
 
-	return "", fmt.Errorf("spacy file not found in any location " + strings.Join(u.workDirs, ","))
+	return "", fmt.Errorf("spacy file not found in any location %s", strings.Join(u.workDirs, ","))
 }
 
 // Detect detects the PII labels from the input word.

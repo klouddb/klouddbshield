@@ -37,6 +37,7 @@ config.toml
 .vscode
 klouddbshield_report.html
 klouddbshield_report.txt
+klouddbshield_report.json
 kshield_pii_*.log
 
 cronreport/*
@@ -46,3 +47,6 @@ docker_testing/pglog/*
 output.csv
 detailed_output.csv
 all_checks.json
+
+postgresql.conf
+testoutput.log

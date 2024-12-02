@@ -10,7 +10,7 @@ import (
 var (
 	ignoreRegexes = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)^(created|updated|deleted|committed)_(at|by|on)$`),
-		regexp.MustCompile(`(?i)_id$`), // this is failing. here we need to all _id accept email_id
+		// regexp.MustCompile(`(?i)_id$`), // this is failing. here we need to all _id accept email_id
 		regexp.MustCompile(`(?i)^.*timestamp.*$`),
 		regexp.MustCompile(`(?i)_date$`),
 		regexp.MustCompile(`(?i)_time$`),

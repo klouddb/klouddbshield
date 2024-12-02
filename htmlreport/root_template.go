@@ -3,7 +3,6 @@ package htmlreport
 import (
 	"bytes"
 	"embed"
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -47,6 +46,8 @@ var (
 
 			return uid.String()
 		},
+		"join":  strings.Join,
+		"split": strings.Split,
 	}).ParseFS(templates, "template/*.tmpl"))
 )
 
@@ -164,6 +165,10 @@ func (h *HtmlReportHelper) CreateAllTab() {
 	allTabData := []any{}
 	for _, t := range h.templateData {
 		allTabData = append(allTabData, t)
+	}
+
+	if len(allTabData) == 0 {
+		return
 	}
 
 	h.templateData[0] = Tab{

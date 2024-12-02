@@ -38,14 +38,16 @@ type ParsedData interface {
 	GetLogLevel() string
 	GetDescription() string
 	GetTime() time.Time
+	GetErrorCode() (string, error)
 }
 
 type parsingIndex struct {
 	// index of user, host, database, time in regex
-	timeIndex     *int
-	userIndex     *int
-	hostIndex     *int
-	databaseIndex *int
+	timeIndex      *int
+	userIndex      *int
+	hostIndex      *int
+	databaseIndex  *int
+	errorCodeIndex *int
 }
 
 type parsedData struct {
@@ -114,6 +116,19 @@ func (b *parsedData) GetDatabase() (string, error) {
 	}
 
 	return d, nil
+}
+
+func (b *parsedData) GetErrorCode() (string, error) {
+	if b.errorCodeIndex == nil {
+		return "", fmt.Errorf("error code is not set in this parser")
+	}
+
+	e := b.parsedData.Get(*b.errorCodeIndex)
+	if e == "" || e == "00000" {
+		return "", fmt.Errorf("invalid value for error code")
+	}
+
+	return e, nil
 }
 
 func (b *parsedData) GetLogLevel() string {
@@ -193,6 +208,12 @@ func (b *baseParser) SetUserIndex(userIndex int) *baseParser {
 // SetHostIndex will set hostIndex
 func (b *baseParser) SetHostIndex(hostIndex int) *baseParser {
 	b.hostIndex = &hostIndex
+	return b
+}
+
+// SetErrorCodeIndex will set errorCodeIndex
+func (b *baseParser) SetErrorCodeIndex(errorCodeIndex int) *baseParser {
+	b.errorCodeIndex = &errorCodeIndex
 	return b
 }
 

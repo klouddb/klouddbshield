@@ -35,7 +35,7 @@ func PrintHelp() {
 	fmt.Scanln(&choice) //nolint:errcheck
 	fmt.Println()
 	switch choice {
-	case 1: // All Postgres checks(Recommended)
+	case cons.SelectionIndex_AllCommands: // All Postgres checks(Recommended)
 		filePath := text.FgMagenta.Sprint("/etc/klouddbshield/kshieldconfig.toml")
 		dirPath := text.FgMagenta.Sprint("/etc/klouddbshield")
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -51,7 +51,7 @@ func PrintHelp() {
 		fmt.Println(text.FgCyan.Sprint(`maxIdleConn = 2`))
 		fmt.Println(text.FgCyan.Sprint(`maxOpenConn = 2`))
 
-	case 2: // Postgres CIS and User Security checks
+	case cons.SelectionIndex_PostgresChecks: // Postgres CIS and User Security checks
 		filePath := text.FgMagenta.Sprint("/etc/klouddbshield/kshieldconfig.toml")
 		dirPath := text.FgMagenta.Sprint("/etc/klouddbshield")
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -67,7 +67,7 @@ func PrintHelp() {
 		fmt.Println(text.FgCyan.Sprint(`maxIdleConn = 2`))
 		fmt.Println(text.FgCyan.Sprint(`maxOpenConn = 2`))
 
-	case 3: // HBA Scanner
+	case cons.SelectionIndex_HBAScanner: // HBA Scanner
 		filePath := text.FgMagenta.Sprint("/etc/klouddbshield/kshieldconfig.toml")
 		dirPath := text.FgMagenta.Sprint("/etc/klouddbshield")
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -83,10 +83,10 @@ func PrintHelp() {
 		fmt.Println(text.FgCyan.Sprint(`maxIdleConn = 2`))
 		fmt.Println(text.FgCyan.Sprint(`maxOpenConn = 2`))
 
-	case 4: // Pii Scanner
+	case cons.SelectionIndex_PIIScanner: // Pii Scanner
 		// help command is not implemented yet. Refer to the detailed guide at 'https://klouddb.gitbook.io/klouddb_shield'
 
-	case 5: // Inactive user report
+	case cons.SelectionIndex_InactiveUsers: // Inactive user report
 		fmt.Println(text.Bold.Sprint("inactive_users") + ": To get inactive users from log file")
 
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -106,7 +106,7 @@ func PrintHelp() {
 		fmt.Println("$ " + mainCommand + " " + fileRegexFlag + " " + beginTimeFlag + " " + endTimeFlag + " " + prefixFlag)
 		fmt.Println("$ " + mainCommand + " " + fileRegexFlag + " " + prefixFlag)
 		fmt.Println("\n> " + text.Bold.Sprint("NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser=inactive_users"))
-	case 6: // Client ip report
+	case cons.SelectionIndex_UniqueIPs: // Client ip report
 		fmt.Println(text.Bold.Sprint("unique_ip") + ": To get client IPs from log file")
 
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -127,7 +127,7 @@ func PrintHelp() {
 		fmt.Println("$ " + mainCommand + " " + fileRegexFlag + " " + prefixFlag)
 		fmt.Println("\n> " + text.Bold.Sprint("NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser=unique_ip"))
 
-	case 7: // HBA unused lines report
+	case cons.SelectionIndex_HBAUnusedLines: // HBA unused lines report
 		fmt.Println(text.Bold.Sprint("unused_lines") + ": To get unused lines from pg_hba.conf file by comparing that with log file")
 
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -149,18 +149,20 @@ func PrintHelp() {
 		fmt.Println("$ " + mainCommand + " " + fileRegexFlag + " " + prefixFlag + " " + hbaFileFlag)
 		fmt.Println("\n> " + text.Bold.Sprint("NOTE: --begin-time and --end-time are optional flags and --prefix, --file-path and --hba-file are required flags if you are using --logparser=unused_lines"))
 
-	case 8: // Password Manager
+	case cons.SelectionIndex_PasswordManager: // Password Manager
 		fmt.Println("This module has 3 different active features 1) Password generator 2) Password attack simulator 3) Common usernames detector")
 
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
 		option := text.FgMagenta.Sprint(`"Password Manager"`)
 		fmt.Printf("> Please run %s and pick option for %s.\n", command, option)
-		fmt.Println("> From there, you can choose one of the following three sub-options:")
-		fmt.Println("\t" + text.FgCyan.Sprint("1. Password generator"))
-		fmt.Println("\t" + text.FgCyan.Sprint("2. Password attack simulator"))
-		fmt.Println("\t" + text.FgCyan.Sprint("3. Common usernames detector"))
+		fmt.Println("> From there, you can choose one of the following five sub-options:")
+		fmt.Println("\t" + text.FgCyan.Sprint("1. Password attack simulator"))
+		fmt.Println("\t" + text.FgCyan.Sprint("2. Password generator"))
+		fmt.Println("\t" + text.FgCyan.Sprint("3. Encrypt a password(scram-sha-256)"))
+		fmt.Println("\t" + text.FgCyan.Sprint("4. Match common usernames"))
+		fmt.Println("\t" + text.FgCyan.Sprint("5. Pawned password detector"))
 
-	case 9: // Password leak scanner
+	case cons.SelectionIndex_PasswordLeakScanner: // Password leak scanner
 		fmt.Println(text.Bold.Sprint("password_leak_scanner") + ": To get password leak scanner from log file")
 
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
@@ -181,7 +183,7 @@ func PrintHelp() {
 		fmt.Println("$ " + mainCommand + " " + fileRegexFlag + " " + prefixFlag)
 		fmt.Println("\n> " + text.Bold.Sprint("NOTE: --begin-time and --end-time are optional flags and --prefix and --file-path are required flags if you are using --logparser=password_leak_scanner"))
 
-	case 10, 11: // AWS RDS Sec Report
+	case cons.SelectionIndex_AWSRDS: // AWS RDS Sec Report
 		fmt.Println("> Make sure you have properly configured your AWS-CLI with a valid Access Key and Region or declare AWS variables properly.")
 		fmt.Println("> NOTE: Please run this tool from a bastion host or another location where you have access to your RDS instances. It only requires basic AWS RDS 'describe' privileges and SNS 'read' privileges.")
 
@@ -194,13 +196,26 @@ func PrintHelp() {
 		option := text.FgMagenta.Sprint(`"AWS RDS Sec Report"`)
 		fmt.Printf("> Once above is done please run %s and pick option for %s.\n", command, option)
 
-	case 12: // MySQL Report
+	case cons.SelectionIndex_AWSAurora: // AWS Aurora Sec Report
+		fmt.Println("> Make sure you have properly configured your AWS-CLI with a valid Access Key and Region or declare AWS variables properly.")
+		fmt.Println("> NOTE: Please run this tool from a bastion host or another location where you have access to your RDS instances. It only requires basic AWS RDS 'describe' privileges and SNS 'read' privileges.")
+
+		fmt.Println("\t $" + text.FgCyan.Sprintf(`export AWS_ACCESS_KEY_ID="ASXXXXXXX"`))
+		fmt.Println("\t $" + text.FgCyan.Sprintf(`export AWS_SECRET_ACCESS_KEY="XXXXXXXXX"`))
+		fmt.Println("\t $" + text.FgCyan.Sprintf(`export AWS_SESSION_TOKEN="XXXXXXXXX"`))
+		fmt.Println("\t $" + text.FgCyan.Sprintf(`export AWS_REGION="XXXXXXXXX"`))
+
+		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
+		option := text.FgMagenta.Sprint(`"AWS Aurora Sec Report"`)
+		fmt.Printf("> Once above is done please run %s and pick option for %s.\n", command, option)
+
+	case cons.SelectionIndex_MySQL: // MySQL Report
 		filePath := text.FgMagenta.Sprint("/etc/klouddbshield/kshieldconfig.toml")
 		dirPath := text.FgMagenta.Sprint("/etc/klouddbshield")
 		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
-		option := text.FgMagenta.Sprint(`"Postgres CIS and User Security checks"`)
+		option := text.FgMagenta.Sprint(`"MySQL Report"`)
 		fmt.Println("> Once you install package or cloned the repo, you need to populate the config file " + filePath + " in " + dirPath + " directory . Please fill username, dbname and password (sample entry below).")
-		fmt.Println("> Once config file is ready please execute " + command + " and and pick option for " + option + " (First option in the list).")
+		fmt.Println("> Once config file is ready please execute " + command + " and and pick option for " + option)
 		fmt.Println(text.FgCyan.Sprint("[mysql]"))
 		fmt.Println(text.FgCyan.Sprint(`host="localhost"`))
 		fmt.Println(text.FgCyan.Sprint(`port="3306"`))
@@ -209,11 +224,29 @@ func PrintHelp() {
 		fmt.Println(text.FgCyan.Sprint(`maxIdleConn = 2`))
 		fmt.Println(text.FgCyan.Sprint(`maxOpenConn = 2`))
 
-	case 13: // Transaction Wraparound Report
+	case cons.SelectionIndex_TransactionWraparound: // Transaction Wraparound Report
 		// TODO: help command is not created for this module. Refer to the detailed guide at 'https://klouddb.gitbook.io/klouddb_shield'
 
-	case 14: // Exit
+	case cons.SelectionIndex_Exit: // Exit
 		os.Exit(0)
+
+	case cons.SelectionIndex_SSLCheck:
+		filePath := text.FgMagenta.Sprint("/etc/klouddbshield/kshieldconfig.toml")
+		dirPath := text.FgMagenta.Sprint("/etc/klouddbshield")
+		command := text.FgMagenta.Sprint(`"ciscollector -r"`)
+		command2 := text.FgMagenta.Sprint(`"ciscollector -ssl-check"`)
+		option := text.FgMagenta.Sprint(`"SSL Check"`)
+		fmt.Println("> Once you install package or cloned the repo, you need to populate the config file " + filePath + " in " + dirPath + " directory . Please fill username, dbname and password (sample entry below).")
+		fmt.Println("> Once config file is ready please execute " + command + " and and pick option for " + option)
+		fmt.Println("> Or else you can execute " + command2)
+		fmt.Println(text.FgCyan.Sprint("[postgres]"))
+		fmt.Println(text.FgCyan.Sprint(`host="54.xxx.xxx.xx"`))
+		fmt.Println(text.FgCyan.Sprint(`port="5432"`))
+		fmt.Println(text.FgCyan.Sprint(`user="xxxxx"`))
+		fmt.Println(text.FgCyan.Sprint(`dbname="postgres"`))
+		fmt.Println(text.FgCyan.Sprint(`password="xxxxx"`))
+		fmt.Println(text.FgCyan.Sprint(`maxIdleConn = 2`))
+		fmt.Println(text.FgCyan.Sprint(`maxOpenConn = 2`))
 
 	default:
 		fmt.Println("Invalid Choice, Please Try Again.")

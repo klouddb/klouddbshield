@@ -7,28 +7,34 @@
             {{ end }}
             {{ if .InactiveUsers }}
                 <div class="data-container">
-                    <h2>Inactive Users</h2>
+                    <h6 class="flaged-title">Inactive Users</h6>
                     {{ template "inactiveUsers" .InactiveUsers }}
                 </div>
             {{ end }}
 
             {{ if .UniqueIPs }}
                 <div class="data-container">
-                    <h2>Unique IPs</h2>
+                    <h6 class="flaged-title">Unique IPs</h6>
                     {{ template "uniqueIPs" .UniqueIPs }}
                 </div>
             {{ end }}
 
             {{ if .UnusedHBALines }}
                 <div class="data-container">
-                    <h2>Unused HBA Lines</h2>
+                    <h6 class="flaged-title">Unused HBA Lines</h6>
                     {{ template "unusedHBALines" .UnusedHBALines }}
                 </div>
             {{ end }}
             {{ if .LeakedPasswords }}
                 <div class="data-container">
-                    <h2>Leaked Password In Logfile</h2>
+                    <h6 class="flaged-title">Leaked Password In Logfile</h6>
                     {{ template "leakedPassword" .LeakedPasswords }}
+                </div>
+            {{ end }}
+            {{ if .SQLInjection }}
+                <div class="data-container">
+                    <h2>SQL Injection</h2>
+                    {{ template "sqlInjectionScan" .SQLInjection }}
                 </div>
             {{ end }}
         </div>
@@ -42,13 +48,18 @@
             <p>No unused HBA lines found from the given log file.</p>
         </div>
     {{ else }}
-        <div class="data-block">
-            <ul class="hba-lines-list">
-                {{ range .Lines }}
-                    <li class="hba-line"><span class="line-no">Line No: {{ .LineNo }}</span> <span class="line-content">{{ .Line }}</span></li>
-                {{ end }}
-            </ul>
-        </div>
+        <table class="table">
+            <tr>
+                <th style="width:100px;" class="db-users">Line No</th>
+                <th class="db-users">Line</th>
+            </tr>
+            {{ range .Lines }}
+                <tr>
+                    <td class="log-users">{{.LineNo}}</td>
+                    <td class="log-users">{{.Line}}</td>
+                </tr>
+            {{ end }}
+        </table>
     {{ end }}
 {{ end }}
 
@@ -61,6 +72,22 @@
         <div class="data-block">
             <ul class="tag-list">
                 {{ range .IPs }}
+                    <li class="tag">{{ . }}</li>
+                {{ end }}
+            </ul>
+        </div>
+    {{ end }}
+{{ end }}
+
+{{ define "sqlInjectionScan" }}
+    {{ if eq (len .Logs) 0 }}
+        <div class="no-data-block">
+            <p>No SQL Injection related logs found in log file/s.</p>
+        </div>
+    {{ else }}
+        <div class="data-block">
+            <ul class="tag-list">
+                {{ range .Logs }}
                     <li class="tag">{{ . }}</li>
                 {{ end }}
             </ul>

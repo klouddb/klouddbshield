@@ -13,10 +13,16 @@
         {{ template "allTab" .Body }}
     {{ else if eq .Title "Users Report" }}
         {{ template "userlistTable" .Body }}
+    {{ else if eq .Title "Config Audit" }}
+        {{ template "configAuditTab" .Body }}
+    {{ else if eq .Title "Compare Config" }}
+        {{ template "configCompareTab" .Body }}
     {{ else if eq .Title "PII Scanner Report" }}
         {{ template "piireport" .Body }}
     {{ else if eq .Title "Wraparound Report" }}
         {{ template "transactionWraparound" .Body }}
+    {{ else if eq .Title "SSL Report" }}
+        {{ template "sslAuditTab" .Body }}
     {{ end }}
 {{ end }}
 

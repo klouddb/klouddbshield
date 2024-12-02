@@ -8,12 +8,8 @@ import (
 )
 
 func GetQueryFromMessage(msg string) (string, bool) {
-	msg = strings.TrimSpace(msg)
-	if !strings.HasPrefix(msg, "statement:") {
-		return "", false
-	}
 
-	msg = strings.TrimPrefix(msg, "statement:")
+	msg = strings.TrimPrefix(strings.TrimSpace(msg), "statement:")
 	msg = strings.TrimSpace(msg)
 	if strings.HasPrefix(msg, "select") || strings.HasPrefix(msg, "SELECT") ||
 		strings.HasPrefix(msg, "update") || strings.HasPrefix(msg, "UPDATE") ||

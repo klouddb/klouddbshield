@@ -67,6 +67,7 @@ type Result struct {
 	CaseFailReason  map[string]*CaseResult `json:"CaseFailReason"`
 	ManualCheckData ManualCheckData        `json:"ManualCheckData"`
 	Critical        bool                   `json:"Critical"`
+	// ReferenceLink   string                 `json:"ReferenceLink"`
 }
 
 type Config struct {
@@ -82,6 +83,26 @@ type Status struct {
 	Pass int
 	Fail int
 }
+
+type ConfigAuditResult struct {
+	Name       string `json:"name"`
+	Status     string `json:"status"`
+	FailReason string `json:"fail_reason"`
+}
+
+type SSLScanResult struct {
+	Cells []*SSLScanResultCell `json:"cells"`
+
+	HBALines  []string          `json:"hba_lines"`
+	SSLParams map[string]string `json:"ssl_params"`
+}
+
+type SSLScanResultCell struct {
+	Title   string `json:"title"`
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
 type HBAScannerResult struct {
 	Title            string
 	Control          int

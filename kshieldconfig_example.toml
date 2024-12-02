@@ -1,11 +1,13 @@
+# customTemplate="/path/to/template"
+
 # [postgres]
-# host="localhost"
-# port="5432"
-# user="postgres"
-# dbname="postgres"
-# password="postgres"
-# maxIdleConn = 2
-# maxOpenConn = 2
+# host = "localhost"
+# port = "5432"
+# user = "postgres"
+# password = "password123"
+# dbname = "mydb"
+# maxIdleConn = 10
+# maxOpenConn = 100
 
 # [mysql]
 # host="localhost"
@@ -14,8 +16,6 @@
 # password="mysql111"
 # maxIdleConn = 2
 # maxOpenConn = 2
-
-# customTemplate="<static path for custom template here>"
 
 # [app]
 # debug = true
