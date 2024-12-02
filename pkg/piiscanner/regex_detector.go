@@ -336,6 +336,12 @@ func (r *regexColumnDetector) Init() error {
 				Weight: 0.7,
 			},
 		},
+		PIILabel_GSTIN: {
+			{
+				Regexp: regexp.MustCompile(`(?i)^.*(gstin|gst).*$`),
+				Weight: 0.5,
+			},
+		},
 	}
 	return nil
 }
@@ -396,90 +402,105 @@ func (r *regexValueDetector) Init() error {
 			},
 			{
 				// New Hampshire driving license regex
-				Regexp: regexp.MustCompile(`\b(?:0[1-9]|1[0-2])[A-Z]{3}[0-9]{2}(?:0[1-9]|1[0-9]|2[0-9]|3[0-1])[0-9]\b`),
+				Regexp: regexp.MustCompile(`(?i)\b(?:0[1-9]|1[0-2])[A-Z]{3}[0-9]{2}(?:0[1-9]|1[0-9]|2[0-9]|3[0-1])[0-9]\b`),
 				Weight: 1,
 			},
 			{
 				// Washington driving license regex
-				Regexp: regexp.MustCompile(`\b(?:[A-Z]{5}|[A-Z]{4}[*]{1}|[A-Z]{3}[*]{2}|[A-Z]{2}[*]{3})[A-Z]{2}[0-9]{3}[A-Z0-9]{2}\b`),
+				Regexp: regexp.MustCompile(`(?i)\b(?:[A-Z]{5}|[A-Z]{4}[*]{1}|[A-Z]{3}[*]{2}|[A-Z]{2}[*]{3})[A-Z]{2}[0-9]{3}[A-Z0-9]{2}\b`),
 				Weight: 1,
 			},
 			{
 				// West Virginia and california driving license regex
-				Regexp: regexp.MustCompile(`\b[A-Z][0-9]{6,7}\b`),
+				Regexp: regexp.MustCompile(`(?i)\b[A-Z][0-9]{6,7}\b`),
 				Weight: 1,
 			},
 			{
 				// Washington, Sept 2018 onwards driving license regex
-				Regexp: regexp.MustCompile(`\bWDL[A-Z0-9]{9}\b`),
+				Regexp: regexp.MustCompile(`(?i)\bWDL[A-Z0-9]{9}\b`),
 				Weight: 1,
 			},
 			{
-				Regexp: regexp.MustCompile(`\b([A-Z]{2}[0-9]{6}[A-Z]?)|([A-Z]{3}[\s_-][0-9]{2}[\s_-][0-9]{4})|([0-9]{3}[A-Z]{2}[0-9]{4})\b`),
+				Regexp: regexp.MustCompile(`(?i)\b([A-Z]{2}[0-9]{6}[A-Z]?)|([A-Z]{3}[\s_-][0-9]{2}[\s_-][0-9]{4})|([0-9]{3}[A-Z]{2}[0-9]{4})\b`),
 				Weight: 0.7,
 			},
 			{
-				Regexp: regexp.MustCompile(`\b(([0-9]{7}[A-Z])|([1-9]{2}[0-9]{5}))\b`),
+				Regexp: regexp.MustCompile(`(?i)\b(([0-9]{7}[A-Z])|([1-9]{2}[0-9]{5}))\b`),
 				Weight: 0.7,
 			},
 			{
-				Regexp: regexp.MustCompile(`\b[A-Z][0-9]{2}[\s_-]?(?:(?:[0-9]{3}[\s_-]?[0-9]{3})|(?:[0-9]{2}[\s_-]?[0-9]{4}))\b`),
+				// Minnesota driving license regex
+				Regexp: regexp.MustCompile(`(?i)\b[A-Z][0-9]{12}\b`),
 				Weight: 0.5,
 			},
 			{
-				Regexp: regexp.MustCompile(`\b[A-Z][\s_-]?[0-9]{3}[\s_-][0-9]{3}[\s_-](?:(?:[0-9]{2}[\s_-][0-9]{3}[\s_-][0-9])|(?:[0-9]{3}[\s_-][0-9]{3}))\b`),
+				// Missouri driving license regex
+				Regexp: regexp.MustCompile(`(?i)\b[A-Z][0-9]{9}\b`),
 				Weight: 0.5,
 			},
 			{
-				Regexp: regexp.MustCompile(`\b[A-Z][0-9]{3}[\s_-][0-9]{4}[\s_-][0-9]{4}(?:[\s_-][0-9]{2})?\b`),
+				Regexp: regexp.MustCompile(`(?i)\b[A-Z][0-9]{2}[\s_-]?(?:(?:[0-9]{3}[\s_-]?[0-9]{3})|(?:[0-9]{2}[\s_-]?[0-9]{4}))\b`),
 				Weight: 0.5,
 			},
 			{
-				Regexp: regexp.MustCompile(`\b[A-Z][0-9]{4}[\s_-][0-9]{5}[\s_-][0-9]{5}\b`),
+				Regexp: regexp.MustCompile(`(?i)\b[A-Z][\s_-]?[0-9]{3}[\s_-][0-9]{3}[\s_-](?:(?:[0-9]{2}[\s_-][0-9]{3}[\s_-][0-9])|(?:[0-9]{3}[\s_-][0-9]{3}))\b`),
+				Weight: 0.5,
+			},
+			{
+				Regexp: regexp.MustCompile(`(?i)\b[A-Z][0-9]{3}[\s_-][0-9]{4}[\s_-][0-9]{4}(?:[\s_-][0-9]{2})?\b`),
+				Weight: 0.5,
+			},
+			{
+				// Pennsylvania driving license regex
+				Regexp: regexp.MustCompile(`\b[0-9]{2}[\s_-][0-9]{3}[\s_-][0-9]{3}\b`),
+				Weight: 0.5,
+			},
+			{
+				Regexp: regexp.MustCompile(`(?i)\b[A-Z][0-9]{4}[\s_-][0-9]{5}[\s_-][0-9]{5}\b`),
 				Weight: 0.5,
 			},
 			{
 				// Arkansas driving license regex
-				Regexp: regexp.MustCompile(`\b9[0-9]{8}\b`),
+				Regexp: regexp.MustCompile(`(?i)\b9[0-9]{8}\b`),
 				Weight: 0.5,
 			},
 			{
-				Regexp: regexp.MustCompile(`\b(?:(?:[0-9]{2}[\s_-][0-9]{3})|(?:[0-9]{3}[\s_-][0-9]{2}))[\s_-][0-9]{4}\b`),
+				Regexp: regexp.MustCompile(`(?i)\b(?:(?:[0-9]{2}[\s_-][0-9]{3})|(?:[0-9]{3}[\s_-][0-9]{2}))[\s_-][0-9]{4}\b`),
 				Weight: 0.3,
 			},
 			{
 				// \b[0-9]{7}\b => Alabama, Alaska, Delaware, Georgia, Maine, Montana, Oregon, South Carolina, Washington, D.C., West Virginia
 				// \b[0-9]{8}\b => South Dakota, Rhode Island, Tennessee, Texas, Vermont
 				// \b[0-9]{9}\b => Connecticut, Louisiana, New Mexico, Idaho, Iowa, Mississippi, Oklahoma, South Dakota, Tennessee, Utah
-				Regexp: regexp.MustCompile(`\b[0-9]{7,9}\b`),
+				Regexp: regexp.MustCompile(`(?i)\b[0-9]{7,9}\b`),
 				Weight: 0.3,
 			},
 			{
 				// Canada
-				Regexp: regexp.MustCompile(`\b(([0-9]{4}-[0-9]{2}-[0-9]{4})|(?i:\b[A-Z][0-9]{4}[\s_-]?[0-9]{5}[\s_-][0-9]{5}\b))\b`),
+				Regexp: regexp.MustCompile(`(?i)\b(([0-9]{4}-[0-9]{2}-[0-9]{4})|(?i:\b[A-Z][0-9]{4}[\s_-]?[0-9]{5}[\s_-][0-9]{5}\b))\b`),
 				Weight: 0.3,
 			},
 			{
-				Regexp: regexp.MustCompile(`\b[0-9]{6}[\s_-][0-9]{3}\b`),
+				Regexp: regexp.MustCompile(`(?i)\b[0-9]{6}[\s_-][0-9]{3}\b`),
 				Weight: 0.3,
 			},
 			{
 				// North Carolina driving license regex
-				Regexp: regexp.MustCompile(`\b[0-9]{12}\b`),
+				Regexp: regexp.MustCompile(`(?i)\b[0-9]{12}\b`),
 				Weight: 0.3,
 			},
 		},
 		PIILabel_ITIN: {
 			{
-				Regexp: regexp.MustCompile(`\b9\d{2}[-\s](5\d|6[0-5]|7\d|8[0-8]|9([0-2]|[4-9]))[-\s]\d{4}\b`),
+				Regexp: regexp.MustCompile(`(?i)\b9\d{2}[-\s](5\d|6[0-5]|7\d|8[0-8]|9([0-2]|[4-9]))[-\s]\d{4}\b`),
 				Weight: 0.7,
 			},
 			{
-				Regexp: regexp.MustCompile(`\b9\d{2}(5\d|6[0-5]|7\d|8[0-8]|9([0-2]|[4-9]))\d{4}\b`),
+				Regexp: regexp.MustCompile(`(?i)\b9\d{2}(5\d|6[0-5]|7\d|8[0-8]|9([0-2]|[4-9]))\d{4}\b`),
 				Weight: 0.3,
 			},
 			{
-				Regexp: regexp.MustCompile(`\b9\d{2}[-\s](5\d|6[0-5]|7\d|8[0-8]|9([0-2]|[4-9]))\d{4}\b|\b9\d{2}(5\d|6[0-5]|7\d|8[0-8]|9([0-2]|[4-9]))[-s]\d{4}\b`),
+				Regexp: regexp.MustCompile(`(?i)\b9\d{2}[-\s](5\d|6[0-5]|7\d|8[0-8]|9([0-2]|[4-9]))\d{4}\b|\b9\d{2}(5\d|6[0-5]|7\d|8[0-8]|9([0-2]|[4-9]))[-s]\d{4}\b`),
 				Weight: 0.05,
 			},
 		},
@@ -528,6 +549,24 @@ func (r *regexValueDetector) Init() error {
 			// 	Regexp: regexp.MustCompile(`((?:(?:\\d{4}[- ]?){3}\\d{4}|\\d{15,16}))(?![\\d])`),
 			// 	Weight: 1.0,
 			// },
+		},
+		PIILabel_VoterID: {
+			{
+				Regexp: regexp.MustCompile(`(?i)\b[A-Z]{3}\d{7}\b`),
+				Weight: 0.8,
+			},
+		},
+		PIILabel_GSTIN: {
+			{
+				Regexp: regexp.MustCompile(`(?i)\b[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}\b`),
+				Weight: 0.5,
+			},
+		},
+		PIILabel_VehicleNumber: {
+			{
+				Regexp: regexp.MustCompile(`(?i)\b[A-Z]{2}[\\ -]?[0-9]{2}[\\ -]?[A-Z]{1,2}[\\ -]?[0-9]{4}\b`),
+				Weight: 0.8,
+			},
 		},
 		PIILabel_SSN: {
 			{

@@ -22,7 +22,7 @@ func NewUnusedHBALineHelper(store *sql.DB) *UnusedHBALineHelper {
 	return &UnusedHBALineHelper{store: store}
 }
 
-func (i *UnusedHBALineHelper) Init(ctx context.Context, logParserCnf *config.LogParser, baseParser parselog.BaseParser) error {
+func (i *UnusedHBALineHelper) Init(ctx context.Context, logParserCnf *config.LogParser) error {
 	// check if postgres setting contains required variable or connection logs
 	if !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%h") && !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%r") {
 		return fmt.Errorf("Please set log_line_prefix to '%%h' or '%%r' or enable log_connections")
@@ -56,7 +56,7 @@ func (i *UnusedHBALineHelper) Init(ctx context.Context, logParserCnf *config.Log
 		return fmt.Errorf("Got error while parsing hba rules: %v", err)
 	}
 
-	i.HbaUnusedLineParser = parselog.NewHbaUnusedLines(logParserCnf, baseParser, hbaValidator)
+	i.HbaUnusedLineParser = parselog.NewHbaUnusedLines(logParserCnf, hbaValidator)
 	return nil
 }
 

@@ -40,6 +40,9 @@ nfpms:
       - src: passwords/*
         dst: /etc/klouddbshield/passwords
         type: config
+      # Simple config file
+      - src: systemd.service
+        dst: /lib/systemd/system/ciscollector.service
       - src: python/*
         dst: /etc/klouddbshield/python
         type: config

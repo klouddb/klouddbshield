@@ -46,6 +46,17 @@ const (
 	PIILabel_DrivingLicenceNumber PIILabel = "DrivingLicenceNumber"
 
 	PIILabel_NHSNumber PIILabel = "NHSNumber"
+
+	// PIILabel_GSTIN is pii label for GSTIN number.
+	PIILabel_GSTIN PIILabel = "GSTIN"
+
+	// PIILabel_VehicleNumber is pii label for Vehicle number.
+	// currently we have only value regex for india.
+	PIILabel_VehicleNumber PIILabel = "VehicleNumber"
+
+	// PIILabel_VoterID is pii label for Voter ID.
+	// currently we have only value regex for india.
+	PIILabel_VoterID PIILabel = "VoterID"
 )
 
 // Detector is an interface that defines the methods that a PII detector should implement.

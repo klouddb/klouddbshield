@@ -15,6 +15,7 @@ import (
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/klouddb/klouddbshield/pkg/config"
 	"github.com/klouddb/klouddbshield/pkg/logger"
+	"github.com/klouddb/klouddbshield/pkg/parselog"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 	"github.com/rs/zerolog/log"
 	"github.com/schollz/progressbar/v3"
@@ -29,13 +30,13 @@ type FastRunnerResponse struct {
 }
 
 type Parser interface {
-	Feed(string) error
+	Feed(parselog.ParsedData) error
 }
 
-type ParserFunc func(string) error
+type ParserFunc func(parselog.ParsedData) error
 
 // RunFastParser runs the log parser using fast processing.
-func RunFastParser(ctx context.Context, runCmd bool, logParserCnf *config.LogParser, fns []ParserFunc, validator ParserFunc) (*FastRunnerResponse, error) {
+func RunFastParser(ctx context.Context, runCmd bool, baseParser parselog.BaseParser, logParserCnf *config.LogParser, fns []ParserFunc) (*FastRunnerResponse, error) {
 	// Read log file path from user
 	defer func() {
 		if r := recover(); r != nil {
@@ -48,7 +49,8 @@ func RunFastParser(ctx context.Context, runCmd bool, logParserCnf *config.LogPar
 	start := time.Now()
 	h := &ProcessHelper{
 		fns:          fns,
-		validator:    validator,
+		baseParser:   baseParser,
+		logParserCnf: logParserCnf,
 		SuccessLines: make([]int64, len(fns)),
 	}
 
@@ -108,8 +110,10 @@ type ProcessHelper struct {
 	TotalLines   int64
 	SuccessLines []int64
 
-	fns       []ParserFunc
-	validator ParserFunc
+	baseParser   parselog.BaseParser
+	logParserCnf *config.LogParser
+
+	fns []ParserFunc
 }
 
 // Process processes the log file in chunks.
@@ -140,6 +144,11 @@ func (p *ProcessHelper) Process(ctx context.Context, filename string) error {
 		return nil
 	}
 
+	// if file is modified before begin time, then ignore it
+	if !p.logParserCnf.Begin.IsZero() && fileInfo.ModTime().Before(p.logParserCnf.Begin) {
+		return nil
+	}
+
 	linesPool := sync.Pool{New: func() interface{} {
 		lines := make([]byte, 250*1024)
 		return &lines
@@ -159,7 +168,7 @@ func (p *ProcessHelper) Process(ctx context.Context, filename string) error {
 
 	var wg sync.WaitGroup
 
-	chunkProcessors := NewChunkProcessor(&linesPool, &stringPool, p.fns)
+	chunkProcessors := NewChunkProcessor(&linesPool, p.baseParser, p.logParserCnf, &stringPool, p.fns)
 
 	previousLine := []byte{}
 	for {
@@ -245,8 +254,9 @@ func (p *ProcessHelper) validateFile(ctx context.Context, f *os.File) error {
 		line = strings.Trim(line, "\n")
 
 		totalLine++
-		err = p.validator(line)
+		_, err = p.baseParser.Parse(line)
 		if err != nil {
+			fmt.Println(err)
 			errorCount++
 		}
 	}
@@ -267,16 +277,21 @@ type ChunkProcessor struct {
 	linesPool, stringPool *sync.Pool
 	fns                   []ParserFunc
 
+	baseParser   parselog.BaseParser
+	logParserCnf *config.LogParser
+
 	totalLines   int64
 	successLines []int64
 }
 
 // NewChunkProcessor creates a new chunk processor.
-func NewChunkProcessor(linesPool *sync.Pool, stringPool *sync.Pool, fns []ParserFunc) *ChunkProcessor {
+func NewChunkProcessor(linesPool *sync.Pool, baseParser parselog.BaseParser, logParserCnf *config.LogParser, stringPool *sync.Pool, fns []ParserFunc) *ChunkProcessor {
 	return &ChunkProcessor{
-		linesPool:  linesPool,
-		stringPool: stringPool,
-		fns:        fns,
+		linesPool:    linesPool,
+		baseParser:   baseParser,
+		logParserCnf: logParserCnf,
+		stringPool:   stringPool,
+		fns:          fns,
 
 		successLines: make([]int64, len(fns)),
 	}
@@ -345,8 +360,22 @@ func (c *ChunkProcessor) Parse(ctx context.Context, chunk []byte) {
 				}
 
 				atomic.AddInt64(&c.totalLines, 1)
+				parsedData, err := c.baseParser.Parse(logLine)
+				if err != nil {
+					logger.FileLogger().Err(err).Str("line", logLine).Msg("Failed to parse line")
+					continue
+				}
+
+				// if time is not valid then return
+				if !c.logParserCnf.IsValidTime(parsedData.GetTime()) {
+					for i := range c.successLines {
+						atomic.AddInt64(&c.successLines[i], 1)
+					}
+					continue
+				}
+
 				for i, fn := range c.fns {
-					err := fn(logLine)
+					err := fn(parsedData)
 					if err != nil {
 						logger.FileLogger().Err(err).Str("line", logLine).Msg("Failed to parse line")
 						continue

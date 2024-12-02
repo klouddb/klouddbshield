@@ -46,6 +46,7 @@ func testUniqueIPs(prefix, file string) {
 	cmd := exec.Command("ciscollector",
 		"-logparser", cons.LogParserCMD_UniqueIPs,
 		"-prefix", prefix,
+		"-config", "./",
 		"-file-path", file,
 		"-output-type", "json",
 	)
@@ -81,9 +82,10 @@ func testUniqueIPs(prefix, file string) {
 
 func testInactiveUser(prefix, file string) {
 	cmd := exec.Command("ciscollector",
-		"-logparser", cons.LogParserCMD_InactiveUsr,
+		"-logparser", cons.LogParserCMD_InactiveUser,
 		"-prefix", prefix,
 		"-file-path", file,
+		"-config", "./",
 		"-output-type", "json",
 	)
 
@@ -166,6 +168,7 @@ func testUnusedHbaLines(prefix, file string) {
 	cmd := exec.Command("ciscollector",
 		"-logparser", cons.LogParserCMD_HBAUnusedLines,
 		"-prefix", prefix,
+		"-config", "./",
 		"-file-path", file,
 		"-output-type", "json",
 		"-hba-file", "./pg_hba.conf",
@@ -209,6 +212,7 @@ func testLeakedPasswordScanner(prefix, file string) {
 	cmd := exec.Command("ciscollector",
 		"-logparser", cons.LogParserCMD_PasswordLeakScanner,
 		"-prefix", prefix,
+		"-config", "./",
 		"-file-path", file,
 		"-output-type", "json",
 	)

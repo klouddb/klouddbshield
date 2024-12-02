@@ -37,17 +37,8 @@ func Open(conf Postgres) (*sql.DB, string, error) {
 	// "host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable"
 	url := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", conf.Host, conf.Port, conf.User, conf.Password, conf.DBName)
 
-	db, err := sql.Open("postgres", url)
+	db, err := ConnectDatabaseUsingConnectionString(url)
 	if err != nil {
-		log.Error().
-			Err(err).
-			Str("conn", url).
-			Msg("Failed to connect to database")
-		return nil, "", err
-	}
-	err = db.Ping()
-	if err != nil {
-		// fmt.Printf("Failed to connect to database. Error:	%s", err.Error())
 		return nil, "", err
 	}
 	if conf.MaxIdleConn > 0 {
@@ -73,4 +64,29 @@ func Open(conf Postgres) (*sql.DB, string, error) {
 	}
 
 	return db, hostname, nil
+}
+
+// ConnectDatabaseUsingConnectionString connects to a PostgreSQL database using the provided connection string.
+// It returns a database connection, the connection string, and an error if any.
+func ConnectDatabaseUsingConnectionString(url string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", url)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("conn", url).
+			Msg("Failed to open database connection")
+		return nil, err
+	}
+
+	err = db.Ping()
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("conn", url).
+			Msg("Failed to ping database")
+		db.Close()
+		return nil, err
+	}
+
+	return db, nil
 }

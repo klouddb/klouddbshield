@@ -20,23 +20,24 @@ import (
 
 type postgresRunner struct {
 	postgresConfig   *postgresdb.Postgres
-	builder          *strings.Builder
 	postgresCheckSet utils.Set[string]
 	htmlReportHelper *htmlreport.HtmlReportHelper
+	outputType       string
+	fileData         map[string]interface{}
 }
 
-func newPostgresRunnerFromConfig(postgresConfig *postgresdb.Postgres, builder *strings.Builder,
-	postgresCheckSet utils.Set[string], htmlReportHelper *htmlreport.HtmlReportHelper) *postgresRunner {
+func newPostgresRunnerFromConfig(postgresConfig *postgresdb.Postgres, fileData map[string]interface{},
+	postgresCheckSet utils.Set[string], htmlReportHelper *htmlreport.HtmlReportHelper, outputType string) *postgresRunner {
 	return &postgresRunner{
 		postgresConfig:   postgresConfig,
-		builder:          builder,
+		fileData:         fileData,
 		postgresCheckSet: postgresCheckSet,
 		htmlReportHelper: htmlReportHelper,
+		outputType:       outputType,
 	}
 }
 
 func (p *postgresRunner) cronProcess(ctx context.Context) error {
-
 	_, err := p.run(ctx)
 	return err
 }
@@ -65,20 +66,32 @@ func (p *postgresRunner) run(ctx context.Context) (map[int]*model.Status, error)
 		return nil, err
 	}
 
-	p.builder.WriteString(simpletextreport.PrintReportInFile(listOfResults, version, "Postgres Report"))
+	out := userlist.Run(ctx, postgresStore)
+
+	if p.outputType == "json" {
+
+		p.fileData["Postgres Report"] = map[string]interface{}{
+			"result":  listOfResults,
+			"version": version,
+		}
+
+		p.fileData["Users Report"] = out
+	} else {
+		p.fileData["Postgres Report"] = simpletextreport.PrintReportInFile(listOfResults, version)
+
+		builder := strings.Builder{}
+		for _, data := range out {
+			builder.WriteString("> " + data.Title + "\n")
+			builder.WriteString(data.Data.Text() + "\n")
+		}
+
+		p.fileData["Users Report"] = builder.String()
+
+	}
 
 	p.htmlReportHelper.RegisterPostgresReportData(listOfResults, scoreMap,
 		version, p.postgresCheckSet.Len() == 0 /* when there is any data from custom template then we need to skip summary part in htmlreport */)
-
-	out := userlist.Run(ctx, postgresStore)
 	p.htmlReportHelper.RegisterUserlistData(out)
-
-	p.builder.WriteString("\nUsers Report")
-
-	for _, data := range out {
-		p.builder.WriteString("> " + data.Title + "\n")
-		p.builder.WriteString(data.Data.Text() + "\n")
-	}
 
 	return scoreMap, nil
 

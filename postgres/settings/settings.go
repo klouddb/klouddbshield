@@ -81,6 +81,7 @@ Logging can be altered and obfuscated inhibiting root cause analysis.`,
 			logDisconnections == "on" &&
 			postAuthDelay == "0" {
 			result.Status = "Pass"
+			return result, nil
 		}
 		result.FailReason = utils.GetFailReasonInString(data)
 		result.Status = "Fail"
@@ -326,6 +327,7 @@ func CheckPGCrypto() helper.CheckHelper {
 		if len(data) == 0 {
 			result.Status = "Fail"
 			result.FailReason = "pgcrypto not installed"
+			return result, nil
 		}
 
 		result.Status = "Pass"

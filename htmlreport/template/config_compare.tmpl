@@ -1,0 +1,63 @@
+{{ define "configCompareTab" }}
+<div class="wrapper">
+    <div class="myContainer">
+        <h3 class="all-title">PostgreSQL Configuration Comparison</h3>
+
+        {{ if .One2OneComparison }}
+        <div class="data-container">
+            <h6 class="flaged-title">Base Server: {{ .One2OneComparison.BaseServer }}</h6>
+            <div class="table-container" style="margin-bottom: 20px;">
+                <h6 class="flaged-title">Matching Servers</h6>
+                <ul class="tag-list">
+                    {{ range .One2OneComparison.One2OneComparisonMatching }}
+                        <li class="tag">{{ . }}</li>
+                    {{ end }}
+                </ul>
+
+                <h6 class="flaged-title">Non-Matching Servers</h6>
+                <table class="table maintable">
+                    <thead>
+                        <tr>
+                            <th>Server</th>
+                            <th class="icon_column">Differences</th>
+                            <th class="icon_column">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range $server, $differences := .One2OneComparison.One2OneComparisonNotMatching }}
+                        <tr class="toggleRow">
+                            <td>{{ $server }}</td>
+                            <td>{{ len $differences }}</td>
+                            {{ template "infoIcon" }}
+                        </tr>
+                        <tr class="childTableRow" style="display:none;">
+                            <td colspan="3">
+                                <div class="scrollable-container">
+                                    <table class="table" id="manualCheckTable">
+                                        <tbody>
+                                            <tr>
+                                                <th>Setting</th>
+                                                <th>Base Value</th>
+                                                <th>Server Value</th>
+                                            </tr>
+                                            {{ range $setting, $values := $differences }}
+                                                <tr>
+                                                    <td>{{ $setting }}</td>
+                                                    <td>{{ index $values 0 }}</td>
+                                                    <td>{{ index $values 1 }}</td>
+                                                </tr>
+                                            {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {{ end }}
+    </div>
+</div>
+{{ end }}

@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"path"
-	"strings"
 	"syscall"
 	"time"
 
@@ -34,11 +33,11 @@ func getProcessorsForCron(schedule string, commnd *config.Command, htmlHelperMap
 		for _, p := range commnd.Postgres {
 			htmlHelper := htmlHelperMap.Get(p.HtmlReportName())
 
-			out = append(out, newPostgresRunnerFromConfig(p, &strings.Builder{},
-				utils.NewDummyContainsAllSet[string](), htmlHelper))
-			out = append(out, newHBARunnerFromConfig(p, &strings.Builder{}, htmlHelper))
+			out = append(out, newPostgresRunnerFromConfig(p, map[string]interface{}{},
+				utils.NewDummyContainsAllSet[string](), htmlHelper, "json"))
+			out = append(out, newHBARunnerFromConfig(p, map[string]interface{}{}, htmlHelper, "json"))
 
-			out = append(out, newPwnedUserRunner(p, true, &strings.Builder{}, htmlHelper))
+			out = append(out, newPwnedUserRunner(p, true, map[string]interface{}{}, htmlHelper, "json"))
 		}
 
 		logPaser, err := getLogParserCron(schedule, commnd, htmlHelperMap)
@@ -56,8 +55,8 @@ func getProcessorsForCron(schedule string, commnd *config.Command, htmlHelperMap
 
 		out := make([]Runner, 0, len(commnd.Postgres))
 		for _, p := range commnd.Postgres {
-			out = append(out, newPostgresRunnerFromConfig(p, &strings.Builder{},
-				utils.NewDummyContainsAllSet[string](), htmlHelperMap.Get(p.HtmlReportName())))
+			out = append(out, newPostgresRunnerFromConfig(p, map[string]interface{}{},
+				utils.NewDummyContainsAllSet[string](), htmlHelperMap.Get(p.HtmlReportName()), "json"))
 		}
 
 		return out, nil
@@ -69,7 +68,7 @@ func getProcessorsForCron(schedule string, commnd *config.Command, htmlHelperMap
 
 		out := make([]Runner, 0, len(commnd.Postgres))
 		for _, p := range commnd.Postgres {
-			out = append(out, newHBARunnerFromConfig(p, &strings.Builder{}, htmlHelperMap.Get(p.HtmlReportName())))
+			out = append(out, newHBARunnerFromConfig(p, map[string]interface{}{}, htmlHelperMap.Get(p.HtmlReportName()), "json"))
 		}
 
 		return out, nil
@@ -82,21 +81,21 @@ func getProcessorsForCron(schedule string, commnd *config.Command, htmlHelperMap
 
 		out := make([]Runner, 0, len(commnd.Postgres))
 		for _, p := range commnd.Postgres {
-			out = append(out, newPwnedUserRunner(p, false, &strings.Builder{}, htmlHelperMap.Get(p.HtmlReportName())))
+			out = append(out, newPwnedUserRunner(p, false, map[string]interface{}{}, htmlHelperMap.Get(p.HtmlReportName()), "json"))
 		}
 		return out, nil
 
 	case cons.RootCMD_AWSRDS, cons.RootCMD_AWSAurora:
-		return []Runner{newRDSRunner(&strings.Builder{})}, nil
+		return []Runner{newRDSRunner("json")}, nil
 
 	case cons.RootCMD_MySQL:
 		out := make([]Runner, 0, len(commnd.Postgres))
 		for _, p := range commnd.MySQL {
-			out = append(out, newMySqlRunner(p, &strings.Builder{}, htmlHelperMap.Get(p.HtmlReportName())))
+			out = append(out, newMySqlRunner(p, map[string]interface{}{}, htmlHelperMap.Get(p.HtmlReportName()), "json"))
 		}
 		return out, nil
 
-	case cons.LogParserCMD_UniqueIPs, cons.LogParserCMD_InactiveUsr,
+	case cons.LogParserCMD_UniqueIPs, cons.LogParserCMD_InactiveUser,
 		cons.LogParserCMD_HBAUnusedLines, cons.LogParserCMD_PasswordLeakScanner:
 		return getLogParserCron(schedule, commnd, htmlHelperMap)
 
@@ -126,7 +125,7 @@ func getLogParserCron(schedule string, command *config.Command, htmlHelperMap ht
 		logParserConfig.Begin = startTime
 		logParserConfig.End = time.Now()
 
-		u := newLogParserRunnerFromConfig(p, logParserConfig, false, &strings.Builder{}, htmlHelperMap.Get(p.HtmlReportName()))
+		u := newLogParserRunnerFromConfig(p, logParserConfig, false, map[string]interface{}{}, htmlHelperMap.Get(p.HtmlReportName()), "json")
 		out = append(out, u)
 	}
 

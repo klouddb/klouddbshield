@@ -30,7 +30,7 @@ func init() {
 }
 
 func generatePiiDataInDatabase(migrationPath string) error {
-	cnf, err := config.LoadConfig()
+	cnf, err := config.LoadConfig("./")
 	if err != nil {
 		return err
 	}

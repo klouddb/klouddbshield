@@ -1179,6 +1179,7 @@ func Get_LMA_Results() map[string]*model.Result {
 			On Windows, eventlog is also supported.
 			One or more of these destinations should be set for server log output.`,
 			Title: "Ensure the log destinations are set correctly",
+			// ReferenceLink: "https://github.com/klouddb/privateversionshield",
 		},
 		"logging_collector": {
 			Control:   "3.1.3",

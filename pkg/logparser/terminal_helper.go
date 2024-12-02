@@ -127,15 +127,47 @@ func PrintTerminalResultsForLogParser(ctx context.Context, runners []runner.Pars
 			table.Render()
 		case *QueryParseHelper:
 			fmt.Println("PII data found in the query log file")
-			for label, v := range r.GetResult(ctx) {
+			queries := r.GetResult(ctx)
+			if len(queries) == 0 {
+				fmt.Println("No PII data found in log file")
+				continue
+			}
+
+			if outputType == "json" {
+				out, _ := json.MarshalIndent(queries, "", "\t")
+				fmt.Println(string(out))
+				continue
+			}
+
+			for label, v := range queries {
 				fmt.Println("label: ", label)
 				for _, queryData := range v {
 					fmt.Println("\t Column:", queryData.Col, "\t Value:", queryData.Val)
 				}
 			}
 
-			fmt.Println("Successfully parsed the query log file")
+			fmt.Println("Successfully parsed them log file")
+		case *SQLInjectionHelper:
+			queries := r.GetResult(ctx)
+			if len(queries) == 0 {
+				fmt.Println("No SQL Injection related logs found in log file")
+				continue
+			}
 
+			if outputType == "json" {
+				sort.SliceStable(queries, func(i, j int) bool {
+					return queries[i] < queries[j]
+				})
+				out, _ := json.MarshalIndent(queries, "", "\t")
+				fmt.Println(string(out))
+				continue
+			}
+
+			fmt.Println("SQL Injection related logs found in log file")
+			for _, queryData := range queries {
+				fmt.Println("> ", queryData)
+			}
+			fmt.Println()
 		}
 	}
 }
@@ -167,18 +199,13 @@ func PrintFastRunnerReport(logParserCnf *config.LogParser, fastRunnerResp *runne
 
 }
 
-func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *config.LogParser, fastRunnerResp *runner.FastRunnerResponse, builder *strings.Builder) {
-
-	builder.WriteString("\n\nLog Parser Summary:\n")
+func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *config.LogParser,
+	fastRunnerResp *runner.FastRunnerResponse, fileData map[string]interface{}, outputType string) {
 
 	PrintFileParsingError(fastRunnerResp.FileErrors)
 
-	var buffer bytes.Buffer
-
-	mult := io.MultiWriter(&buffer, os.Stdout)
-
-	table := tablewriter.NewWriter(mult)
-
+	data := [][]string{}
+	allValues := []interface{}{}
 	for i, cmd := range logParserCnf.Commands {
 		parseStatus := "All lines parsed successfully"
 		if fastRunnerResp.SuccessLines[i] == 0 {
@@ -188,6 +215,7 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *co
 		}
 
 		resultMsg := "No result found"
+		var val interface{}
 		switch r := runners[i].(type) {
 		case *ErrorHelper:
 			resultMsg = r.Message
@@ -198,6 +226,7 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *co
 			} else {
 				resultMsg = fmt.Sprintf("%d unused lines found in hba_conf file\n", len(unusedLine))
 			}
+			val = unusedLine
 
 		case *UniqueIPHelper:
 			ips := r.GetResult(ctx)
@@ -206,6 +235,7 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *co
 			} else {
 				resultMsg = fmt.Sprintf("%d unique IPs found from log file\n", len(ips))
 			}
+			val = ips
 
 		case *InactiveUsersHelper:
 			userdata := r.GetResult(ctx)
@@ -222,6 +252,7 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *co
 					resultMsg = fmt.Sprintf("%d inactive users found in database\n", len(userdata[2]))
 				}
 			}
+			val = userdata
 
 		case *PasswordLeakHelper:
 			leakedPasswords := r.GetResult(ctx)
@@ -230,16 +261,53 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *co
 			} else {
 				resultMsg = fmt.Sprintf("%d leaked passwords found\n", len(leakedPasswords))
 			}
+			val = leakedPasswords
+
+		case *SQLInjectionHelper:
+			sqlInjection := r.GetResult(ctx)
+			if len(sqlInjection) == 0 {
+				resultMsg = "No SQL Injection related logs found in log file."
+			} else {
+				resultMsg = fmt.Sprintf("%d SQL Injection related logs found in log file\n", len(sqlInjection))
+			}
+			val = sqlInjection
 		}
 
-		table.Append([]string{cmd, parseStatus, resultMsg})
+		data = append(data, []string{cmd, parseStatus, resultMsg})
+		allValues = append(allValues, map[string]interface{}{
+			"Command":      cmd,
+			"Parse Status": parseStatus,
+			"Result":       resultMsg,
+			"Value":        val,
+		})
 	}
 
-	table.Append([]string{
+	data = append(data, []string{
 		fmt.Sprintf("Parsed %d files which took: %s", len(logParserCnf.LogFiles), time.Since(fastRunnerResp.StartTime)),
 		"",
 		"",
 	})
+	allValues = append(allValues, fmt.Sprintf("Parsed %d files which took: %s", len(logParserCnf.LogFiles), time.Since(fastRunnerResp.StartTime)))
+
+	var buffer bytes.Buffer
+
+	mult := io.MultiWriter(&buffer, os.Stdout)
+
+	if outputType == "json" {
+		fileData["Log Parser Summary"] = allValues
+
+		jsonData, err := json.MarshalIndent(fileData, "", "    ")
+		if err != nil {
+			fmt.Println("Error while marshalling data to json")
+			return
+		}
+		fmt.Println(string(jsonData))
+		return
+	}
+	table := tablewriter.NewWriter(mult)
+	for _, v := range data {
+		table.Append(v)
+	}
 
 	table.SetRowLine(true)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
@@ -247,7 +315,7 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *co
 	table.Render()
 	fmt.Println("")
 
-	builder.Write(buffer.Bytes())
+	fileData["Log Parser Summary"] = buffer.String()
 }
 
 func PrintFileParsingError(fileError map[string]string) {

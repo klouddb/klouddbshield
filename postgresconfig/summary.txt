@@ -1,0 +1,30 @@
+PostgreSQL Configuration Summary
+================================
+
+PostgreSQL Version: {{.version}}
+RAM: {{.ram}}
+CPU Cores: {{.cpu}}
+Disk Type: {{.diskType}}
+Host IP Address: {{.listen_addr}}
+Port: {{.port}}
+Database Size: {{.databaseSize}}
+Database Type: {{.dbType}}
+Database Replicas: {{.replica}}
+
+Superuser Reserved Connections: {{.superuser_reserved_connections}}
+
+Max WAL Size: {{.max_wal_size}}
+WAL Compression: {{.wal_compression}}
+WAL Level: {{.wal_level}}
+
+Synchronous Commit: {{.synchronous_commit}}
+Include Replicas: {{.synchronous_standby_names}}
+Temp File Limit: {{.temp_file_limit}}
+
+Autovacuum Naptime: {{.autovacuum_naptime}}
+Autovacuum Vacuum Cost Limit: {{.autovacuum_vacuum_cost_limit}}
+Autovacuum Vacuum Cost Delay: {{.autovacuum_vacuum_cost_delay}}
+Autovacuum Max Workers: {{.autovacuum_max_workers}}
+JIT: {{.jit}}
+Statement Timeout: {{.statement_timeout}}
+Idle in Transaction Session Timeout: {{.idle_in_transaction_session_timeout}}

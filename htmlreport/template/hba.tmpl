@@ -62,7 +62,7 @@
     {{ range . }}
         {{ if eq .Status "Fail" }}
             <div class="failedrowcontainer">
-                <h6>HBA Check {{ .Control }} - {{ .Description }} (Failure Report)</h6>
+                <h6 class="flaged-title">HBA Check {{ .Control }} - {{ .Description }} (Failure Report)</h6>
                 {{ template "hbafailRows" . }}
             </div>
         {{ end }}
@@ -74,7 +74,7 @@
     <table class="table failedrowtable">
         <thead>
             <tr>
-                <th>Line Number</th>
+                <th style="width:100px;">Line No</th>
                 <th style="text-align:left;">HBA Entry</th>
             </tr>
         </thead>

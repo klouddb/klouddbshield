@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/klouddb/klouddbshield/pkg/config"
+	"github.com/klouddb/klouddbshield/pkg/parselog"
 )
 
 func TestFastRunner(t *testing.T) {
@@ -20,7 +21,7 @@ func TestFastRunner(t *testing.T) {
 // 	testRunParser(t, RunParser)
 // }
 
-func testRunParser(t *testing.T, runner func(ctx context.Context, runCmd bool, logParserCnf *config.LogParser, fns []ParserFunc, validator ParserFunc) (*FastRunnerResponse, error)) {
+func testRunParser(t *testing.T, runner func(ctx context.Context, runCmd bool, baseParser parselog.BaseParser, logParserCnf *config.LogParser, fns []ParserFunc) (*FastRunnerResponse, error)) {
 	// Define the test cases as a table
 	testCases := []struct {
 		name         string
@@ -83,11 +84,11 @@ Line 5
 
 			// Define a mock parser function for testing
 			var receivedLogs []string
-			mockParserFunc := func(line string) error {
-				if line == "Line 3" {
+			mockParserFunc := func(parsedLine parselog.ParsedData) error {
+				if parsedLine.GetDescription() == "Line 3" {
 					return errors.New("error parsing line")
 				}
-				receivedLogs = append(receivedLogs, line)
+				receivedLogs = append(receivedLogs, parsedLine.GetDescription())
 				// Simulate some processing
 				time.Sleep(100 * time.Millisecond)
 				return nil
@@ -96,7 +97,7 @@ Line 5
 			runners := []ParserFunc{mockParserFunc, mockParserFunc}
 
 			// Run the parser
-			runner(context.TODO(), false, cnf.LogParser, runners, mockParserFunc) //nolint:errcheck
+			runner(context.TODO(), false, nil, cnf.LogParser, runners) //nolint:errcheck
 
 			// Verify that all lines from the file are received in the mock function
 			if !stringSlicesEqual(receivedLogs, tc.expectedLogs) {

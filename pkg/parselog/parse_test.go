@@ -60,10 +60,15 @@ func TestUniqueIPParser_Feed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			baseParser := GetDynamicBaseParser(tt.cnf.PgSettings.LogLinePrefix)
-			u := NewUniqueIPParser(tt.cnf, baseParser)
+			u := NewUniqueIPParser(tt.cnf)
 
 			for _, line := range tt.lines {
-				err := u.Feed(line)
+				parsedData, err := baseParser.Parse(line)
+				if err != nil {
+					t.Errorf("UniqueIPParser.Feed() error = %v, wantErr %v", err, tt.err)
+					return
+				}
+				err = u.Feed(parsedData)
 				if err == nil && tt.err != nil {
 					t.Errorf("UniqueIPParser.Feed() error = %v, wantErr %v", err, tt.err)
 					return
@@ -141,10 +146,15 @@ func TestUniqueUsers_Feed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			baseParser := GetDynamicBaseParser(tt.cnf.PgSettings.LogLinePrefix)
-			u := NewUserParser(tt.cnf, baseParser)
+			u := NewUserParser(tt.cnf)
 
 			for _, line := range tt.lines {
-				err := u.Feed(line)
+				parsedData, err := baseParser.Parse(line)
+				if err != nil {
+					t.Errorf("UniqueIPParser.Feed() error = %v, wantErr %v", err, tt.err)
+					return
+				}
+				err = u.Feed(parsedData)
 				if err == nil && tt.err != nil {
 					t.Errorf("UniqueIPParser.Feed() error = %v, wantErr %v", err, tt.err)
 					return

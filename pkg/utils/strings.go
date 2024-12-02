@@ -1,6 +1,21 @@
 package utils
 
-import "strings"
+import (
+	"strings"
+)
+
+func RemoveDuplicates(arr []string) []string {
+	m := make(map[string]bool)
+	for _, v := range arr {
+		m[v] = true
+	}
+
+	out := make([]string, 0)
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}
 
 func AraryToHumanReadableString(arr []string) string {
 	if len(arr) < 2 {

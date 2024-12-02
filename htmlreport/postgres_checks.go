@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/klouddb/klouddbshield/model"
+	"github.com/klouddb/klouddbshield/postgresconfig"
 )
 
 type SectionProgress struct {
@@ -177,6 +178,18 @@ func (h *HtmlReportHelper) RegisterMysqlReportData(listOfResults []*model.Result
 
 func (h *HtmlReportHelper) RegisterHBAReportData(listOfResults []*model.HBAScannerResult) {
 	h.AddTab("HBA Scanner Report", listOfResults)
+}
+
+func (h *HtmlReportHelper) RegisterConfigAudit(listOfResults []*model.ConfigAuditResult) {
+	h.AddTab("Config Audit", listOfResults)
+}
+
+func (h *HtmlReportHelper) RegisterSSLReport(listOfResults *model.SSLScanResult) {
+	h.AddTab("SSL Report", listOfResults)
+}
+
+func (h *HtmlReportHelper) RegisterCompareConfig(result *postgresconfig.ConfigCompareResult) {
+	h.AddTab("Compare Config", result)
 }
 
 func (h *HtmlReportHelper) RegisterUserlistData(listOfResults []model.UserlistResult) {

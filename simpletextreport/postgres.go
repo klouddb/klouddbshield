@@ -2,16 +2,26 @@ package simpletextreport
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 
 	"github.com/klouddb/klouddbshield/model"
 	"github.com/olekukonko/tablewriter"
 )
 
-func PrintReportInFile(listOfResults []*model.Result, database, title string) string {
+func PrintJsonReport(i interface{}) string {
+	b, err := json.MarshalIndent(i, "", "	")
+	if err != nil {
+		return ""
+	}
+
+	return string(b)
+}
+
+func PrintReportInFile(listOfResults []*model.Result, database string) string {
 	buf := new(bytes.Buffer)
 
-	out := title + "\n"
+	out := ""
 	table := tablewriter.NewWriter(buf)
 
 	for _, result := range listOfResults {

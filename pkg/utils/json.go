@@ -272,3 +272,20 @@ func GetListFromQuery(store *sql.DB, sqlString string) ([]string, error) {
 
 	return list, nil
 }
+
+// GetConfigValueFromPostgres retrieves all configuration values from a PostgreSQL database
+func GetConfigValueFromPostgres(db *sql.DB) (map[string]string, error) {
+	data, err := GetJSON(db, "SHOW ALL;")
+	if err != nil {
+		return nil, fmt.Errorf("error getting pg_settings: %v", err)
+	}
+
+	configValues := make(map[string]string)
+	for _, obj := range data {
+		name := fmt.Sprint(obj["name"])
+		setting := fmt.Sprint(obj["setting"])
+		configValues[name] = setting
+	}
+
+	return configValues, nil
+}

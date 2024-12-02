@@ -163,18 +163,20 @@ func (*encryptedPasswordGenerator) run(_ context.Context) error {
 
 type pwnedUserRunner struct {
 	postgresDatabase *postgresdb.Postgres
-	builder          *strings.Builder
+	fileData         map[string]interface{}
 	printSummaryOnly bool
 	htmlReportHelper *htmlreport.HtmlReportHelper
+	outputType       string
 }
 
 func newPwnedUserRunner(postgresDatabase *postgresdb.Postgres, printSummaryOnly bool,
-	builder *strings.Builder, htmlReportHelper *htmlreport.HtmlReportHelper) *pwnedUserRunner {
+	fileData map[string]interface{}, htmlReportHelper *htmlreport.HtmlReportHelper, outputType string) *pwnedUserRunner {
 	return &pwnedUserRunner{
 		postgresDatabase: postgresDatabase,
-		builder:          builder,
+		fileData:         fileData,
 		printSummaryOnly: printSummaryOnly,
 		htmlReportHelper: htmlReportHelper,
+		outputType:       outputType,
 	}
 }
 
@@ -203,14 +205,18 @@ func (p *pwnedUserRunner) run(ctx context.Context) error {
 		}
 	}
 
+	if p.outputType == "json" {
+		p.fileData["Password Manager Report"] = commonUserNames
+	}
 	if p.printSummaryOnly {
 		fmt.Println(text.Bold.Sprint("Password Manager Report:"))
 
-		p.builder.WriteString(fmt.Sprintln("Password Manager Report:"))
-		if len(commonUserNames) > 0 {
-			p.builder.WriteString(fmt.Sprintf("> Found these common usernames in the database: %s\n", strings.Join(commonUserNames, ", ")))
-		} else {
-			p.builder.WriteString(fmt.Sprintln("> No common usernames found in the database."))
+		if p.outputType != "json" {
+			if len(commonUserNames) > 0 {
+				p.fileData["Password Manager Report"] = fmt.Sprintf("> Found these common usernames in the database: %s\n", strings.Join(commonUserNames, ", "))
+			} else {
+				p.fileData["Password Manager Report"] = fmt.Sprintln("> No common usernames found in the database.")
+			}
 		}
 	}
 	if len(commonUserNames) > 0 {
