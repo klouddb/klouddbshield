@@ -256,7 +256,6 @@ func (p *ProcessHelper) validateFile(ctx context.Context, f *os.File) error {
 		totalLine++
 		_, err = p.baseParser.Parse(line)
 		if err != nil {
-			fmt.Println(err)
 			errorCount++
 		}
 	}

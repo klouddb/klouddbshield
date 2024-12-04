@@ -843,19 +843,21 @@ func getLogParserInputs(postgresConf *postgresdb.Postgres, command string) (*Log
 	hbaConfigSuggestion := ""
 	prefixSuggestion := ""
 	logfileSuggestion := ""
-	store, _, err := postgresdb.Open(*postgresConf)
-	if err == nil {
-		defer store.Close()
-		prefixSuggestion, _ = utils.GetLoglinePrefix(context.Background(), store)
-		dataDir, _ := utils.GetDataDirectory(context.Background(), store)
-		if dataDir != "" {
-			logfileSuggestion = dataDir + "/log/*.log"
-		}
+	if postgresConf != nil {
+		store, _, err := postgresdb.Open(*postgresConf)
+		if err == nil {
+			defer store.Close()
+			prefixSuggestion, _ = utils.GetLoglinePrefix(context.Background(), store)
+			dataDir, _ := utils.GetDataDirectory(context.Background(), store)
+			if dataDir != "" {
+				logfileSuggestion = dataDir + "/log/*.log"
+			}
 
-		if command == cons.LogParserCMD_HBAUnusedLines || command == cons.LogParserCMD_All {
-			hbaConfigSuggestion, _ = utils.GetHBAFilePath(context.Background(), store)
-			if _, err := os.Stat(hbaConfigSuggestion); err != nil {
-				hbaConfigSuggestion = ""
+			if command == cons.LogParserCMD_HBAUnusedLines || command == cons.LogParserCMD_All {
+				hbaConfigSuggestion, _ = utils.GetHBAFilePath(context.Background(), store)
+				if _, err := os.Stat(hbaConfigSuggestion); err != nil {
+					hbaConfigSuggestion = ""
+				}
 			}
 		}
 	}

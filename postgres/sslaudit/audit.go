@@ -141,12 +141,12 @@ func ValidateCertificate(ctx context.Context, host, port string) ([]*model.SSLSc
 		return nil, err
 	}
 
-	if expiryDate.Before(time.Now().AddDate(0, 0, 45)) {
-		out[1].Status = "Critical"
-		out[1].Message = fmt.Sprintf("SSL Certificate will expire in %d days", int(time.Until(expiryDate).Hours()/24))
-	} else if expiryDate.Before(time.Now()) {
+	if expiryDate.Before(time.Now()) {
 		out[1].Status = "Critical"
 		out[1].Message = "SSL Certificate has expired"
+	} else if expiryDate.Before(time.Now().AddDate(0, 0, 45)) {
+		out[1].Status = "Critical"
+		out[1].Message = fmt.Sprintf("SSL Certificate will expire in %d days", int(time.Until(expiryDate).Hours()/24))
 	}
 
 	return out, nil

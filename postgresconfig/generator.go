@@ -417,11 +417,11 @@ func WriteToFile(configString, filepath string) error {
 var logOutput *os.File
 
 func init() {
-	var err error
-	logOutput, err = os.Create("testoutput.log")
-	if err != nil {
-		panic(err)
-	}
+	// var err error
+	// logOutput, err = os.Create("testoutput.log")
+	// if err != nil {
+	// 	panic(err)
+	// }
 }
 
 func printTestLog(str string, args ...interface{}) {
