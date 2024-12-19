@@ -94,9 +94,9 @@ func calculateWorkerMem(totalRam, sharedBuffersValue, maxConnectionsValue int, d
 		printTestLog("\tfor unknown setting workMemResult to %d", workMemResult)
 	}
 
-	if workMemResult < 64 {
-		workMemResult = 64
-		printTestLog("\tworkMemResult < 64 so setting to 64")
+	if workMemResult < 4096 {
+		workMemResult = 4096
+		printTestLog("\tworkMemResult < 4096 so setting to 4096")
 	}
 
 	return workMemResult
@@ -143,7 +143,7 @@ func ConfigGenerator(inputMap map[string]string) string {
 		return ""
 	}
 
-	databaseSize := parseSize(inputMap["databaseSize"])
+	// databaseSize := parseSize(inputMap["databaseSize"])
 
 	dbType, err := getInt(inputMap["dbType"])
 	if err != nil {
@@ -161,6 +161,10 @@ func ConfigGenerator(inputMap map[string]string) string {
 	if err != nil {
 		fmt.Println("Error parsing 'max_wal_size':", err)
 		return ""
+	}
+	if maxWalSize < 512 {
+		maxWalSize = 512
+		printTestLog("Max Wal Size is less than 512MB so setting to 512MB")
 	}
 
 	// Determine the number of connections based on the database type
@@ -272,12 +276,6 @@ func ConfigGenerator(inputMap map[string]string) string {
 	maxWalSenders := math.Max(10, float64(replicas+4))
 	printTestLog("Max Wal Senders: math.Max(10, replicas+4) = math.Max(10, %d+4) = %f", replicas, maxWalSenders)
 	printTestLog("\n")
-	// if backup == 3 {
-	// 	walLevel = "logical"
-	// } else if backup == 1 && replicas == 0 {
-	// 	walLevel = "minimal"
-	// 	maxWalSenders = 0
-	// }
 
 	// SKIPPED
 	// TODO
@@ -299,7 +297,8 @@ func ConfigGenerator(inputMap map[string]string) string {
 		walArchiving = "\n# WAL archiving\narchive_mode=on\narchive_command='/bin/true'\n"
 		printTestLog("WAL Archiving: walLevel != 'minimal' so setting to on")
 	} else {
-		printTestLog("WAL Level is minimal so not setting WAL Archiving")
+		printTestLog("WAL Level is minimal so not setting WAL Archiving and setting Max WAL Senders as 0")
+		maxWalSenders = 0
 	}
 	printTestLog("\n")
 
@@ -316,9 +315,9 @@ func ConfigGenerator(inputMap map[string]string) string {
 	printTestLog("\n")
 
 	parallel := ""
-	advanced := ""
+	// advanced := ""
 	if version > 10 {
-		printTestLog("Version is greater than 10 so setting advanced and parallel settings")
+		printTestLog("Version is greater than 10 so setting parallel settings")
 
 		maxParallelWorkersPerGather := cpu / 2
 		parallel = fmt.Sprintf(
@@ -335,27 +334,27 @@ func ConfigGenerator(inputMap map[string]string) string {
 			cpu,
 		)
 
-		advanced = "enable_partitionwise_join=on\nenable_partitionwise_aggregate=on"
-		printTestLog("\tAdvanced Settings: enable_partitionwise_join=on\n\t\tenable_partitionwise_aggregate=on")
+		// advanced = "enable_partitionwise_join=on\nenable_partitionwise_aggregate=on"
+		// printTestLog("\tAdvanced Settings: enable_partitionwise_join=on\n\t\tenable_partitionwise_aggregate=on")
 
-		if inputMap["jit"] == "on" {
-			advanced += "\njit=on"
-			printTestLog("\tAdvanced Settings: jit=on")
-		}
+		// if inputMap["jit"] == "on" {
+		// 	advanced += "\njit=on"
+		// 	printTestLog("\tAdvanced Settings: jit=on")
+		// }
 
-		if version >= 14 {
-			printTestLog("Version is greater than or equal to 14 so setting max slot wal keep size and track wal io timing")
+		// if version >= 14 {
+		// printTestLog("Version is greater than or equal to 14 so setting max slot wal keep size and track wal io timing")
 
-			maxSlotWalKeepSize := math.Max(float64(databaseSize)*0.1, 1000)
-			printTestLog("\tMax Slot Wal Keep Size: math.Max(databaseSize*0.1, 1000) = math.Max(%d*0.1, 1000) = %f", databaseSize, maxSlotWalKeepSize)
+		// maxSlotWalKeepSize := math.Max(float64(databaseSize)*0.1, 1000)
+		// printTestLog("\tMax Slot Wal Keep Size: math.Max(databaseSize*0.1, 1000) = math.Max(%d*0.1, 1000) = %f", databaseSize, maxSlotWalKeepSize)
 
-			advanced += fmt.Sprintf("\nmax_slot_wal_keep_size='%.0f MB'\ntrack_wal_io_timing=on",
-				maxSlotWalKeepSize,
-			)
-			printTestLog("\tAdvanced Settings: max_slot_wal_keep_size='%.0f MB'\ntrack_wal_io_timing=on",
-				maxSlotWalKeepSize,
-			)
-		}
+		// advanced += fmt.Sprintf("\nmax_slot_wal_keep_size='%.0f MB'\ntrack_wal_io_timing=on",
+		// 	maxSlotWalKeepSize,
+		// )
+		// printTestLog("\tAdvanced Settings: max_slot_wal_keep_size='%.0f MB'\ntrack_wal_io_timing=on",
+		// 	maxSlotWalKeepSize,
+		// )
+		// }
 
 	} else {
 		parallel = fmt.Sprintf("max_worker_processes=%d\nmax_parallel_workers_per_gather=%d\nmax_parallel_workers=%d",
@@ -379,16 +378,27 @@ func ConfigGenerator(inputMap map[string]string) string {
 		int(effectiveCacheSize),
 		int(effectiveIOConcurrency),
 		randomPageCost,
+		inputMap["log_connections"],
+		inputMap["log_disconnections"],
+		inputMap["log_statement"],
+		inputMap["ssl"],
+		inputMap["log_line_prefix"],
+		inputMap["logging_collector"],
+		inputMap["log_destination"],
+		inputMap["log_checkpoints"],
+		inputMap["log_lock_waits"],
+		inputMap["log_temp_files"],
+		inputMap["log_autovacuum_min_duration"],
+		inputMap["log_min_duration_statement"],
 		walLevel,
 		int(maxWalSenders),
 		inputMap["synchronous_commit"],
 		maxWalSize,
 		minWalSize,
-		walArchiving,
 		inputMap["wal_compression"],
 		replication,
+		walArchiving,
 		parallel,
-		advanced,
 		inputMap["synchronous_standby_names"],
 		inputMap["temp_file_limit"],
 		inputMap["autovacuum_naptime"],
@@ -414,7 +424,7 @@ func WriteToFile(configString, filepath string) error {
 	return err
 }
 
-var logOutput *os.File
+// var logOutput *os.File
 
 func init() {
 	// var err error
@@ -425,5 +435,6 @@ func init() {
 }
 
 func printTestLog(str string, args ...interface{}) {
-	fmt.Fprintf(logOutput, " > "+str+"\n", args...)
+
+	// fmt.Fprintf(logOutput, " > "+str+"\n", args...)
 }

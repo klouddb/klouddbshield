@@ -1,0 +1,114 @@
+name: postgresconf
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  postgresconf:
+    name: "Postgres version : ${{ matrix.postgres_version }}, Testcase : ${{ matrix.testcases }}" 
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgres_version: [13,14,15,16]
+        testcases: [9]
+      max-parallel: 4
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.21.1
+          cache: true
+      - name: make install
+        run: make install
+      - name: Create temp directory with random name
+        run: |
+          cd docker_testing/postgresconfig
+          RANDOM_NUM=$((RANDOM % 10000))
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          TEMP_DIR="$PWD/temp_${TIMESTAMP}_${RANDOM_NUM}"
+          mkdir -p "$TEMP_DIR"
+          echo "Temp directory created: $TEMP_DIR"
+          echo "TEMP_DIR=$TEMP_DIR" >> $GITHUB_ENV
+      - name: generate postgres config
+        run: |
+          cd $TEMP_DIR
+          ciscollector -r -config=.. < ../input-${{ matrix.postgres_version }}-${{ matrix.testcases }}.txt
+      - name: print postgres config
+        run: |
+          cat $TEMP_DIR/postgresql.conf
+      - name: Set container name
+        run: |
+          echo "CONTAINER_NAME=postgres-test-${{ matrix.postgres_version }}-${{ matrix.testcases }}" >> $GITHUB_ENV
+      - name: Run PostgreSQL Container
+        run: |
+          echo "Container name : ${CONTAINER_NAME}"
+          docker run --name $CONTAINER_NAME \
+          -e POSTGRES_PASSWORD=mysecretpassword \
+          -d postgres:${{ matrix.postgres_version }}
+      - name: Wait for PostgreSQL to be ready
+        run: sleep 2
+      - name: Copy Custom Config
+        run: |
+          docker cp $TEMP_DIR/postgresql.conf $CONTAINER_NAME:/var/lib/postgresql/data/postgresql.conf
+      - name: Wait for PostgreSQL to be ready after config
+        run: sleep 2
+      - name: Reload PostgreSQL with New Config without restart
+        run: |
+          docker exec $CONTAINER_NAME \
+          psql -U postgres -c "SELECT pg_reload_conf();"
+      - name: Run Validation Script after reload
+        run: |
+          errors=$(docker exec $CONTAINER_NAME \
+            psql -U postgres -t -c "SELECT COUNT(*) FROM pg_file_settings WHERE error IS NOT NULL;")
+
+          if [ "$errors" -ne 0 ]; then
+            echo -e "\033[0;31mSome configuration settings require restart.\033[0m"
+
+            docker exec $CONTAINER_NAME \
+              psql -U postgres -c "SELECT * FROM pg_file_settings WHERE error IS NOT NULL;"
+          else
+            echo -e "\033[0;32mNo configuration errors found.\033[0m"
+            echo -e "\033[0;32mApplied configuration is.\033[0m"
+            docker exec $CONTAINER_NAME \
+              psql -U postgres -c "SELECT * FROM pg_file_settings;"
+          fi
+      - name: Restart PostgreSQL Container
+        run: |
+          docker restart $CONTAINER_NAME
+      - name: Wait for PostgreSQL to be ready after restart
+        run: sleep 2
+      - name: Run Validation Script after restart
+        run: |
+          container_status=$(docker inspect -f '{{.State.Running}}' $CONTAINER_NAME 2>/dev/null || echo "not_found")
+
+          if [ "$container_status" != "true" ]; then
+            echo "Container is not running or not found. Attempting to print logs."
+            docker logs $CONTAINER_NAME || echo "No logs found or unable to retrieve logs."
+            exit 1
+          fi
+
+          errors=$(docker exec $CONTAINER_NAME \
+            psql -U postgres -t -c "SELECT COUNT(*) FROM pg_file_settings WHERE error IS NOT NULL;")
+
+          if [ "$errors" -ne 0 ]; then
+            echo "Container logs"
+            docker logs $CONTAINER_NAME
+
+            echo -e "\033[0;31mConfiguration errors found in pg_file_settings.\033[0m"
+
+            docker exec $CONTAINER_NAME \
+              psql -U postgres -c "SELECT * FROM pg_file_settings WHERE error IS NOT NULL;"
+            exit 1
+          else
+            echo -e "\033[0;32mNo configuration errors found.\033[0m"
+            echo -e "\033[0;32mApplied configuration is.\033[0m"
+            docker exec $CONTAINER_NAME \
+              psql -U postgres -c "SELECT * FROM pg_file_settings;"
+          fi

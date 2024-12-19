@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	_ "net/http/pprof"
 	"os"
 	"strings"
 	"time"
@@ -183,10 +184,14 @@ func main() {
 		}
 	}
 
+	if cnf.BackupHistoryInput.BackupTool != "" {
+		overviewErrorMap[cons.RootCMD_BackupAuditTool] = newBackupHistory(cnf.BackupHistoryInput, htmlReportHelper).run(ctx)
+	}
+
 	if cnf.CreatePostgresConfig {
-		overviewErrorMap[cons.RootCMD_CreatePostgresconfig] = postgresconfig.NewProcessor(".").Run(context.TODO())
-		if overviewErrorMap[cons.RootCMD_CreatePostgresconfig] != nil {
-			fmt.Println("> Error while generating postgresql.conf file: ", text.FgHiRed.Sprint(overviewErrorMap[cons.RootCMD_CreatePostgresconfig]))
+		overviewErrorMap[cons.RootCMD_CreatePostgresConfig] = postgresconfig.NewProcessor(".").Run(context.TODO())
+		if overviewErrorMap[cons.RootCMD_CreatePostgresConfig] != nil {
+			fmt.Println("> Error while generating postgresql.conf file: ", text.FgHiRed.Sprint(overviewErrorMap[cons.RootCMD_CreatePostgresConfig]))
 		}
 	}
 
