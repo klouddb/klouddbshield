@@ -37,6 +37,7 @@ const (
 	SelectionIndex_PostgresChecks
 	SelectionIndex_HBAScanner
 	SelectionIndex_PIIScanner
+	SelectionIndex_CreatePostgresConfig
 	SelectionIndex_InactiveUsers
 	SelectionIndex_UniqueIPs
 	SelectionIndex_HBAUnusedLines
@@ -46,9 +47,10 @@ const (
 	SelectionIndex_AWSAurora
 	SelectionIndex_MySQL
 	SelectionIndex_TransactionWraparound
-	// SelectionIndex_CreatePostgresconfig
-	// SelectionIndex_ConfigAuditing
 	SelectionIndex_SSLCheck
+	SelectionIndex_ConfigAuditing
+	SelectionIndex_CompareConfig
+	SelectionIndex_BackupAuditTool
 	SelectionIndex_Exit
 )
 
@@ -74,46 +76,62 @@ var CommandList = []CommandTitle{
 		Title: "Postgres PII report",
 	},
 	{ // 5
+		CMD:   RootCMD_CreatePostgresConfig,
+		Title: "Postgres Config Generator",
+	},
+	{ // 6
 		CMD:   LogParserCMD_InactiveUser,
 		Title: "Inactive user report",
 	},
-	{ // 6
+	{ // 7
 		CMD:   LogParserCMD_UniqueIPs,
 		Title: "Client ip report",
 	},
-	{ // 7
+	{ // 8
 		CMD:   LogParserCMD_HBAUnusedLines,
 		Title: "HBA unused lines report",
 	},
-	{ // 8
+	{ // 9
 		CMD:   RootCMD_PasswordManager,
 		Title: "Password Manager",
 	},
-	{ // 9
+	{ // 10
 		CMD:   LogParserCMD_PasswordLeakScanner,
 		Title: "Password leak scanner",
 	},
-	{ // 10
+	{ // 11
 		CMD:   RootCMD_AWSRDS,
 		Title: "AWS RDS Sec Report",
 	},
-	{ // 11
+	{ // 12
 		CMD:   RootCMD_AWSAurora,
 		Title: "AWS Aurora Sec Report",
 	},
-	{ // 12
+	{ // 13
 		CMD:   RootCMD_MySQL,
 		Title: "MySQL Report",
 	},
-	{ // 13
+	{ // 14
 		CMD:   RootCMD_TransactionWraparound,
 		Title: "Transaction Wraparound Report",
 	},
-	{ // 14
+	{ // 15
 		CMD:   RootCMD_SSLCheck,
 		Title: "SSL Check",
 	},
-	{ // 15
+	{ // 16
+		CMD:   RootCMD_ConfigAuditing,
+		Title: "Config Audit",
+	},
+	{ // 17
+		CMD:   RootCMD_CompareConfig,
+		Title: "Compare Config",
+	},
+	{ // 18
+		CMD:   RootCMD_BackupAuditTool,
+		Title: "Backup Audit Tool",
+	},
+	{ // 19
 		CMD:   RootCMD_Exit,
 		Title: "Exit",
 	},
@@ -151,11 +169,11 @@ const (
 	RootCMD_MySQL                 = "mysql"
 	RootCMD_PiiScanner            = "pii_scanner"
 	RootCMD_TransactionWraparound = "transaction_wraparound"
-	RootCMD_CreatePostgresconfig  = "create_postgresconfig"
+	RootCMD_CreatePostgresConfig  = "create_postgresconfig"
 	RootCMD_ConfigAuditing        = "config_auditing"
 	RootCMD_SSLCheck              = "ssl_check"
 	RootCMD_Exit                  = "exit"
-
+	RootCMD_BackupAuditTool       = "backup_audit_tool"
 	// LogParserCMD_MismatchIPs         = "mismatch_ips"
 	LogParserCMD_UniqueIPs           = "unique_ip"
 	LogParserCMD_InactiveUser        = "inactive_users"

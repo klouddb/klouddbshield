@@ -7,7 +7,6 @@ CPU Cores: {{.cpu}}
 Disk Type: {{.diskType}}
 Host IP Address: {{.listen_addr}}
 Port: {{.port}}
-Database Size: {{.databaseSize}}
 Database Type: {{.dbType}}
 Database Replicas: {{.replica}}
 
@@ -16,6 +15,20 @@ Superuser Reserved Connections: {{.superuser_reserved_connections}}
 Max WAL Size: {{.max_wal_size}}
 WAL Compression: {{.wal_compression}}
 WAL Level: {{.wal_level}}
+
+Log Connections: {{.log_connections}}
+Log Disconnections: {{.log_disconnections}}
+Log Statement: {{.log_statement}}
+SSL: {{.ssl}}
+Log Line Prefix: {{.log_line_prefix}}
+Log Collector: {{.logging_collector}}
+Log Destination: {{.log_destination}}
+
+Log Checkpoints: {{.log_checkpoints}}
+Log Lock Waits: {{.log_lock_waits}}
+Log Temp Files: {{.log_temp_files}}
+Log Autovaccum Min Duration: {{.log_autovacuum_min_duration}}
+Log Min Duration Statement: {{.log_min_duration_statement}}
 
 Synchronous Commit: {{.synchronous_commit}}
 Include Replicas: {{.synchronous_standby_names}}

@@ -1,0 +1,58 @@
+{{ define "backupAuditToolTab" }}
+<div class="wrapper">
+    <div class="myContainer">
+        <h3 class="all-title">PostgreSQL Backup Audit Tool</h3>
+
+        <div class="data-container">
+            <div style="margin-bottom: 20px;">
+                <p>Database {{ .BackupFrequency }} backup scan results for period: <strong>{{ .StartDate }}</strong> to <strong>{{ .EndDate }}</strong></p>
+            </div>
+
+            <h6 class="flaged-title">Backup Timeline</h6>
+            {{ if eq (len .MissingDates) 0 }}
+                <div class="no-data-block">
+                    {{ if eq .BackupFrequency "daily" }}
+                        <p>No missing daily backups found in the specified period. Your backup schedule is being followed correctly.</p>
+                    {{ else if eq .BackupFrequency "weekly" }}
+                        <p>No missing weekly backups found in the specified period. Your backup schedule is being followed correctly.</p>
+                    {{ else if eq .BackupFrequency "monthly" }}
+                        <p>No missing monthly backups found in the specified period. Your backup schedule is being followed correctly.</p>
+                    {{ end }}
+                </div>
+            {{ else }}
+                <div class="danger_text" style="margin-bottom: 10px;">
+                    {{ if eq .BackupFrequency "daily" }}
+                        Warning: Found {{ len .MissingDates }} days with missing backups
+                    {{ else if eq .BackupFrequency "weekly" }}
+                        Warning: Found {{ len .MissingDates }} weeks with missing backups
+                    {{ else if eq .BackupFrequency "monthly" }}
+                        Warning: Found {{ len .MissingDates }} months with missing backups
+                    {{ end }}
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width:100px;">No.</th>
+                            {{ if eq .BackupFrequency "daily" }}
+                                <th>Missing Days</th>
+                            {{ else if eq .BackupFrequency "weekly" }}
+                                <th>Missing Weeks</th>
+                            {{ else if eq .BackupFrequency "monthly" }}
+                                <th>Missing Months</th>
+                            {{ end }}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range $index, $date := .MissingDates }}
+                            <tr>
+                                <td>{{ add $index 1 }}</td>
+                                <td>{{ $date }}</td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            {{ end }}
+        </div>
+    </div>
+</div>
+{{ end }} 

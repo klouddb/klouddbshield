@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/klouddb/klouddbshield/model"
+	"github.com/klouddb/klouddbshield/pkg/backuphistory"
 	cons "github.com/klouddb/klouddbshield/pkg/const"
 	"github.com/klouddb/klouddbshield/pkg/piiscanner"
 	"github.com/klouddb/klouddbshield/pkg/postgresdb"
@@ -52,6 +53,10 @@ type Config struct {
 	CompareConfig []string `toml:"compare-config"`
 
 	CompareConfigBaseServer string `toml:"compare-config-base-server"`
+
+	// BackupPath is the path to the backup directory which we will use to
+	// understand if we are taking backup on daily basis or not
+	BackupHistoryInput backuphistory.BackupHistoryInput `toml:"-"`
 }
 
 func NewPiiInteractiveMode(pgConfig *postgresdb.Postgres, printAll, spacyOnly, summary bool) (*piiscanner.Config, error) {
@@ -59,21 +64,19 @@ func NewPiiInteractiveMode(pgConfig *postgresdb.Postgres, printAll, spacyOnly, s
 		return nil, fmt.Errorf(cons.Err_PostgresConfig_Missing)
 	}
 
-	reader := newInputReader()
-
 	var readOption string
 	if !spacyOnly {
-		readOption = strings.TrimSpace(reader.Read("Please enter run option", piiscanner.RunOption_DataScan_String))
+		readOption = strings.TrimSpace(ReadInput("Please enter run option", piiscanner.RunOption_DataScan_String))
 		_, ok := piiscanner.RunOptionMap[readOption]
 		if !ok {
 			return nil, fmt.Errorf("invalid run option %s, valid options are %s", readOption, strings.Join(piiscanner.RunOptionSlice(), ", "))
 		}
 	}
-	readExcludeTable := strings.TrimSpace(reader.Read("Please enter exclude tables ( e.g table1,table2,table3 )", ""))
-	readIncludeTable := strings.TrimSpace(reader.Read("Please enter include tables ( e.g table1,table2,table3 )", ""))
+	readExcludeTable := strings.TrimSpace(ReadInput("Please enter exclude tables ( e.g table1,table2,table3 )", ""))
+	readIncludeTable := strings.TrimSpace(ReadInput("Please enter include tables ( e.g table1,table2,table3 )", ""))
 
-	readDatabase := strings.TrimSpace(reader.Read("Please enter database name", pgConfig.DBName))
-	readSchema := strings.TrimSpace(reader.Read("Please enter schema name", "public"))
+	readDatabase := strings.TrimSpace(ReadInput("Please enter database name", pgConfig.DBName))
+	readSchema := strings.TrimSpace(ReadInput("Please enter schema name", "public"))
 
 	fmt.Println()
 
@@ -357,19 +360,24 @@ func NewConfig() (*Config, error) {
 	flag.BoolVar(&transactionWraparound, "transaction-wraparound", transactionWraparound, "Generate transaction wraparound report")
 
 	var createPostgresConfig bool
-	// flag.BoolVar(&createPostgresConfig, "create-postgres-config", false, "Create postgres config")
+	flag.BoolVar(&createPostgresConfig, "create-postgres-config", false, "Create postgres config")
 
 	var configAudit bool
-	// flag.BoolVar(&configAudit, "config-audit", configAudit, "Config audit")
+	flag.BoolVar(&configAudit, "config-audit", configAudit, "Config audit")
 
 	var sslCheck bool
 	flag.BoolVar(&sslCheck, "ssl-check", sslCheck, "SSL check")
 
-	var compareConfig compareConfigFlag
-	// flag.Var(&compareConfig, "compare-config", "Connection strings for multiple PostgreSQL servers to compare (can be specified multiple times)")
+	var backupHistoryInput backuphistory.BackupHistoryInput
+	flag.StringVar(&backupHistoryInput.BackupPath, "backup-path", "", "Backup path")
+	flag.StringVar(&backupHistoryInput.BackupTool, "backup-tool", "", "Backup tool")
+	flag.StringVar(&backupHistoryInput.BackupFrequency, "backup-frequency", "", "Backup frequency")
 
-	// var compareConfigBaseServer string
-	// flag.StringVar(&compareConfigBaseServer, "compare-config-base-server", "", "Base server for comparison")
+	var compareConfig compareConfigFlag
+	flag.Var(&compareConfig, "compare-config", "Connection strings for multiple PostgreSQL servers to compare (can be specified multiple times)")
+
+	var compareConfigBaseServer string
+	flag.StringVar(&compareConfigBaseServer, "compare-config-base-server", "", "Base server for comparison")
 
 	flag.Parse()
 
@@ -400,7 +408,7 @@ func NewConfig() (*Config, error) {
 		!spacyOnly && !configAudit && !sslCheck && !transactionWraparound &&
 		!runPostgres && !runMySql && !runRds && !hbaScanner &&
 		!runPostgresConnTest && !runGeneratePassword && !runGenerateEncryptedPassword &&
-		!runPwnedUsers && !runPwnedPassword &&
+		!runPwnedUsers && !runPwnedPassword && backupHistoryInput.BackupTool == "" &&
 		!createPostgresConfig && len(compareConfig) == 0 {
 		fmt.Println("> For Help: " + text.FgGreen.Sprint("ciscollector --help"))
 		os.Exit(0)
@@ -529,14 +537,63 @@ func NewConfig() (*Config, error) {
 		case cons.SelectionIndex_Exit: // Exit
 			os.Exit(0)
 
-		// case cons.SelectionIndex_CreatePostgresConfig:
-		// 	createPostgresConfig = true
+		case cons.SelectionIndex_CreatePostgresConfig:
+			createPostgresConfig = true
 
-		// case cons.SelectionIndex_ConfigAudit:
-		// 	configAudit = true
+		case cons.SelectionIndex_ConfigAuditing:
+			configAudit = true
+
+		case cons.SelectionIndex_CompareConfig:
+			compareConfigBaseServer = ReadInput("Enter the base server for comparison", "")
+			if compareConfigBaseServer == "" {
+				fmt.Println("Base server is required")
+				os.Exit(1)
+			}
+
+			configs := ReadInput("Enter the connection strings for the servers to compare (can be specified comma separated)", "")
+			if configs == "" {
+				fmt.Println("No connection strings provided")
+				os.Exit(1)
+			}
+
+			for _, config := range strings.Split(configs, ",") {
+				config = strings.TrimSpace(config)
+				if config == "" {
+					continue
+				}
+				compareConfig = append(compareConfig, config)
+			}
+
+			if len(compareConfig) == 0 {
+				fmt.Println("No connection strings provided")
+				os.Exit(1)
+			}
+
+			fmt.Println(compareConfig)
 
 		case cons.SelectionIndex_SSLCheck:
 			sslCheck = true
+
+		case cons.SelectionIndex_BackupAuditTool:
+			backupHistoryInput.BackupTool = ReadInput("Enter the backup tool (e.g pg_dump, pg_basebackup, pgbackrest)", "pg_dump")
+			if backupHistoryInput.BackupTool != "pgbackrest" {
+				backupHistoryInput.BackupPath = ReadInput("Enter the backup path (e.g /path/to/backup)", "")
+			}
+			backupHistoryInput.BackupFrequency = ReadInput("Enter the backup frequency (e.g daily, weekly, monthly)", "")
+
+			if backupHistoryInput.BackupTool == "" || backupHistoryInput.BackupFrequency == "" {
+				fmt.Println("Backup tool and frequency are required")
+				os.Exit(1)
+			}
+
+			if backupHistoryInput.BackupTool != "pgbackrest" && backupHistoryInput.BackupTool != "pg_dump" && backupHistoryInput.BackupTool != "pg_dumpall" && backupHistoryInput.BackupTool != "pg_basebackup" {
+				fmt.Println("Invalid backup tool. Supported tools are pg_dump, pg_dumpall, pg_basebackup")
+				os.Exit(1)
+			}
+			if backupHistoryInput.BackupTool != "pgbackrest" && backupHistoryInput.BackupPath == "" {
+				fmt.Println("Backup path is required for " + backupHistoryInput.BackupTool)
+				os.Exit(1)
+			}
 
 		default:
 			fmt.Println("Invalid Choice, Please Try Again.")
@@ -546,8 +603,9 @@ func NewConfig() (*Config, error) {
 
 	c.PiiScannerConfig = piiConfig
 	c.PostgresCheckSet = utils.NewDummyContainsAllSet[string]()
-	// c.CreatePostgresConfig = createPostgresConfig
-	// c.ConfigAudit = configAudit
+	c.BackupHistoryInput = backupHistoryInput
+	c.CreatePostgresConfig = createPostgresConfig
+	c.ConfigAudit = configAudit
 	c.SSLCheck = sslCheck
 	if c.CustomTemplate != "" {
 		var checkNumbers []string
@@ -690,11 +748,15 @@ func NewConfig() (*Config, error) {
 		case cons.SelectionIndex_Exit:
 			os.Exit(0)
 
-		// case cons.SelectionIndex_CreatePostgresConfig:
-		// 	createPostgresConfig = true
+		case cons.SelectionIndex_CreatePostgresConfig:
+			createPostgresConfig = true
 
-		// case cons.SelectionIndex_ConfigAudit:
-		// 	configAudit = true
+		case cons.SelectionIndex_ConfigAuditing:
+			c.ConfigAudit = true
+
+		case cons.SelectionIndex_CompareConfig:
+			fmt.Println("Verbose feature is not available for Compare Config yet .. Will be added in future releases")
+			os.Exit(1)
 
 		case cons.SelectionIndex_SSLCheck:
 			fmt.Println("Verbose feature is not available for SSL Check yet .. Will be added in future releases")
@@ -713,7 +775,7 @@ func NewConfig() (*Config, error) {
 			return nil, fmt.Errorf("getting hostname: %v", err)
 		}
 	}
-	if c.MySQL == nil && c.Postgres == nil && !runRds && c.LogParser == nil {
+	if c.MySQL == nil && c.Postgres == nil && !runRds && c.LogParser == nil && c.BackupHistoryInput.BackupTool == "" {
 		return nil, fmt.Errorf(cons.Err_PostgresConfig_Missing)
 	}
 	if c.MySQL != nil && c.Postgres != nil && !runRds {
@@ -766,13 +828,11 @@ func NewConfig() (*Config, error) {
 		}
 	}
 
-	// c.CompareConfig = compareConfig
-	// c.CompareConfigBaseServer = compareConfigBaseServer
-	// if compareConfigBaseServer != "" && len(compareConfig) == 0 {
-	// 	return nil, fmt.Errorf("compare-config flag requires at least one connection string")
-	// } else if compareConfigBaseServer == "" && len(compareConfig) > 1 {
-	// 	return nil, fmt.Errorf("compare-config flag requires only one connection string when compare-config-base-server is not provided")
-	// }
+	c.CompareConfig = compareConfig
+	c.CompareConfigBaseServer = compareConfigBaseServer
+	if c.CompareConfigBaseServer != "" && len(c.CompareConfig) == 0 {
+		return nil, fmt.Errorf("with base server, at least one connection string is required")
+	}
 
 	return c, nil
 }
@@ -801,23 +861,15 @@ func LoadConfig(configPath string) (*Config, error) {
 	return c, nil
 }
 
-type inputReader struct {
-	reader *bufio.Reader
-}
+func ReadInput(msg, detault string) string {
+	reader := bufio.NewReader(os.Stdin)
 
-func newInputReader() *inputReader {
-	return &inputReader{
-		reader: bufio.NewReader(os.Stdin),
-	}
-}
-
-func (i *inputReader) Read(msg, detault string) string {
 	fmt.Print("> " + msg)
 	if detault != "" {
 		fmt.Print(" [" + detault + "]")
 	}
 	fmt.Print(": ")
-	input, err := i.reader.ReadString('\n')
+	input, err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Println("Invalid input for logparser:", err)
 		os.Exit(1)
@@ -862,12 +914,10 @@ func getLogParserInputs(postgresConf *postgresdb.Postgres, command string) (*Log
 		}
 	}
 
-	reader := newInputReader()
-
-	prefix := reader.Read("Enter Log Line Prefix", prefixSuggestion)
-	logfile := reader.Read("Enter Log File Path", logfileSuggestion)
-	beginTime := reader.Read("Enter Begin Time (format: 2006-01-02 15:04:05) [optional]", "")
-	endTime := reader.Read("Enter End Time (format: 2006-01-02 15:04:05) [optional]", "")
+	prefix := ReadInput("Enter Log Line Prefix", prefixSuggestion)
+	logfile := ReadInput("Enter Log File Path", logfileSuggestion)
+	beginTime := ReadInput("Enter Begin Time (format: 2006-01-02 15:04:05) [optional]", "")
+	endTime := ReadInput("Enter End Time (format: 2006-01-02 15:04:05) [optional]", "")
 
 	// var ipfile string
 	// if command == cons.LogParserCMD_MismatchIPs {
@@ -876,7 +926,7 @@ func getLogParserInputs(postgresConf *postgresdb.Postgres, command string) (*Log
 
 	var hbaConfigFile string
 	if command == cons.LogParserCMD_HBAUnusedLines || command == cons.LogParserCMD_All {
-		hbaConfigFile = reader.Read("Enter pg_hba.conf File Path", hbaConfigSuggestion)
+		hbaConfigFile = ReadInput("Enter pg_hba.conf File Path", hbaConfigSuggestion)
 	}
 
 	l, err := NewLogParser(command, beginTime, endTime, prefix, logfile, hbaConfigFile)

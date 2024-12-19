@@ -23,6 +23,8 @@
         {{ template "transactionWraparound" .Body }}
     {{ else if eq .Title "SSL Report" }}
         {{ template "sslAuditTab" .Body }}
+    {{ else if eq .Title "Backup Audit Tool" }}
+        {{ template "backupAuditToolTab" .Body }}
     {{ end }}
 {{ end }}
 

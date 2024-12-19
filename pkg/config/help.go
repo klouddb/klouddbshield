@@ -248,6 +248,11 @@ func PrintHelp() {
 		fmt.Println(text.FgCyan.Sprint(`maxIdleConn = 2`))
 		fmt.Println(text.FgCyan.Sprint(`maxOpenConn = 2`))
 
+	case cons.SelectionIndex_BackupAuditTool,
+		cons.SelectionIndex_CreatePostgresConfig,
+		cons.SelectionIndex_ConfigAuditing,
+		cons.SelectionIndex_CompareConfig:
+
 	default:
 		fmt.Println("Invalid Choice, Please Try Again.")
 		os.Exit(1)
