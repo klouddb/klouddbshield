@@ -28,10 +28,13 @@ func Open(conf config.MySQL) (*sql.DB, string, error) {
 			Msg("Failed to connect to database")
 		return nil, "", err
 	}
-	err = db.Ping()
-	if err != nil {
-		// fmt.Printf("Failed to connect to database. Error:	%s", err.Error())
-		return nil, "", err
+
+	if conf.PingCheck {
+		err = db.Ping()
+		if err != nil {
+			// fmt.Printf("Failed to connect to database. Error:	%s", err.Error())
+			return nil, "", err
+		}
 	}
 	if conf.MaxIdleConn > 0 {
 		db.SetMaxIdleConns(conf.MaxIdleConn)
