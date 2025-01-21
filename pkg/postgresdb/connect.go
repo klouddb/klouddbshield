@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+	"strings"
 
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog/log"
@@ -36,7 +37,7 @@ var re = regexp.MustCompile(`(?m)(?:host=)([^\s]+)`)
 
 func Open(conf Postgres) (*sql.DB, string, error) {
 	// "host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable"
-	url := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", conf.Host, conf.Port, conf.User, conf.Password, conf.DBName)
+	url := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s pingcheck=%t", conf.Host, conf.Port, conf.User, conf.Password, conf.DBName, conf.SSLmode, conf.PingCheck)
 
 	db, err := ConnectDatabaseUsingConnectionString(url)
 	if err != nil {
@@ -69,7 +70,11 @@ func Open(conf Postgres) (*sql.DB, string, error) {
 
 // ConnectDatabaseUsingConnectionString connects to a PostgreSQL database using the provided connection string.
 // It returns a database connection, the connection string, and an error if any.
+
 func ConnectDatabaseUsingConnectionString(url string) (*sql.DB, error) {
+	parts := strings.Split(url, "pingcheck=")
+	pingcheck := parts[1]
+	url = parts[0]
 	db, err := sql.Open("postgres", url)
 	if err != nil {
 		log.Error().
@@ -79,7 +84,7 @@ func ConnectDatabaseUsingConnectionString(url string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	if conf.PingCheck {
+	if len(pingcheck) > 0 && pingcheck == "true" {
 		err = db.Ping()
 		if err != nil {
 			log.Error().
@@ -90,6 +95,7 @@ func ConnectDatabaseUsingConnectionString(url string) (*sql.DB, error) {
 			return nil, err
 		}
 	}
+
 
 	return db, nil
 }

@@ -215,6 +215,7 @@ type MySQL struct {
 	Port     string `toml:"port"`
 	User     string `toml:"user"`
 	Password string `toml:"password"`
+	PingCheck	  bool `toml:"pingCheck"`
 	// DBName      string `toml:"dbname"`
 	// SSLmode     string `toml:"sslmode"`
 	MaxIdleConn int `toml:"maxIdleConn"`
