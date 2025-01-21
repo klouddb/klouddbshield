@@ -100,11 +100,13 @@ port="5432"
 user="postgres"
 dbname="postgres"
 password="xxxxx" 
+sslmode="disable"
 maxIdleConn = 2
 maxOpenConn = 2
 
 [app]
 debug = true
+pingCheck = true
 
 ```
 

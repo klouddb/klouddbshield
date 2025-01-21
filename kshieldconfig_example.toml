@@ -5,6 +5,7 @@
 # port = "5432"
 # user = "postgres"
 # password = "password123"
+# sslmode = "disable"
 # dbname = "mydb"
 # maxIdleConn = 10
 # maxOpenConn = 100

@@ -15,7 +15,7 @@ type Postgres struct {
 	User     string `toml:"user"`
 	Password string `toml:"password"`
 	DBName   string `toml:"dbname"`
-	// SSLmode     string `toml:"sslmode"`
+	SSLmode     string `toml:"sslmode"`
 	MaxIdleConn int `toml:"maxIdleConn"`
 	MaxOpenConn int `toml:"maxOpenConn"`
 }
@@ -35,7 +35,7 @@ var re = regexp.MustCompile(`(?m)(?:host=)([^\s]+)`)
 
 func Open(conf Postgres) (*sql.DB, string, error) {
 	// "host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable"
-	url := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", conf.Host, conf.Port, conf.User, conf.Password, conf.DBName)
+	url := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", conf.Host, conf.Port, conf.User, conf.Password, conf.DBName)
 
 	db, err := ConnectDatabaseUsingConnectionString(url)
 	if err != nil {
@@ -78,14 +78,16 @@ func ConnectDatabaseUsingConnectionString(url string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	err = db.Ping()
-	if err != nil {
-		log.Error().
-			Err(err).
-			Str("conn", url).
-			Msg("Failed to ping database")
-		db.Close()
-		return nil, err
+	if cnf.App.PingCheck {
+		err = db.Ping()
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("conn", url).
+				Msg("Failed to ping database")
+			db.Close()
+			return nil, err
+		}
 	}
 
 	return db, nil
