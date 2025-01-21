@@ -235,7 +235,6 @@ type GeneratePassword struct {
 type App struct {
 	Debug              bool   `toml:"debug"`
 	Hostname           string `toml:"hostname"`
-	PingCheck					 bool   `toml:"pingCheck"`
 	Run                bool
 	RunPostgres        bool
 	RunMySql           bool

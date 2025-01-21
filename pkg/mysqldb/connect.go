@@ -29,7 +29,7 @@ func Open(conf config.MySQL) (*sql.DB, string, error) {
 		return nil, "", err
 	}
 
-	if cnf.App.PingCheck {
+	if conf.PingCheck {
 		err = db.Ping()
 		if err != nil {
 			// fmt.Printf("Failed to connect to database. Error:	%s", err.Error())

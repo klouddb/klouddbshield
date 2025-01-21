@@ -106,7 +106,6 @@ maxOpenConn = 2
 
 [app]
 debug = true
-pingCheck = true
 
 ```
 

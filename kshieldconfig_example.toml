@@ -6,6 +6,7 @@
 # user = "postgres"
 # password = "password123"
 # sslmode = "disable"
+# pingcheck = true
 # dbname = "mydb"
 # maxIdleConn = 10
 # maxOpenConn = 100

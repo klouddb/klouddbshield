@@ -16,6 +16,7 @@ type Postgres struct {
 	Password string `toml:"password"`
 	DBName   string `toml:"dbname"`
 	SSLmode     string `toml:"sslmode"`
+	PingCheck	  bool `toml:"pingCheck"`
 	MaxIdleConn int `toml:"maxIdleConn"`
 	MaxOpenConn int `toml:"maxOpenConn"`
 }
@@ -78,7 +79,7 @@ func ConnectDatabaseUsingConnectionString(url string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	if cnf.App.PingCheck {
+	if conf.PingCheck {
 		err = db.Ping()
 		if err != nil {
 			log.Error().
