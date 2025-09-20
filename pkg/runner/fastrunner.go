@@ -237,7 +237,7 @@ func (p *ProcessHelper) validateFile(ctx context.Context, f *os.File) error {
 
 	errorCount := 0
 	totalLine := 0
-	for i := 0; i < 100; i++ {
+	for totalLine < 100 {
 		// if context context expired, stop processing
 		if ctx.Err() != nil {
 			return nil
@@ -251,11 +251,16 @@ func (p *ProcessHelper) validateFile(ctx context.Context, f *os.File) error {
 			return err
 		}
 
+		if strings.HasPrefix(line, "\t") {
+			continue
+		}
+
 		line = strings.Trim(line, "\n")
 
 		totalLine++
 		_, err = p.baseParser.Parse(line)
 		if err != nil {
+			logger.FileLogger().Err(err).Str("step", "validateFile").Str("line", line).Msg("Failed to parse line")
 			errorCount++
 		}
 	}
@@ -265,7 +270,7 @@ func (p *ProcessHelper) validateFile(ctx context.Context, f *os.File) error {
 	}
 
 	if totalLine*70/100 < errorCount {
-		return fmt.Errorf("logline prefix is wrong")
+		return fmt.Errorf("logline prefix is wrong [validation failed]")
 	}
 
 	return nil

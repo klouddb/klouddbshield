@@ -26,7 +26,7 @@ func NewInactiveUsersHelper(store *sql.DB) *InactiveUsersHelper {
 func (i *InactiveUsersHelper) Init(ctx context.Context, logParserCnf *config.LogParser) error {
 	// check if postgres setting contains required variable or connection logs
 	if !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%u") && !logParserCnf.PgSettings.LogConnections {
-		return fmt.Errorf("Please set log_line_prefix to '%%u' or enable log_connections")
+		return fmt.Errorf("please set log_line_prefix to '%%u' or enable log_connections")
 	}
 
 	i.UniqueUserParser = parselog.NewUserParser(logParserCnf)

@@ -116,17 +116,59 @@ func (u *HbaUnusedLineParser) Feed(parsedData ParsedData) error {
 
 	user, err := parsedData.GetUser()
 	if err != nil {
-		return nil
+		if !u.logParserCnf.PgSettings.LogConnections {
+			return nil
+		}
+
+		desc := parsedData.GetDescription()
+		if !UserConnAuthRegexp.MatchString(desc) {
+			return nil
+		}
+
+		var parts utils.StringSlice = UserConnAuthRegexp.FindStringSubmatch(desc)
+
+		user = parts.Get(3)
+		if user == "" {
+			return nil
+		}
 	}
 
 	host, err := parsedData.GetHost()
 	if err != nil {
-		return nil
+		if !u.logParserCnf.PgSettings.LogConnections {
+			return nil
+		}
+
+		desc := parsedData.GetDescription()
+		if !LogPrefixPostgresIpsRegexp.MatchString(desc) {
+			return nil
+		}
+
+		var parts utils.StringSlice = LogPrefixPostgresIpsRegexp.FindStringSubmatch(desc)
+
+		host = parts.Get(3)
+		if host == "" {
+			return nil
+		}
 	}
 
 	database, err := parsedData.GetDatabase()
 	if err != nil {
-		return nil
+		if !u.logParserCnf.PgSettings.LogConnections {
+			return nil
+		}
+
+		desc := parsedData.GetDescription()
+		if !UserConnAuthRegexp.MatchString(desc) {
+			return nil
+		}
+
+		var parts utils.StringSlice = UserConnAuthRegexp.FindStringSubmatch(desc)
+
+		database = parts.Get(5)
+		if database == "" {
+			return nil
+		}
 	}
 
 	u.mt.Lock()
