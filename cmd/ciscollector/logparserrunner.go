@@ -112,7 +112,7 @@ func runLogParserWithMultipleParser(ctx context.Context, runCmd bool, logParserC
 		logparser.PrintTerminalResultsForLogParser(ctx, allParser, outputType)
 	}
 
-	htmlReportHelper.RenderLogparserResponse(ctx, store, allParser)
+	htmlReportHelper.RenderLogparserResponse(ctx, allParser)
 	return nil
 }
 

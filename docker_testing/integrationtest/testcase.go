@@ -188,7 +188,7 @@ func testUnusedHbaLines(prefix, file string) {
 	}
 
 	out := buf.String()
-	if strings.Contains(out, "In logline prefix, please set '%u' and '%d'") || strings.Contains(out, "Please set log_line_prefix to '%h' or '%r' or enable log_connections") {
+	if strings.Contains(out, "In logline prefix, please set '%u' and '%d'") || strings.Contains(out, "please set log_line_prefix") {
 		fmt.Println("skipping test for unused files as required details are not available in prefix:", prefix)
 		return
 	}
@@ -199,7 +199,7 @@ func testUnusedHbaLines(prefix, file string) {
 		os.Exit(1)
 	}
 
-	if strings.Contains(out, `Unused lines found from given log file: [11 23 28]`) {
+	if strings.Contains(out, `Unused lines found from given log file: [11 23 28]`) || strings.Contains(out, `Unused lines found from given log file: [11 16 17 23 28]`) {
 		fmt.Println("unused lines test is working fine for prefix:", prefix)
 		return
 	}

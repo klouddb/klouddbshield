@@ -24,12 +24,21 @@ func NewUnusedHBALineHelper(store *sql.DB) *UnusedHBALineHelper {
 
 func (i *UnusedHBALineHelper) Init(ctx context.Context, logParserCnf *config.LogParser) error {
 	// check if postgres setting contains required variable or connection logs
-	if !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%h") && !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%r") {
-		return fmt.Errorf("Please set log_line_prefix to '%%h' or '%%r' or enable log_connections")
-	}
+	// for unused hba parsing we need to have any 2 of the following
+	// 1. log_line_prefix contains %h or %r
+	// 2. log_connections is enabled
+	// 3. log_line_prefix contains %u and %d
 
-	if !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%u") || !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%d") {
-		return fmt.Errorf("In logline prefix, please set '%s' and '%s'\n", "%u", "%d") // using printf to avoid the warning for %d in println
+	if logParserCnf.PgSettings.LogConnections {
+		if !(strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%h") || strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%r")) &&
+			!(strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%u") && strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%d")) {
+			return fmt.Errorf("with log_connections enabled, please set log_line_prefix to '%%h' or '%%r' or '%%u' and '%%d'")
+		}
+	} else {
+		if !(strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%h") || strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%r")) ||
+			!(strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%u") && strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%d")) {
+			return fmt.Errorf("please set log_line_prefix to '%%h' or '%%r' or '%%u' and '%%d'")
+		}
 	}
 
 	var hbaRules []model.HBAFIleRules

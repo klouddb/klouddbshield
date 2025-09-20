@@ -100,6 +100,8 @@ port="5432"
 user="postgres"
 dbname="postgres"
 password="xxxxx" 
+sslmode="disable"
+pingCheck=true
 maxIdleConn = 2
 maxOpenConn = 2
 
