@@ -6,6 +6,8 @@
 # user = "postgres"
 # password = "password123"
 # dbname = "mydb"
+# sslmode = "disable"
+# pingCheck = true
 # maxIdleConn = 10
 # maxOpenConn = 100
 
@@ -14,6 +16,7 @@
 # port="3306"
 # user="root"
 # password="mysql111"
+# pingCheck = true
 # maxIdleConn = 2
 # maxOpenConn = 2
 

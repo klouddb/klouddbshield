@@ -217,8 +217,9 @@ type MySQL struct {
 	Password string `toml:"password"`
 	// DBName      string `toml:"dbname"`
 	// SSLmode     string `toml:"sslmode"`
-	MaxIdleConn int `toml:"maxIdleConn"`
-	MaxOpenConn int `toml:"maxOpenConn"`
+	PingCheck   bool `toml:"pingCheck"`
+	MaxIdleConn int  `toml:"maxIdleConn"`
+	MaxOpenConn int  `toml:"maxOpenConn"`
 }
 
 func (p *MySQL) HtmlReportName() string {
@@ -856,6 +857,12 @@ func LoadConfig(configPath string) (*Config, error) {
 	err = v.Unmarshal(c)
 	if err != nil {
 		return c, fmt.Errorf("unmarshal: %v", err)
+	}
+
+	if c.Postgres != nil {
+		if c.Postgres.SSLmode == "" {
+			c.Postgres.SSLmode = "disable"
+		}
 	}
 
 	return c, nil

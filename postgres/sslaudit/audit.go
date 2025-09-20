@@ -238,7 +238,7 @@ func ParseNotAfter(certText string) (time.Time, error) {
 	dateStr := strings.TrimSpace(matches[1])
 
 	// Parse the date string
-	notAfterTime, err := time.Parse("Jan 02 15:04:05 2006 MST", dateStr)
+	notAfterTime, err := time.Parse("Jan 2 15:04:05 2006 MST", dateStr)
 	if err != nil {
 		return time.Time{}, err
 	}

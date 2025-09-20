@@ -10,14 +10,15 @@ import (
 )
 
 type Postgres struct {
-	Host     string `toml:"host"`
-	Port     string `toml:"port"`
-	User     string `toml:"user"`
-	Password string `toml:"password"`
-	DBName   string `toml:"dbname"`
-	// SSLmode     string `toml:"sslmode"`
-	MaxIdleConn int `toml:"maxIdleConn"`
-	MaxOpenConn int `toml:"maxOpenConn"`
+	Host        string `toml:"host"`
+	Port        string `toml:"port"`
+	User        string `toml:"user"`
+	Password    string `toml:"password"`
+	DBName      string `toml:"dbname"`
+	SSLmode     string `toml:"sslmode"`
+	PingCheck   bool   `toml:"pingCheck"`
+	MaxIdleConn int    `toml:"maxIdleConn"`
+	MaxOpenConn int    `toml:"maxOpenConn"`
 }
 
 func (p *Postgres) HtmlReportName() string {
@@ -35,9 +36,9 @@ var re = regexp.MustCompile(`(?m)(?:host=)([^\s]+)`)
 
 func Open(conf Postgres) (*sql.DB, string, error) {
 	// "host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable"
-	url := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", conf.Host, conf.Port, conf.User, conf.Password, conf.DBName)
+	url := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", conf.Host, conf.Port, conf.User, conf.Password, conf.DBName, conf.SSLmode)
 
-	db, err := ConnectDatabaseUsingConnectionString(url)
+	db, err := ConnectDatabaseUsingConnectionString(url, conf.PingCheck)
 	if err != nil {
 		return nil, "", err
 	}
@@ -68,7 +69,7 @@ func Open(conf Postgres) (*sql.DB, string, error) {
 
 // ConnectDatabaseUsingConnectionString connects to a PostgreSQL database using the provided connection string.
 // It returns a database connection, the connection string, and an error if any.
-func ConnectDatabaseUsingConnectionString(url string) (*sql.DB, error) {
+func ConnectDatabaseUsingConnectionString(url string, pingCheck bool) (*sql.DB, error) {
 	db, err := sql.Open("postgres", url)
 	if err != nil {
 		log.Error().
@@ -78,14 +79,16 @@ func ConnectDatabaseUsingConnectionString(url string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	err = db.Ping()
-	if err != nil {
-		log.Error().
-			Err(err).
-			Str("conn", url).
-			Msg("Failed to ping database")
-		db.Close()
-		return nil, err
+	if pingCheck {
+		err = db.Ping()
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("conn", url).
+				Msg("Failed to ping database")
+			db.Close()
+			return nil, err
+		}
 	}
 
 	return db, nil

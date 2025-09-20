@@ -87,7 +87,7 @@ func GetAllConfigValues(connectionStrings []string) (*AllConfigValues, error) {
 
 // GetAllConfigValuesFromConnectionString fetches all configuration values from a single PostgreSQL database
 func GetAllConfigValuesFromConnectionString(connectionString string) (map[string]string, error) {
-	db, err := postgresdb.ConnectDatabaseUsingConnectionString(connectionString)
+	db, err := postgresdb.ConnectDatabaseUsingConnectionString(connectionString, true)
 	if err != nil {
 		return nil, fmt.Errorf("error opening postgres connection: %v", err)
 	}
