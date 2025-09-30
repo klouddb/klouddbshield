@@ -152,6 +152,36 @@ func CheckSystemdServiceFiles_v16() helper.CheckHelper {
 	})
 }
 
+// 1.2 Ensure systemd Service Files Are Enabled (v17)
+func CheckSystemdServiceFiles_v17() helper.CheckHelper {
+	result := &model.Result{
+		Control:     "1.2",
+		Title:       "Ensure systemd Service Files Are Enabled",
+		Description: "Confirm, and correct if necessary, the PostgreSQL systemd service is enabled",
+		Rationale:   "Enabling the systemd service on the OS ensures the database service is active when a change of state occurs as in the case of a system startup or reboot.",
+		Procedure: `Confirm the PostgreSQL service is enabled by executing the following:
+        $ systemctl is-enabled postgresql-17.service`,
+		References: `CIS PostgreSQL 17
+        v1.0.0 - 11-07-2023`,
+	}
+	return helper.NewCheckHelper(result, func(store *sql.DB, ctx context.Context) (*model.Result, error) {
+		cmd := "sudo systemctl is-enabled postgresql-17.service"
+		outStr, errStr, err := utils.ExecBash(cmd)
+		// Debian check
+		if err != nil || !strings.Contains(outStr, "enabled") {
+			cmd = "systemctl is-enabled postgresql@17-main.service 2>/dev/null"
+			outStr, errStr, err = utils.ExecBash(cmd)
+		}
+		if strings.Contains(outStr, "enabled") {
+			result.Status = "Pass"
+		} else {
+			result.FailReason = fmt.Sprintf(cons.ErrFmt, cmd, err, errStr)
+			result.Status = "Fail"
+		}
+		return result, nil
+	})
+}
+
 // 1.3 Ensure Data Cluster Initialized Successfully
 func CheckDataCluster() helper.CheckHelper {
 	result := &model.Result{

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+	"strings"
 
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog/log"
@@ -16,6 +17,9 @@ type Postgres struct {
 	Password    string `toml:"password"`
 	DBName      string `toml:"dbname"`
 	SSLmode     string `toml:"sslmode"`
+	SSLcert     string `toml:"sslcert"`
+	SSLkey      string `toml:"sslkey"`
+	SSLrootcert string `toml:"sslrootcert"`
 	PingCheck   bool   `toml:"pingCheck"`
 	MaxIdleConn int    `toml:"maxIdleConn"`
 	MaxOpenConn int    `toml:"maxOpenConn"`
@@ -34,9 +38,38 @@ func (p *Postgres) HtmlReportName() string {
 
 var re = regexp.MustCompile(`(?m)(?:host=)([^\s]+)`)
 
+// BuildConnectionString builds a PostgreSQL connection string from the given configuration
+func BuildConnectionString(conf Postgres) string {
+	var parts []string
+
+	parts = append(parts,
+		fmt.Sprintf("host=%s", conf.Host),
+		fmt.Sprintf("port=%s", conf.Port),
+		fmt.Sprintf("user=%s", conf.User),
+		fmt.Sprintf("password=%s", conf.Password),
+		fmt.Sprintf("dbname=%s", conf.DBName),
+	)
+
+	if conf.SSLmode != "" {
+		parts = append(parts, fmt.Sprintf("sslmode=%s", conf.SSLmode))
+	} else {
+		parts = append(parts, "sslmode=disable")
+	}
+	if conf.SSLcert != "" {
+		parts = append(parts, fmt.Sprintf("sslcert=%s", conf.SSLcert))
+	}
+	if conf.SSLkey != "" {
+		parts = append(parts, fmt.Sprintf("sslkey=%s", conf.SSLkey))
+	}
+	if conf.SSLrootcert != "" {
+		parts = append(parts, fmt.Sprintf("sslrootcert=%s", conf.SSLrootcert))
+	}
+
+	return strings.Join(parts, " ")
+}
+
 func Open(conf Postgres) (*sql.DB, string, error) {
-	// "host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable"
-	url := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", conf.Host, conf.Port, conf.User, conf.Password, conf.DBName, conf.SSLmode)
+	url := BuildConnectionString(conf)
 
 	db, err := ConnectDatabaseUsingConnectionString(url, conf.PingCheck)
 	if err != nil {
