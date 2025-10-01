@@ -21,7 +21,7 @@ func GetPGSettings(ctx context.Context, store *sql.DB) (*model.PgSettings, error
 	out := &model.PgSettings{}
 	for _, val := range data {
 		if val["name"] == "log_connections" {
-			out.LogConnections = val["setting"] == "on"
+			out.LogConnections = val["setting"] == "on" || val["setting"] == "yes"
 		}
 	}
 

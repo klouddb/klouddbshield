@@ -100,6 +100,11 @@ port="5432"
 user="postgres"
 dbname="postgres"
 password="xxxxx" 
+sslmode="require"
+sslcert="path/to/cert"
+sslkey="path/to/key"
+sslrootcert="path/to/rootcert"
+pingCheck=true
 maxIdleConn = 2
 maxOpenConn = 2
 

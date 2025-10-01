@@ -34,6 +34,9 @@ var referenceMap = map[string]string{
 
 	"16": `CIS PostgreSQL 16
 	v1.0.0 - 11-07-2023`,
+
+	"17": `CIS PostgreSQL 17
+	v1.0.0 - 11-07-2024`,
 }
 
 var installationChecks = map[string][]helper.CheckHelper{
@@ -57,6 +60,10 @@ var installationChecks = map[string][]helper.CheckHelper{
 		installation.CheckSystemdServiceFiles_v16(), // 1.2
 		installation.CheckDataCluster(),             // 1.3
 	},
+	"17": {
+		installation.CheckSystemdServiceFiles_v17(), // 1.2
+		installation.CheckDataCluster(),             // 1.3
+	},
 }
 
 var permissionsChecks = map[string][]helper.CheckHelper{
@@ -76,6 +83,9 @@ var permissionsChecks = map[string][]helper.CheckHelper{
 		permissions.CheckSystemdServiceFiles(), // 2.1
 	},
 	"16": {
+		permissions.CheckSystemdServiceFiles(), // 2.1
+	},
+	"17": {
 		permissions.CheckSystemdServiceFiles(), // 2.1
 	},
 }
@@ -144,6 +154,14 @@ var authChecks = map[string][]helper.CheckHelper{
 		auth.CheckSetUserExtension(),         // 4.6
 		auth.CheckPredefinedRoles(),          // 4.7
 	},
+	"17": {
+		auth.CheckPrivilegedAccess(),         // 4.2
+		auth.CheckFunctionPrivileges(),       // 4.3
+		auth.CheckDMLPrivileges(),            // 4.4
+		auth.CheckRLSSecurityConfiguration(), // 4.5
+		auth.CheckSetUserExtension(),         // 4.6
+		auth.CheckPredefinedRoles(),          // 4.7
+	},
 }
 
 var connectionChecks = map[string][]helper.CheckHelper{
@@ -169,6 +187,11 @@ var connectionChecks = map[string][]helper.CheckHelper{
 		connection.CheckPasswordComplexity(), // 5.3
 	},
 	"16": {
+		connection.CheckLocalSocketLogin(),   // 5.1
+		connection.CheckHostSocketLogin(),    // 5.2
+		connection.CheckPasswordComplexity(), // 5.3
+	},
+	"17": {
 		connection.CheckLocalSocketLogin(),   // 5.1
 		connection.CheckHostSocketLogin(),    // 5.2
 		connection.CheckPasswordComplexity(), // 5.3
@@ -220,6 +243,16 @@ var settingsChecks = map[string][]helper.CheckHelper{
 		settings.CheckSSL(),              // 6.8
 		settings.CheckPGCrypto(),         // 6.9
 	},
+	"17": {
+		settings.CheckSetUserExtension(), // 6.2
+		settings.CheckPostmasterParams(), // 6.3
+		settings.CheckSignupParams(),     // 6.4
+		settings.CheckSupperUserParams(), // 6.5
+		settings.CheckUserParams(),       // 6.6
+		settings.CheckFIPS(),             // 6.7
+		settings.CheckSSL(),              // 6.8
+		settings.CheckPGCrypto(),         // 6.9
+	},
 }
 
 var replicationChecks = map[string][]helper.CheckHelper{
@@ -251,6 +284,13 @@ var replicationChecks = map[string][]helper.CheckHelper{
 		replication.CheckArchiveMode(),                       // 7.4
 		replication.CheckStreamingReplicationConfiguration(), // 7.5
 	},
+	"17": {
+		replication.CheckReplicationUser(),                   // 7.1
+		replication.CheckReplicationLogging(),                // 7.2
+		replication.CheckBaseBackupConfiguration(),           // 7.3
+		replication.CheckArchiveMode(),                       // 7.4
+		replication.CheckStreamingReplicationConfiguration(), // 7.5
+	},
 }
 
 var specialChecks = map[string][]helper.CheckHelper{
@@ -270,6 +310,11 @@ var specialChecks = map[string][]helper.CheckHelper{
 		special.CheckMiscellaneousConfigurationSetting(), // 8.3
 	},
 	"16": {
+		special.CheckPostgresSubdirecotry(),              // 8.1
+		special.CheckPgBackRestInstallation(),            // 8.2
+		special.CheckMiscellaneousConfigurationSetting(), // 8.3
+	},
+	"17": {
 		special.CheckPostgresSubdirecotry(),              // 8.1
 		special.CheckPgBackRestInstallation(),            // 8.2
 		special.CheckMiscellaneousConfigurationSetting(), // 8.3

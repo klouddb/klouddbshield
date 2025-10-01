@@ -50,3 +50,5 @@ all_checks.json
 
 postgresql.conf
 testoutput.log
+
+*.prof

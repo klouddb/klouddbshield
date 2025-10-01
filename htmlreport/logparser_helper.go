@@ -2,7 +2,6 @@ package htmlreport
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 
 	"github.com/klouddb/klouddbshield/pkg/hbarules"
@@ -12,7 +11,7 @@ import (
 )
 
 type LogparserHTMLReport struct {
-	Error           string
+	Error           []string
 	InactiveUsers   *SimplifiedInactiveUserData
 	UniqueIPs       *UniqueIPRenderData
 	UnusedHBALines  *UnusedHBALinesRenderData
@@ -61,11 +60,11 @@ func GetSimplifiedInactiveUsers(userdata [][]string) *SimplifiedInactiveUserData
 
 func (h *HtmlReportHelper) RanderLogParserError(err error) {
 	h.AddTab("Log Parser", LogparserHTMLReport{
-		Error: err.Error(),
+		Error: []string{err.Error()},
 	})
 }
 
-func (h *HtmlReportHelper) RenderLogparserResponse(ctx context.Context, store *sql.DB, parsers []runner.Parser) {
+func (h *HtmlReportHelper) RenderLogparserResponse(ctx context.Context, parsers []runner.Parser) {
 	data := LogparserHTMLReport{}
 
 	for _, r := range parsers {
@@ -92,6 +91,8 @@ func (h *HtmlReportHelper) RenderLogparserResponse(ctx context.Context, store *s
 			data.SQLInjection = &SQLInjectionRenderData{
 				Logs: r.GetResult(ctx),
 			}
+		case *logparser.ErrorHelper:
+			data.Error = append(data.Error, r.Error())
 		}
 	}
 

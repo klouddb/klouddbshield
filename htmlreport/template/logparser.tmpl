@@ -1,9 +1,11 @@
 {{ define "logparserbody" }}
     <div class="wrapper">
         <div class="myContainer">
-            {{ if .Error }}
-                <h3> Becuase of some error we were not able to generate the report for Log Parser.</h3>
-                <p>{{ .Error }}</p>
+            {{ if and (not (eq .Error nil)) (gt (len .Error) 0) }}
+                <h3>There are some errors while parsing the log file. Please check the following:</h3>
+                {{ range .Error }}
+                    <p style="color: #a72727;">{{ . }}</p>
+                {{ end }}
             {{ end }}
             {{ if .InactiveUsers }}
                 <div class="data-container">
