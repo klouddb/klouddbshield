@@ -40,10 +40,16 @@ KloudDB Shield serves as a comprehensive security tool designed specifically for
 ## 🔧 Key Features
 
 	* PII Scanner
+
+	* 90+ Security Checks
  
 	* HBA Scanner
 
 	* Transaction wraparound detector
+
+	* Postgres Config Generator
+
+	* Postgres Config Audit
 
 	* Inactive Users
 
@@ -52,6 +58,8 @@ KloudDB Shield serves as a comprehensive security tool designed specifically for
 	* RDS/Aurora Security reports
 
 	* Password Generator
+
+	* Password leakage detector
 
 	* Common Username detector
 
