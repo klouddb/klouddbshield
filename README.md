@@ -57,6 +57,8 @@ KloudDB Shield serves as a comprehensive security tool designed specifically for
 
 	* Elevated privs report
 
+	* SSL Audit
+
 	* Unique IPs
 
 	* RDS/Aurora Security reports
