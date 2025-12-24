@@ -43,7 +43,7 @@ KloudDB Shield serves as a comprehensive security tool designed specifically for
 
 	* 90+ Security Checks
 
-	* Backup Compliance Extension
+	* Backup Compliance Extension https://github.com/klouddb/pg_backup_compliance
  
 	* HBA Scanner
 
