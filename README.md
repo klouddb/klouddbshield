@@ -55,6 +55,8 @@ KloudDB Shield serves as a comprehensive security tool designed specifically for
 
 	* Inactive Users
 
+	* Elevated privs report
+
 	* Unique IPs
 
 	* RDS/Aurora Security reports
