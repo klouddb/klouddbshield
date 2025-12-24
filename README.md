@@ -42,6 +42,8 @@ KloudDB Shield serves as a comprehensive security tool designed specifically for
 	* PII Scanner
 
 	* 90+ Security Checks
+
+	* Backup Compliance Extension
  
 	* HBA Scanner
 
