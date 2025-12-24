@@ -49,9 +49,9 @@ KloudDB Shield serves as a comprehensive security tool designed specifically for
 
 	* Transaction wraparound detector
 
-	* Postgres Config Generator
+	* Postgres Config Generator  - Helps you in hardening a new server
 
-	* Postgres Config Audit
+	* Postgres Config Audit 
 
 	* Inactive Users
 
