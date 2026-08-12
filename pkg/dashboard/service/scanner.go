@@ -73,7 +73,9 @@ type PiiScannerRow struct {
 
 // LogParserScanner returns all log parser command findings for a host from report_json.
 func (s *Service) LogParserScanner(ctx context.Context, host string) (*LogParserScannerResponse, error) {
-	run, err := s.resolveRunForHost(ctx, host)
+	// Prefer a run that actually contains Log Parser Summary. A newer PII-only /
+	// empty report_json row must not hide an older successful log-parser push.
+	run, err := s.resolveRunForHostWithLogParser(ctx, host)
 	if err != nil {
 		return nil, err
 	}

@@ -1,8 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-# Extra roles for CIS/HBA checks (pattern from docker_testing/createuser.sh).
-for i in 0 1 2 3 4 5; do
+# Extra roles for CIS/HBA checks — count varies per profile.
+user_count="${COLLECTOR_EXTRA_USERS:-6}"
+pgbench_scale="${COLLECTOR_PGBENCH_SCALE:-10}"
+
+for i in $(seq 0 $((user_count - 1))); do
   psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
     DO \$\$
     BEGIN
@@ -14,6 +17,7 @@ for i in 0 1 2 3 4 5; do
 EOSQL
 done
 
-pgbench -i -s 10 -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1 || true
+pgbench -i -s "${pgbench_scale}" -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1 || true
 
-echo "bootstrap users and pgbench schema ready"
+touch "${PGDATA}/.e2e-init-complete"
+echo "bootstrap users (count=${user_count}) and pgbench scale=${pgbench_scale} ready"

@@ -59,18 +59,38 @@ func inactiveUserRowsFromReport(host string, report map[string]interface{}) [][]
 }
 
 func inactiveUserNamesFromLogValue(val interface{}) []string {
-	outer, ok := val.([]interface{})
-	if !ok || len(outer) < 3 {
-		return nil
+	switch outer := val.(type) {
+	case [][]string:
+		if len(outer) < 3 {
+			return nil
+		}
+		return trimInactiveUserNames(outer[2])
+	case []interface{}:
+		if len(outer) < 3 {
+			return nil
+		}
+		switch third := outer[2].(type) {
+		case []string:
+			return trimInactiveUserNames(third)
+		case []interface{}:
+			names := make([]string, 0, len(third))
+			for _, item := range third {
+				name := strings.TrimSpace(fmt.Sprint(item))
+				if name != "" && name != "<nil>" {
+					names = append(names, name)
+				}
+			}
+			return names
+		}
 	}
-	third, ok := outer[2].([]interface{})
-	if !ok {
-		return nil
-	}
-	var names []string
-	for _, item := range third {
-		name := strings.TrimSpace(fmt.Sprint(item))
-		if name != "" && name != "<nil>" {
+	return nil
+}
+
+func trimInactiveUserNames(users []string) []string {
+	names := make([]string, 0, len(users))
+	for _, user := range users {
+		name := strings.TrimSpace(user)
+		if name != "" {
 			names = append(names, name)
 		}
 	}

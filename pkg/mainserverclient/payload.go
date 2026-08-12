@@ -34,7 +34,8 @@ type NodeData struct {
 	GucSettings                 *GucSettingsPayload          `json:"guc_settings,omitempty"`
 }
 
-// GucSettingsPayload is SHOW ALL output pushed for GUC drift comparison.
+// GucSettingsPayload is pg_settings output pushed for GUC drift comparison
+// (setting values plus packed unit/vartype metadata in reserved keys).
 type GucSettingsPayload struct {
 	Settings map[string]string `json:"settings"`
 	ScanMeta ScanMetadata      `json:"scan_meta"`
@@ -84,8 +85,7 @@ type ScanMetadata struct {
 
 type AgentConfig struct {
 	Agent struct {
-		ID        string `json:"id"`
-		ClusterID string `json:"cluster_id"`
+		ID string `json:"id"`
 	} `json:"agent"`
 	Server struct {
 		URL   string `json:"url"`
@@ -144,12 +144,16 @@ func BuildScanPayload(
 	host, port, dbName := "", "", ""
 	tid := reportstore.TargetID(pg)
 	if pg != nil {
-		host = reportstore.NormalizeHost(pg.Host)
+		host = reportstore.ResolveTargetHost(pg.Host, c.Hostname())
 		port = pg.Port
 		if port == "" {
 			port = "5432"
 		}
 		dbName = pg.DBName
+		// Rebuild target id with resolved host so loopback configs stay unique per agent.
+		pgResolved := *pg
+		pgResolved.Host = host
+		tid = reportstore.TargetID(&pgResolved)
 	}
 	status := "success"
 	if runErr != "" {

@@ -1,8 +1,10 @@
 <header class="topbar">
 <div class="breadcrumb" id="breadcrumb"><strong>Fleet Overview</strong> / Executive Fleet Dashboard</div>
         <div class="topbar-actions">
-          <input type="search" placeholder="Search hostname, IP…" style="padding:8px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);width:200px;" />
-          <select id="global-range-select" class="btn" style="padding:8px 12px;cursor:pointer;">
+          <label class="topbar-search-label" for="global-host-search">Search hostname or IP</label>
+          <input type="search" id="global-host-search" placeholder="Search hostname, IP…" autocomplete="off" class="topbar-search-input" />
+          <label class="sr-only" for="global-range-select">Time range</label>
+          <select id="global-range-select" class="btn topbar-range-select" aria-label="Time range">
             <option value="24h">Last 24 hours</option>
             <option value="7d">Last 7 days</option>
             <option value="30d" selected>Last 30 days</option>
@@ -10,3 +12,4 @@
           <button type="button" class="btn btn-primary" id="global-refresh-btn">Refresh</button>
         </div>
 </header>
+<div id="route-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>

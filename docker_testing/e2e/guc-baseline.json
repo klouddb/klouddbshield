@@ -1,0 +1,20 @@
+{
+  "label": "e2e-global",
+  "settings": {
+    "ssl": "off",
+    "logging_collector": "on",
+    "log_connections": "on",
+    "log_disconnections": "on",
+    "log_directory": "log",
+    "log_filename": "postgresql-%Y-%m-%d.log",
+    "log_line_prefix": "%t %u %d %h ",
+    "max_connections": "100",
+    "shared_buffers": "128MB",
+    "password_encryption": "scram-sha-256",
+    "track_counts": "on",
+    "track_activities": "on",
+    "track_io_timing": "off",
+    "log_statement": "none",
+    "log_min_duration_statement": "-1"
+  }
+}

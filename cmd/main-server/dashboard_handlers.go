@@ -121,7 +121,17 @@ func (a *App) gucDriftHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, dashboardsvc.GucDriftResponse{})
 		return
 	}
-	resp, err := svc.GucDrift(r.Context())
+	groupID := strings.TrimSpace(r.URL.Query().Get("group_id"))
+	targetID := strings.TrimSpace(r.URL.Query().Get("target_id"))
+	var (
+		resp *dashboardsvc.GucDriftResponse
+		err  error
+	)
+	if groupID != "" || targetID != "" {
+		resp, err = svc.GucDriftQuery(r.Context(), groupID, targetID)
+	} else {
+		resp, err = svc.GucDrift(r.Context())
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -135,7 +145,8 @@ func (a *App) gucBaselineGetHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, dashboardsvc.GucBaselineResponse{Settings: map[string]string{}})
 		return
 	}
-	resp, err := svc.GucBaseline(r.Context())
+	groupID := strings.TrimSpace(r.URL.Query().Get("group_id"))
+	resp, err := svc.GucBaselineForGroup(r.Context(), groupID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -151,21 +162,38 @@ func (a *App) gucBaselinePutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var req struct {
 		Label    string            `json:"label"`
+		TargetID string            `json:"target_id"`
+		GroupID  string            `json:"group_id"`
 		Settings map[string]string `json:"settings"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid JSON body", http.StatusBadRequest)
 		return
 	}
-	if req.Settings == nil {
-		http.Error(w, "settings is required", http.StatusBadRequest)
+	groupID := strings.TrimSpace(req.GroupID)
+	var err error
+	if groupID != "" {
+		if strings.TrimSpace(req.TargetID) != "" {
+			err = svc.PutGucGroupBaselineFromHost(r.Context(), groupID, req.TargetID)
+		} else if req.Settings != nil {
+			err = svc.PutGucGroupBaselineFile(r.Context(), groupID, req.Label, req.Settings)
+		} else {
+			http.Error(w, "target_id or settings is required", http.StatusBadRequest)
+			return
+		}
+	} else if strings.TrimSpace(req.TargetID) != "" {
+		err = svc.PutGucBaselineFromHost(r.Context(), req.TargetID)
+	} else if req.Settings != nil {
+		err = svc.PutGucBaseline(r.Context(), req.Label, req.Settings)
+	} else {
+		http.Error(w, "target_id or settings is required", http.StatusBadRequest)
 		return
 	}
-	if err := svc.PutGucBaseline(r.Context(), req.Label, req.Settings); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	resp, err := svc.GucBaseline(r.Context())
+	resp, err := svc.GucBaselineForGroup(r.Context(), groupID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -185,6 +213,137 @@ func (a *App) gucSnapshotsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func (a *App) gucIgnoresGetHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		writeJSON(w, http.StatusOK, dashboardsvc.GucIgnoresResponse{Ignores: []dashboardsvc.GucIgnoreEntryDTO{}})
+		return
+	}
+	resp, err := svc.ListGucIgnores(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (a *App) gucIgnoresPutHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		http.Error(w, "database not configured", http.StatusServiceUnavailable)
+		return
+	}
+	var req struct {
+		Scope    string `json:"scope"`
+		TargetID string `json:"target_id"`
+		Guc      string `json:"guc"`
+		Ignore   *bool  `json:"ignore"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON body", http.StatusBadRequest)
+		return
+	}
+	ignore := true
+	if req.Ignore != nil {
+		ignore = *req.Ignore
+	}
+	if err := svc.SetGucIgnore(r.Context(), req.Scope, req.TargetID, req.Guc, ignore); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	resp, err := svc.ListGucIgnores(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (a *App) gucGroupsGetHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		writeJSON(w, http.StatusOK, dashboardsvc.GucServerGroupsResponse{Groups: []dashboardsvc.GucServerGroupDTO{}})
+		return
+	}
+	resp, err := svc.ListGucServerGroups(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (a *App) gucGroupsPostHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		http.Error(w, "database not configured", http.StatusServiceUnavailable)
+		return
+	}
+	var req struct {
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON body", http.StatusBadRequest)
+		return
+	}
+	dto, err := svc.UpsertGucServerGroup(r.Context(), req.ID, req.Name, req.Description)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusOK, dto)
+}
+
+func (a *App) gucGroupDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		http.Error(w, "database not configured", http.StatusServiceUnavailable)
+		return
+	}
+	id := strings.TrimSpace(mux.Vars(r)["groupId"])
+	if id == "" {
+		http.Error(w, "group id required", http.StatusBadRequest)
+		return
+	}
+	if err := svc.DeleteGucServerGroup(r.Context(), id); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+func (a *App) gucGroupMembersPutHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		http.Error(w, "database not configured", http.StatusServiceUnavailable)
+		return
+	}
+	id := strings.TrimSpace(mux.Vars(r)["groupId"])
+	if id == "" {
+		http.Error(w, "group id required", http.StatusBadRequest)
+		return
+	}
+	var req struct {
+		TargetIDs []string `json:"target_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON body", http.StatusBadRequest)
+		return
+	}
+	if err := svc.SetGucServerGroupMembers(r.Context(), id, req.TargetIDs); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	dto, err := svc.GetGucServerGroup(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, dto)
 }
 
 func (a *App) policiesHandler(w http.ResponseWriter, r *http.Request) {
@@ -292,6 +451,79 @@ func (a *App) piiScannerHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := svc.PiiScanner(r.Context(), host)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (a *App) backupComplianceSummaryHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		writeJSON(w, http.StatusOK, dashboardsvc.BackupComplianceSummaryResponse{})
+		return
+	}
+	resp, err := svc.BackupComplianceSummary(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (a *App) backupComplianceHistoryHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		writeJSON(w, http.StatusOK, dashboardsvc.BackupComplianceHistoryResponse{})
+		return
+	}
+	f := dashboardsvc.BackupComplianceHistoryFilter{
+		Server:     r.URL.Query().Get("server"),
+		BackupType: r.URL.Query().Get("backup_type"),
+		Date:       r.URL.Query().Get("date"),
+		From:       r.URL.Query().Get("from"),
+		To:         r.URL.Query().Get("to"),
+		Status:     r.URL.Query().Get("status"),
+	}
+	resp, err := svc.BackupComplianceHistory(r.Context(), f)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (a *App) backupCompliancePolicyGetHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		writeJSON(w, http.StatusOK, dashboardsvc.BackupCompliancePolicyResponse{
+			AllowedDays: []string{},
+			Source:      "none",
+			Hint:        "Database not configured",
+		})
+		return
+	}
+	resp, err := svc.GetBackupCompliancePolicy(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (a *App) backupCompliancePolicyPutHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		http.Error(w, "database not configured", http.StatusServiceUnavailable)
+		return
+	}
+	var req dashboardsvc.BackupCompliancePolicyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON body", http.StatusBadRequest)
+		return
+	}
+	resp, err := svc.PutBackupCompliancePolicy(r.Context(), req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)

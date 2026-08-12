@@ -325,30 +325,47 @@ type HostKV struct {
 	Status string `json:"status,omitempty"`
 }
 
-// GucDriftResponse fleet GUC drift vs global baseline.
+// GucDriftResponse fleet GUC drift vs global (or group) baseline.
 type GucDriftResponse struct {
 	Stats         GucDriftStats         `json:"stats"`
 	HostSummaries []GucDriftHostSummary `json:"host_summaries"`
 	Rows          []GucDriftRow         `json:"rows"`
+	GroupID       string                `json:"group_id,omitempty"`
+	GroupName     string                `json:"group_name,omitempty"`
 }
 
 type GucDriftStats struct {
-	BaselineLabel   string `json:"baseline_label"`
-	BaselineKeys    int    `json:"baseline_keys"`
-	HostsCompared   int    `json:"hosts_compared"`
-	MatchedServers  int    `json:"matched_servers"`
-	DriftingServers int    `json:"drifting_servers"`
-	MissingServers  int    `json:"missing_servers"`
-	TotalDrifted    int    `json:"total_drifted"`
-	TotalMissing    int    `json:"total_missing"`
+	BaselineLabel       string `json:"baseline_label"`
+	BaselineKeys        int    `json:"baseline_keys"`
+	BaselineSource      string `json:"baseline_source,omitempty"` // host | file | none
+	BaselineTargetID    string `json:"baseline_target_id,omitempty"`
+	BaselineHost        string `json:"baseline_host,omitempty"`
+	BaselineMajor       int    `json:"baseline_major,omitempty"`
+	HostsCompared       int    `json:"hosts_compared"`
+	MatchedServers      int    `json:"matched_servers"`
+	DriftingServers     int    `json:"drifting_servers"`
+	MissingServers      int    `json:"missing_servers"`
+	IgnoredServers      int    `json:"ignored_servers"`
+	TotalDrifted        int    `json:"total_drifted"`
+	TotalMissing        int    `json:"total_missing"`
+	TotalIgnored        int    `json:"total_ignored"`
+	TotalVersionUpdated int    `json:"total_version_updated,omitempty"`
+	TotalVersionNew     int    `json:"total_version_new,omitempty"`
+	TotalVersionRemoved int    `json:"total_version_removed,omitempty"`
 }
 
 type GucDriftHostSummary struct {
-	Host         string `json:"host"`
-	TargetID     string `json:"target_id"`
-	Status       string `json:"status"`
-	DriftCount   int    `json:"drift_count"`
-	MissingCount int    `json:"missing_count"`
+	Host                string `json:"host"`
+	TargetID            string `json:"target_id"`
+	Status              string `json:"status"`
+	DriftCount          int    `json:"drift_count"`
+	MissingCount        int    `json:"missing_count"`
+	IgnoredCount        int    `json:"ignored_count"`
+	VersionUpdatedCount int    `json:"version_updated_count,omitempty"`
+	VersionNewCount     int    `json:"version_new_count,omitempty"`
+	VersionRemovedCount int    `json:"version_removed_count,omitempty"`
+	PostgresMajor       int    `json:"postgres_major,omitempty"`
+	HostIgnored         bool   `json:"host_ignored,omitempty"`
 }
 
 type GucDriftRow struct {
@@ -358,24 +375,36 @@ type GucDriftRow struct {
 	Live     string `json:"live"`
 	Baseline string `json:"baseline"`
 	Status   string `json:"status"`
+	Ignored  bool   `json:"ignored,omitempty"`
 }
 
 // HostGucDriftView is per-host GUC drift vs the global baseline.
 type HostGucDriftView struct {
-	Available     bool          `json:"available"`
-	Status        string        `json:"status"`
-	BaselineLabel string        `json:"baseline_label,omitempty"`
-	DriftCount    int           `json:"drift_count"`
-	MissingCount  int           `json:"missing_count"`
-	Rows          []GucDriftRow `json:"rows,omitempty"`
-	EmptyReason   string        `json:"empty_reason,omitempty"`
+	Available           bool          `json:"available"`
+	Status              string        `json:"status"`
+	BaselineLabel       string        `json:"baseline_label,omitempty"`
+	BaselineMajor       int           `json:"baseline_major,omitempty"`
+	PostgresMajor       int           `json:"postgres_major,omitempty"`
+	DriftCount          int           `json:"drift_count"`
+	MissingCount        int           `json:"missing_count"`
+	IgnoredCount        int           `json:"ignored_count,omitempty"`
+	VersionUpdatedCount int           `json:"version_updated_count,omitempty"`
+	VersionNewCount     int           `json:"version_new_count,omitempty"`
+	VersionRemovedCount int           `json:"version_removed_count,omitempty"`
+	Rows                []GucDriftRow `json:"rows,omitempty"`
+	EmptyReason         string        `json:"empty_reason,omitempty"`
+	HostIgnored         bool          `json:"host_ignored,omitempty"`
 }
 
 type GucBaselineResponse struct {
 	Label     string            `json:"label"`
+	Source    string            `json:"source"` // host | file | none
+	TargetID  string            `json:"target_id,omitempty"`
+	Host      string            `json:"host,omitempty"`
 	Settings  map[string]string `json:"settings"`
 	UpdatedAt string            `json:"updated_at"`
 	KeyCount  int               `json:"key_count"`
+	GroupID   string            `json:"group_id,omitempty"`
 }
 
 type GucSnapshotsResponse struct {
@@ -388,6 +417,32 @@ type GucSnapshotEntry struct {
 	NodeID      string `json:"node_id"`
 	CollectedAt string `json:"collected_at"`
 	KeyCount    int    `json:"key_count"`
+}
+
+type GucIgnoreEntryDTO struct {
+	Scope       string `json:"scope"`
+	TargetID    string `json:"target_id"`
+	InstanceKey string `json:"instance_key"`
+	Guc         string `json:"guc,omitempty"`
+	IgnoredAt   string `json:"ignored_at"`
+}
+
+type GucIgnoresResponse struct {
+	Ignores []GucIgnoreEntryDTO `json:"ignores"`
+}
+
+type GucServerGroupDTO struct {
+	ID          string               `json:"id"`
+	Name        string               `json:"name"`
+	Description string               `json:"description,omitempty"`
+	MemberIDs   []string             `json:"member_ids"`
+	MemberCount int                  `json:"member_count"`
+	Baseline    *GucBaselineResponse `json:"baseline,omitempty"`
+	UpdatedAt   string               `json:"updated_at"`
+}
+
+type GucServerGroupsResponse struct {
+	Groups []GucServerGroupDTO `json:"groups"`
 }
 
 // PoliciesResponse security policy templates and assignments.

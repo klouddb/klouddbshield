@@ -5,12 +5,21 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 const gucBaselineRowID = "global"
+
+// Reserved meta keys stored inside guc_baseline.settings_json (not real GUCs).
+const (
+	GucBaselineMetaSource   = "__kshield_source"
+	GucBaselineMetaTargetID = "__kshield_target_id"
+	GucBaselineSourceHost   = "host"
+	GucBaselineSourceFile   = "file"
+)
 
 // GucSnapshotSummary is a lightweight view of a stored SHOW ALL snapshot.
 type GucSnapshotSummary struct {
@@ -64,6 +73,45 @@ func GetGucBaseline(ctx context.Context, db *sql.DB) (label string, settings map
 		}
 	}
 	return label, settings, updatedAt, nil
+}
+
+// GucBaselineSource returns host|file|"" from stored baseline settings.
+func GucBaselineSource(settings map[string]string) string {
+	if settings == nil {
+		return ""
+	}
+	return strings.TrimSpace(settings[GucBaselineMetaSource])
+}
+
+// GucBaselineTargetID returns the reference host target_id when source is host.
+func GucBaselineTargetID(settings map[string]string) string {
+	if settings == nil {
+		return ""
+	}
+	return strings.TrimSpace(settings[GucBaselineMetaTargetID])
+}
+
+// StripGucBaselineMeta removes reserved kshield meta keys from a settings map.
+func StripGucBaselineMeta(settings map[string]string) map[string]string {
+	if len(settings) == 0 {
+		return map[string]string{}
+	}
+	out := make(map[string]string, len(settings))
+	for k, v := range settings {
+		if k == GucBaselineMetaSource || k == GucBaselineMetaTargetID {
+			continue
+		}
+		out[k] = v
+	}
+	return out
+}
+
+// HostBaselineSettings builds the stored blob for a host-as-baseline reference.
+func HostBaselineSettings(targetID string) map[string]string {
+	return map[string]string{
+		GucBaselineMetaSource:   GucBaselineSourceHost,
+		GucBaselineMetaTargetID: strings.TrimSpace(targetID),
+	}
 }
 
 // UpsertServerGucSnapshot stores the latest SHOW ALL snapshot for a target.
@@ -139,7 +187,14 @@ func ListServerGucSnapshots(ctx context.Context, db *sql.DB) ([]GucSnapshotSumma
 		if blob != "" {
 			_ = json.Unmarshal([]byte(blob), &settings)
 		}
-		s.KeyCount = len(settings)
+		n := 0
+		for k := range settings {
+			if strings.HasPrefix(k, "__kshield_") {
+				continue
+			}
+			n++
+		}
+		s.KeyCount = n
 		out = append(out, s)
 	}
 	return out, rows.Err()

@@ -15,10 +15,12 @@ function emitHostsSearch() {
 }
 
 export function initGlobalSearch() {
-  const input = document.querySelector('.topbar input[type="search"]');
+  const input = document.getElementById('global-host-search') || document.querySelector('.topbar input[type="search"]');
   if (!input) return;
-  input.id = input.id || 'global-host-search';
-  input.setAttribute('aria-label', 'Search hostname or IP');
+  if (!input.id) input.id = 'global-host-search';
+  if (!input.getAttribute('aria-label')) {
+    input.setAttribute('aria-label', 'Search hostname or IP');
+  }
   input.addEventListener('input', () => {
     setHostsSearchFilter(input.value);
     emitHostsSearch();

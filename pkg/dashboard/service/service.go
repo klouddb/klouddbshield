@@ -110,6 +110,10 @@ func reportHasLogParserCommand(report map[string]interface{}, command string) bo
 	return false
 }
 
+func reportHasAnyLogParser(report map[string]interface{}) bool {
+	return len(decodeLogParserEntries(report)) > 0
+}
+
 // latestRunsByTargetWithLogParser returns the newest run per target that includes
 // the given log-parser command. Needed when log-parser scans run on a separate
 // cron schedule than CIS/PII and would otherwise be hidden by a newer push.

@@ -63,6 +63,11 @@ func getProcessorsForCron(schedule string, commnd *config.Command, htmlHelperMap
 				htmlHelper := htmlHelperMap.Get(p.HtmlReportName())
 				out = append(out, newPiiDbScanner(p, piiCfg, htmlHelper, shield))
 			}
+			if shield.BackupCompliance.Enabled {
+				for _, p := range commnd.Postgres {
+					out = append(out, newBackupComplianceRunner(p, shield))
+				}
+			}
 		}
 
 		return out, nil
@@ -170,6 +175,19 @@ func getProcessorsForCron(schedule string, commnd *config.Command, htmlHelperMap
 			}
 			htmlHelper := htmlHelperMap.Get(p.HtmlReportName())
 			out = append(out, newPiiDbScanner(p, piiCfg, htmlHelper, shield))
+		}
+		return out, nil
+
+	case cons.RootCMD_BackupCompliance:
+		if shield == nil {
+			return nil, fmt.Errorf(cons.Err_BackupCompliance_ShieldRequired)
+		}
+		if len(commnd.Postgres) == 0 {
+			return nil, fmt.Errorf(cons.Err_PostgresConfig_Missing)
+		}
+		out := make([]Runner, 0, len(commnd.Postgres))
+		for _, p := range commnd.Postgres {
+			out = append(out, newBackupComplianceRunner(p, shield))
 		}
 		return out, nil
 

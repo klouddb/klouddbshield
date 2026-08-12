@@ -278,6 +278,25 @@ func main() {
 		overviewErrorMap[cons.RootCMD_BackupAuditTool] = newBackupHistory(cnf.BackupHistoryInput, htmlReportHelper).run(ctx)
 	}
 
+	if cnf.BackupCompliance.Enabled {
+		targets := cnf.BackupComplianceTargets()
+		if len(targets) == 0 {
+			overviewErrorMap[cons.RootCMD_BackupCompliance] = fmt.Errorf(cons.Err_BackupCompliance_PostgresRequired)
+			fmt.Println("> Error while running backup compliance: ", text.FgHiRed.Sprint(overviewErrorMap[cons.RootCMD_BackupCompliance]))
+		} else {
+			var firstErr error
+			for _, p := range targets {
+				if err := newBackupComplianceRunner(p, cnf).run(ctx, "manual"); err != nil {
+					fmt.Println("> Error while running backup compliance: ", text.FgHiRed.Sprint(err))
+					if firstErr == nil {
+						firstErr = err
+					}
+				}
+			}
+			overviewErrorMap[cons.RootCMD_BackupCompliance] = firstErr
+		}
+	}
+
 	if cnf.CreatePostgresConfig {
 		overviewErrorMap[cons.RootCMD_CreatePostgresConfig] = postgresconfig.NewProcessor(".").Run(context.TODO())
 		if overviewErrorMap[cons.RootCMD_CreatePostgresConfig] != nil {

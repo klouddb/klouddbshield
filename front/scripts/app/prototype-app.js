@@ -1,20 +1,19 @@
 import { gid, gval, gon, gq, gcls } from '../utils/dom.js';
 import { paginateSlice, mountTablePagination } from '../utils/pagination.js';
 import { PAGE_META as pages } from '../router/routes.js';
-import { loadHostDetail } from '../pages/host-detail/index.js';
-import { initGucDriftPage } from '../pages/guc-drift.js';
-import { initCollectorNodesPage } from '../pages/collector-nodes.js';
+import { ensurePageHtml } from '../utils/page-loader.js';
+import { ensureHtmlReportCss } from '../utils/styles.js';
 import { getHostsSearchFilter } from '../pages/search.js';
-import { initHbaScannerPage } from '../pages/hba-scanner.js';
-import { initSslScannerPage } from '../pages/ssl-scanner.js';
-import { initPiiScannerPage } from '../pages/pii-scanner.js';
-import { initLogParserPage } from '../pages/log-parser.js';
-import { initLogReadinessPage } from '../pages/log-readiness.js';
-import { initInactiveUsersReportPage } from '../pages/inactive-users-report.js';
-import { initCommonUsersReportPage } from '../pages/common-users-report.js';
-import { initPoliciesPage } from '../pages/policies-page.js';
 import { hostsApi } from '../api/index.js';
 import { mapHostsResponse } from '../api/mappers.js';
+
+const PAGE_ASSET = (path) => new URL(`../../${path}`, import.meta.url).pathname;
+
+let hostsPageInited = false;
+let criticalViolationsPageInited = false;
+let strategicDashboardInited = false;
+let hostDetailChromeInited = false;
+let policiesChromeInited = false;
 
     function setRouteHash(nextHash) {
       if (!nextHash || location.hash === nextHash) return;
@@ -88,6 +87,9 @@ import { mapHostsResponse } from '../api/mappers.js';
       if (page === 'fleet-category' && fleetCatId) {
         return '#fleet/' + fleetCatId;
       }
+      if (page === 'guc-drift') {
+        return '#guc-drift';
+      }
       if (page === 'critical-violations') {
         return checkPreset ? '#critical-violations/' + encodeURIComponent(checkPreset) : '#critical-violations';
       }
@@ -148,24 +150,31 @@ import { mapHostsResponse } from '../api/mappers.js';
       if (fleetParts) {
         return { page: 'fleet-category', fleetCat: fleetParts[1] };
       }
+      const gucDriftParts = raw.match(/^guc-drift(?:\/host\/(.+))?$/);
+      if (gucDriftParts) {
+        return {
+          page: 'guc-drift',
+          gucTarget: gucDriftParts[1] ? decodeURIComponent(gucDriftParts[1]) : '',
+        };
+      }
       return { page: raw };
     }
 
     function buildFleetTilesMarkup() {
       const tiles = FLEET_CATEGORIES.map(cat => {
         const cls = cat.level === 'critical' ? 'critical' : cat.level === 'healthy' ? 'healthy' : 'medium';
-        return '<div class="fleet-tile fleet-tile--' + cls + '" role="listitem" data-goto="fleet-category" data-fleet-cat="' + cat.id + '" tabindex="0">' +
-          '<div class="fleet-tile-title">' + cat.title + '</div>' +
-          '<div class="fleet-tile-count">' + cat.count + '</div>' +
-          '<div class="fleet-tile-meta">' + cat.menu + '</div></div>';
+        return '<button type="button" class="fleet-tile fleet-tile--' + cls + '" data-goto="fleet-category" data-fleet-cat="' + cat.id + '" aria-label="' + escapeHtml(cat.title + ', ' + cat.count + ' items, ' + cat.menu) + '">' +
+          '<span class="fleet-tile-title">' + cat.title + '</span>' +
+          '<span class="fleet-tile-count" aria-hidden="true">' + cat.count + '</span>' +
+          '<span class="fleet-tile-meta">' + cat.menu + '</span></button>';
       }).join('');
       return '<div class="strategic-fleet-block">' +
         '<h2 class="strategic-section-title">Fleet Status</h2>' +
         '<div class="fleet-tile-legend">' +
-        '<span class="legend-critical"><i></i> Critical Risk</span>' +
-        '<span class="legend-medium"><i></i> Medium</span>' +
-        '<span class="legend-healthy"><i></i> Healthy</span></div>' +
-        '<div class="fleet-grid-panel"><div class="fleet-tile-grid" role="list">' + tiles + '</div></div></div>';
+        '<span class="legend-critical"><i aria-hidden="true"></i> Critical Risk</span>' +
+        '<span class="legend-medium"><i aria-hidden="true"></i> Medium</span>' +
+        '<span class="legend-healthy"><i aria-hidden="true"></i> Healthy</span></div>' +
+        '<div class="fleet-grid-panel"><div class="fleet-tile-grid" role="group" aria-label="Fleet status categories">' + tiles + '</div></div></div>';
     }
 
     function resolveFleetCategoryId(rawId) {
@@ -186,6 +195,43 @@ import { mapHostsResponse } from '../api/mappers.js';
       return inst;
     }
 
+    // Keep table columns aligned when some rows include an extra Databases
+    // summary cell (multi-db instances) while others do not.
+    function alignFleetCategoryTable(cat) {
+      const baseCols = Array.isArray(cat.cols) ? cat.cols.slice() : [];
+      const rawRows = Array.isArray(cat.rows) ? cat.rows : [];
+      const maxLen = rawRows.reduce((m, r) => Math.max(m, Array.isArray(r) ? r.length : 0), 0);
+      const cols = baseCols.slice();
+      if (maxLen > cols.length) {
+        const hostIdx = cols.findIndex((c) => /^host$/i.test(c));
+        const insertAt = hostIdx >= 0 ? hostIdx + 1 : 1;
+        if (!cols.some((c) => /^databases?$/i.test(c))) {
+          cols.splice(insertAt, 0, 'Databases');
+        }
+        while (cols.length < maxLen) {
+          cols.splice(Math.max(cols.length - 1, 0), 0, '');
+        }
+      }
+      const insertAt = (() => {
+        const hostIdx = cols.findIndex((c) => /^host$/i.test(c));
+        return hostIdx >= 0 ? hostIdx + 1 : 1;
+      })();
+      const rows = rawRows.map((row) => {
+        if (!Array.isArray(row)) return row;
+        if (row.length === cols.length) return row;
+        if (row.length > cols.length) return row.slice(0, cols.length);
+        const copy = row.slice();
+        while (copy.length < cols.length) {
+          const at = Math.min(insertAt, copy.length);
+          // Keep Action as the last cell.
+          if (at >= copy.length) copy.push('—');
+          else copy.splice(at, 0, '—');
+        }
+        return copy;
+      });
+      return { cols, rows };
+    }
+
     function renderFleetCategoryRow(cat, row, actionLabels) {
       const hostCol = cat.cols.findIndex(c => /^host$/i.test(c));
       const rowHost = fleetRowHostKey(cat, row) || (hostCol >= 0 ? row[hostCol] : '');
@@ -193,10 +239,13 @@ import { mapHostsResponse } from '../api/mappers.js';
       const cells = row.map((cell, i) => {
         const colName = (cat.cols[i] || '').toLowerCase();
         if (colName === 'host' && hostCol === i) {
-          return '<td><strong>' + escapeHtml(cell) + '</strong></td>';
+          return '<td class="fleet-col-host"><strong>' + escapeHtml(cell) + '</strong></td>';
         }
-        if (colName === 'database') {
-          return '<td><code class="fleet-db-name">' + escapeHtml(cell) + '</code></td>';
+        if (colName === 'database' || colName === 'databases') {
+          return '<td class="fleet-col-databases"><code class="fleet-db-name">' + escapeHtml(cell) + '</code></td>';
+        }
+        if (colName === 'last seen' || colName === 'detail' || colName === 'issue') {
+          return '<td class="fleet-col-detail">' + escapeHtml(cell).replace(/\n/g, '<br>') + '</td>';
         }
         if (colName === 'posture') {
           const failing = /failing/i.test(cell);
@@ -233,7 +282,7 @@ import { mapHostsResponse } from '../api/mappers.js';
               ? ' data-host="' + escapeHtml(rowHost) + '"'
               : ' data-host-instance="' + escapeHtml(target.instance || rowHost) + '"';
           }
-          return '<td><span class="action-link" data-goto="' + goto + '"' + extra + '>' + escapeHtml(cell) + '</span></td>';
+          return '<td class="fleet-col-action"><span class="action-link" data-goto="' + goto + '"' + extra + '>' + escapeHtml(cell) + '</span></td>';
         }
         return '<td>' + escapeHtml(cell) + '</td>';
       }).join('');
@@ -266,7 +315,9 @@ import { mapHostsResponse } from '../api/mappers.js';
       const pagerEl = document.getElementById('fleet-category-pagination');
       if (!titleEl || !tbodyEl) return;
       titleEl.textContent = cat.title;
-      const allRows = cat.rows || [];
+      const aligned = alignFleetCategoryTable(cat);
+      const displayCat = Object.assign({}, cat, { cols: aligned.cols, rows: aligned.rows });
+      const allRows = displayCat.rows || [];
       const pg = paginateSlice(allRows, fleetCategoryPager.page, fleetCategoryPager.pageSize);
       fleetCategoryPager.page = pg.page;
       if (subEl) {
@@ -283,13 +334,16 @@ import { mapHostsResponse } from '../api/mappers.js';
           '<strong>' + cat.title + ':</strong> <span class="badge ' + levelBadge + '">' + levelLabel + '</span> · ' + cat.menu + reportLink;
       }
       if (theadEl) {
-        theadEl.innerHTML = '<tr>' + cat.cols.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+        theadEl.innerHTML = '<tr>' + displayCat.cols.map((c, i) => {
+          const cls = i === displayCat.cols.length - 1 ? ' class="fleet-col-action"' : '';
+          return '<th' + cls + '>' + escapeHtml(c) + '</th>';
+        }).join('') + '</tr>';
       }
       if (!pg.total) {
         tbodyEl.innerHTML =
-          '<tr><td colspan="' + Math.max(cat.cols.length, 1) + '" style="color:var(--muted);padding:20px;">No rows for this category yet. Run a collector scan.</td></tr>';
+          '<tr><td colspan="' + Math.max(displayCat.cols.length, 1) + '" style="color:var(--muted);padding:20px;">No rows for this category yet. Run a collector scan.</td></tr>';
       } else {
-        tbodyEl.innerHTML = pg.items.map(row => renderFleetCategoryRow(cat, row, actionLabels)).join('');
+        tbodyEl.innerHTML = pg.items.map(row => renderFleetCategoryRow(displayCat, row, actionLabels)).join('');
       }
       mountTablePagination(pagerEl, {
         page: pg.page,
@@ -310,36 +364,54 @@ import { mapHostsResponse } from '../api/mappers.js';
       });
     }
 
-    function showFleetCategory(catId) {
+    async function showFleetCategory(catId) {
       const resolvedId = resolveFleetCategoryId(catId);
       fleetCategoryPager.catId = resolvedId;
       fleetCategoryPager.page = 1;
-      renderFleetCategory(resolvedId);
-      showPage('fleet-category', undefined, { fleetCat: resolvedId });
+      await showPage('fleet-category', undefined, { fleetCat: resolvedId });
     }
 
-    function showPage(id, hostName, options) {
+    async function showPage(id, hostName, options) {
       const opts = options || {};
       const prevPageId = activePageId;
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-
       let pageId = id;
+
+      await ensurePageHtml(pageId, PAGE_ASSET);
+
+      if (pageId === 'html-report' || pageId === 'host-detail') {
+        ensureHtmlReportCss();
+      }
+
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach((n) => {
+        n.classList.remove('active');
+        n.removeAttribute('aria-current');
+      });
+
       let pageEl = document.getElementById('page-' + pageId);
       if (!pageEl) {
         pageId = 'strategic-dashboard';
+        await ensurePageHtml(pageId, PAGE_ASSET);
         pageEl = document.getElementById('page-strategic-dashboard');
       }
       if (pageEl) pageEl.classList.add('active');
 
       const nav = document.querySelector('.nav-item[data-page="' + pageId + '"]');
-      if (nav) nav.classList.add('active');
-      else if (pageId === 'host-detail') {
+      if (nav) {
+        nav.classList.add('active');
+        nav.setAttribute('aria-current', 'page');
+      } else if (pageId === 'host-detail') {
         const hostsNav = document.querySelector('.nav-item[data-page="hosts"]');
-        if (hostsNav) hostsNav.classList.add('active');
+        if (hostsNav) {
+          hostsNav.classList.add('active');
+          hostsNav.setAttribute('aria-current', 'page');
+        }
       } else if (pageId === 'fleet-category') {
         const strategicNav = document.querySelector('.nav-item[data-page="strategic-dashboard"]');
-        if (strategicNav) strategicNav.classList.add('active');
+        if (strategicNav) {
+          strategicNav.classList.add('active');
+          strategicNav.setAttribute('aria-current', 'page');
+        }
       }
 
       const meta = pages[pageId] || pages['strategic-dashboard'];
@@ -347,6 +419,8 @@ import { mapHostsResponse } from '../api/mappers.js';
       const resolvedHost = pageId === 'host-detail' ? (hostName || defaultHostName()) : hostName;
       if (pageId === 'host-detail') {
         title = resolvedHost;
+        ensureHostDetailChromeInit();
+        const { loadHostDetail } = await import('../pages/host-detail/index.js');
         void loadHostDetail(resolvedHost, { section: opts.section, database: opts.database });
         if (opts.section && !String(opts.section).startsWith('sub-')) {
           requestAnimationFrame(() => scrollToHostSection(opts.section));
@@ -355,48 +429,68 @@ import { mapHostsResponse } from '../api/mappers.js';
       if (pageId === 'fleet-category' && opts.fleetCat) {
         const cat = FLEET_CATEGORIES.find(c => c.id === opts.fleetCat);
         if (cat) title = cat.title;
+        renderFleetCategory(opts.fleetCat);
       }
       const crumbEl = document.getElementById('breadcrumb');
       if (crumbEl) crumbEl.innerHTML = '<strong>' + title + '</strong> / ' + meta.crumb;
 
       if (pageId === 'strategic-dashboard') {
+        ensureStrategicDashboardInit();
         renderStrategicDashboard(strategicRange);
       }
       if (pageId === 'hosts') {
+        ensureHostsPageInit();
         showHostsView();
         renderHostsTable();
       }
       if (pageId === 'critical-violations') {
+        ensureCriticalViolationsPageInit();
         refreshCriticalViolationsFromApi(opts.checkPreset || '', { resetFilters: !!opts.resetFilters });
       }
       if (pageId === 'guc-drift') {
+        const { initGucDriftPage } = await import('../pages/guc-drift.js');
         initGucDriftPage();
       }
       if (pageId === 'collector-nodes') {
+        const { initCollectorNodesPage } = await import('../pages/collector-nodes.js');
         void initCollectorNodesPage();
       }
       if (pageId === 'hba-scanner') {
+        const { initHbaScannerPage } = await import('../pages/hba-scanner.js');
         initHbaScannerPage();
       }
       if (pageId === 'ssl-scanner') {
+        const { initSslScannerPage } = await import('../pages/ssl-scanner.js');
         initSslScannerPage();
       }
       if (pageId === 'pii-scanner' && pageId !== prevPageId) {
+        const { initPiiScannerPage } = await import('../pages/pii-scanner.js');
         void initPiiScannerPage();
       }
+      if (pageId === 'backup-compliance') {
+        import('../pages/backup-compliance.js').then(({ initBackupCompliancePage }) => {
+          void initBackupCompliancePage();
+        });
+      }
       if (pageId === 'log-parser' && pageId !== prevPageId) {
+        const { initLogParserPage } = await import('../pages/log-parser.js');
         void initLogParserPage();
       }
       if (pageId === 'log-readiness' && pageId !== prevPageId) {
+        const { initLogReadinessPage } = await import('../pages/log-readiness.js');
         void initLogReadinessPage();
       }
       if (pageId === 'inactive-users-report' && pageId !== prevPageId) {
+        const { initInactiveUsersReportPage } = await import('../pages/inactive-users-report.js');
         void initInactiveUsersReportPage();
       }
       if (pageId === 'common-users-report' && pageId !== prevPageId) {
+        const { initCommonUsersReportPage } = await import('../pages/common-users-report.js');
         void initCommonUsersReportPage();
       }
       if (pageId === 'policies') {
+        ensurePoliciesChromeInit();
+        const { initPoliciesPage } = await import('../pages/policies-page.js');
         initPoliciesPage();
       }
       if (pageId === 'html-report') {
@@ -409,6 +503,9 @@ import { mapHostsResponse } from '../api/mappers.js';
 
       activePageId = pageId;
 
+      const announcer = document.getElementById('route-announcer');
+      if (announcer) announcer.textContent = title + ' — ' + meta.crumb;
+
       if (!opts.skipHash) {
         const nextHash = buildRouteHash(pageId, resolvedHost, opts.section, opts.fleetCat, opts.hostsMode, opts.checkPreset, opts.database);
         setRouteHash(nextHash);
@@ -419,27 +516,27 @@ import { mapHostsResponse } from '../api/mappers.js';
       }
     }
 
-    function applyRouteFromHash() {
+    async function applyRouteFromHash() {
       const route = parseRouteHash();
       if (route.page === 'strategic-dashboard') {
+        ensureStrategicDashboardInit();
         const rangeFromHash = route.range || strategicRange;
         renderStrategicDashboard(rangeFromHash);
       }
       if (route.page === 'hosts') {
-        showPage('hosts', undefined, { skipHash: true });
+        await showPage('hosts', undefined, { skipHash: true });
         return;
       }
       if (route.page === 'critical-violations') {
-        showPage('critical-violations', undefined, { skipHash: true, checkPreset: route.checkPreset || '' });
+        await showPage('critical-violations', undefined, { skipHash: true, checkPreset: route.checkPreset || '' });
         return;
       }
       if (route.page === 'fleet-category' && route.fleetCat) {
         const resolvedFleetCat = resolveFleetCategoryId(route.fleetCat);
-        renderFleetCategory(resolvedFleetCat);
-        showPage('fleet-category', undefined, { skipHash: true, fleetCat: resolvedFleetCat });
+        await showPage('fleet-category', undefined, { skipHash: true, fleetCat: resolvedFleetCat });
         return;
       }
-      showPage(route.page, route.host, {
+      await showPage(route.page, route.host, {
         skipHash: true,
         skipScrollTop: !!route.section,
         fleetCat: route.fleetCat,
@@ -463,10 +560,10 @@ import { mapHostsResponse } from '../api/mappers.js';
         e.preventDefault();
         const page = el.dataset.page;
         if (page === 'critical-violations') {
-          showPage(page, undefined, { checkPreset: '', resetFilters: true });
+          void showPage(page, undefined, { checkPreset: '', resetFilters: true });
           return;
         }
-        showPage(page);
+        void showPage(page);
       });
     });
 
@@ -477,22 +574,22 @@ import { mapHostsResponse } from '../api/mappers.js';
       if (!page) return;
       e.preventDefault();
       if (page === 'fleet-category' && goto.dataset.fleetCat) {
-        showFleetCategory(goto.dataset.fleetCat);
+        void showFleetCategory(goto.dataset.fleetCat);
         return;
       }
       if (page === 'critical-violations') {
         const reset = goto.dataset.resetCritFilters === '1';
-        showPage('critical-violations', undefined, {
+        void showPage('critical-violations', undefined, {
           checkPreset: reset ? '' : (goto.dataset.checkPreset || ''),
           resetFilters: reset,
         });
         return;
       }
       if (page === 'hosts') {
-        showPage('hosts', undefined);
+        void showPage('hosts', undefined);
         return;
       }
-      showPage(page, goto.dataset.hostInstance || goto.dataset.host || undefined, {
+      void showPage(page, goto.dataset.hostInstance || goto.dataset.host || undefined, {
         section: goto.dataset.section || undefined,
         database: goto.dataset.database || undefined,
         skipScrollTop: !!goto.dataset.section,
@@ -1076,7 +1173,7 @@ import { mapHostsResponse } from '../api/mappers.js';
       const q = getHostsSearchFilter();
       hostsPager.page = 1;
       if (q && activePageId !== 'hosts') {
-        showPage('hosts');
+        void showPage('hosts');
         return;
       }
       if (activePageId === 'hosts') {
@@ -1114,21 +1211,60 @@ import { mapHostsResponse } from '../api/mappers.js';
       });
     }
 
-    initHostsPage();
-    initCriticalViolationsPage();
+    function ensureHostsPageInit() {
+      if (hostsPageInited) return;
+      hostsPageInited = true;
+      initHostsPage();
+    }
 
-    document.querySelectorAll('#host-report .sub-tabs').forEach(bar => {
-      bar.addEventListener('click', e => {
-        const sub = e.target.closest('.sub-tab');
-        if (!sub) return;
-        const block = bar.closest('.report-block');
-        block.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
-        block.querySelectorAll('.host-subpanel').forEach(p => p.classList.remove('active'));
-        sub.classList.add('active');
-        const panel = block.querySelector('#sub-' + sub.dataset.sub);
-        if (panel) panel.classList.add('active');
+    function ensureCriticalViolationsPageInit() {
+      if (criticalViolationsPageInited) return;
+      criticalViolationsPageInited = true;
+      initCriticalViolationsPage();
+    }
+
+    function ensureHostDetailChromeInit() {
+      if (hostDetailChromeInited) return;
+      hostDetailChromeInited = true;
+      document.querySelectorAll('#host-report .sub-tabs').forEach(bar => {
+        bar.addEventListener('click', e => {
+          const sub = e.target.closest('.sub-tab');
+          if (!sub) return;
+          const block = bar.closest('.report-block');
+          block.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+          block.querySelectorAll('.host-subpanel').forEach(p => p.classList.remove('active'));
+          sub.classList.add('active');
+          const panel = block.querySelector('#sub-' + sub.dataset.sub);
+          if (panel) panel.classList.add('active');
+        });
       });
-    });
+
+      document.querySelectorAll('.host-toc a[href^="#"]').forEach(a => {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          scrollToHostSection(a.getAttribute('href').slice(1));
+        });
+      });
+
+      document.querySelectorAll('[data-goto-section]').forEach(el => {
+        el.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = el.dataset.gotoSection || (el.getAttribute('href') ? el.getAttribute('href').slice(1) : '');
+          if (!id) return;
+          if (!document.getElementById('page-host-detail').classList.contains('active')) {
+            void showPage('host-detail');
+          }
+          requestAnimationFrame(() => scrollToHostSection(id));
+        });
+      });
+    }
+
+    function ensurePoliciesChromeInit() {
+      if (policiesChromeInited) return;
+      policiesChromeInited = true;
+      bindPoliciesPrototypeChrome();
+    }
 
     function scrollToHostSection(id) {
       if (id === 'block-critical-checks') id = 'block-critical-violations';
@@ -1143,26 +1279,6 @@ import { mapHostsResponse } from '../api/mappers.js';
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-
-    document.querySelectorAll('.host-toc a[href^="#"]').forEach(a => {
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        scrollToHostSection(a.getAttribute('href').slice(1));
-      });
-    });
-
-    document.querySelectorAll('[data-goto-section]').forEach(el => {
-      el.addEventListener('click', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = el.dataset.gotoSection || (el.getAttribute('href') ? el.getAttribute('href').slice(1) : '');
-        if (!id) return;
-        if (!document.getElementById('page-host-detail').classList.contains('active')) {
-          showPage('host-detail');
-        }
-        requestAnimationFrame(() => scrollToHostSection(id));
-      });
-    });
 
     /* HBA scanner: see pages/hba-scanner.js (loads /api/scanner/hba from SQLite) */
     /* PII scanner: see pages/pii-scanner.js (GET /api/scanner/pii; run via ciscollector on agent) */
@@ -1404,7 +1520,7 @@ import { mapHostsResponse } from '../api/mappers.js';
         '<h1>Fleet Overview</h1>' +
         '<p class="subtitle">Main report view · fleet aggregates for <strong>' + r.label + '</strong> · ' + r.servers + ' monitored servers</p></div>' +
         '<div class="strategic-toolbar">' +
-        '<select id="strategic-range-select" class="btn" style="padding:8px 14px;cursor:pointer;">' +
+        '<select id="strategic-range-select" class="btn" style="padding:8px 14px;cursor:pointer;" aria-label="Fleet overview time range">' +
         '<option value="24h"' + (range === '24h' ? ' selected' : '') + '>Last 24 hours</option>' +
         '<option value="7d"' + (range === '7d' ? ' selected' : '') + '>Last 7 days</option>' +
         '<option value="30d"' + (range === '30d' ? ' selected' : '') + '>Last 30 days</option></select>' +
@@ -1536,6 +1652,12 @@ import { mapHostsResponse } from '../api/mappers.js';
       }, delay);
     }
 
+    function ensureStrategicDashboardInit() {
+      if (strategicDashboardInited) return;
+      strategicDashboardInited = true;
+      initStrategicDashboard();
+    }
+
     function initStrategicDashboard() {
       renderStrategicDashboard(strategicRange);
       const root = document.getElementById('strategic-root');
@@ -1568,8 +1690,6 @@ import { mapHostsResponse } from '../api/mappers.js';
         });
       }
     }
-
-    initStrategicDashboard();
 
     /* Image 3 - Security policy engine (prototype) */
     const POLICY_CHECKS = [
@@ -1709,80 +1829,82 @@ import { mapHostsResponse } from '../api/mappers.js';
         '\nusername = "' + user + '"\npassword = "app-password"\n\n# Report job (extends cron output)\nto = "' + to + '"\npolicy_bundle = "' + bundle + '"\nattach_html = true';
     }
 
-    document.querySelectorAll('.policy-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.policy-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.policy-section').forEach(s => s.classList.remove('active'));
-        tab.classList.add('active');
-        const id = tab.dataset.policyTab;
-        (function(){var _e=document.getElementById('policy-sec-' + id);if(_e)_e.classList.add('active');})();
+    function bindPoliciesPrototypeChrome() {
+      document.querySelectorAll('.policy-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.policy-tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.policy-section').forEach(s => s.classList.remove('active'));
+          tab.classList.add('active');
+          const id = tab.dataset.policyTab;
+          (function(){var _e=document.getElementById('policy-sec-' + id);if(_e)_e.classList.add('active');})();
+        });
       });
-    });
 
-    gon('policy-use-template', 'click', () => {
-      (function(){var _q=document.querySelector('.policy-tab[data-policy-tab="custom"]');if(_q)_q.click();})();
-    });
-
-    gon('policy-check-all', 'click', () => {
-      policySelectedChecks = new Set(POLICY_CHECKS.map(c => c.id));
-      renderPolicyChecks();
-    });
-    gon('policy-check-none', 'click', () => {
-      policySelectedChecks.clear();
-      renderPolicyChecks();
-    });
-    gon('policy-save', 'click', () => {
-      const st = document.getElementById('policy-save-status');
-      const name = gval('policy-name', 'custom_policy');
-      if (st) { st.textContent = 'Saved "' + name + '" with ' + policySelectedChecks.size + ' checks'; st.style.color = 'var(--success)'; }
-    });
-
-    gon('policy-add-group', 'click', () => {
-      const name = (gval('policy-new-group', '')).trim();
-      const policy = gval('policy-new-group-policy');
-      if (!name) return;
-      POLICY_GROUPS.push({ name, hosts: 0, policy: policy || 'prod_standard_policy', schedule: '0 2 1 * *' });
-      renderPolicyGroups();
-      fillPolicySelects();
-    });
-
-    gon('policy-host-assign', 'click', () => {
-      const host = gval('policy-host-pick');
-      const policy = gval('policy-host-policy');
-      const row = POLICY_HOST_MAP.find(h => h.host === host);
-      if (row && policy) { row.policy = policy; row.override = true; renderPolicyHosts(); }
-    });
-
-    gon('policy-sched-save', 'click', () => {
-      const pre = document.getElementById('policy-cron-toml');
-      if (pre) pre.textContent = buildCronToml();
-    });
-
-    gon('policy-email-save', 'click', () => {
-      const pre = document.getElementById('policy-email-toml');
-      const st = document.getElementById('policy-email-status');
-      if (pre) pre.textContent = buildEmailToml();
-      if (st) { st.textContent = 'Email config preview updated'; st.style.color = 'var(--success)'; }
-    });
-
-    gon('policy-sched-freq', 'change', e => {
-      const cronIn = document.getElementById('policy-sched-cron');
-      if (cronIn && e.target.value !== 'custom') cronIn.value = e.target.value;
-    });
-
-    document.addEventListener('click', e => {
-      const jump = e.target.closest('[data-policy-tab-jump]');
-      if (jump) {
-        e.preventDefault();
-        (function(){var _q=document.querySelector('.policy-tab[data-policy-tab="' + jump.dataset.policyTabJump + '"]');if(_q)_q.click();})();
-      }
-      const fleetPol = e.target.closest('[data-goto="policies"]');
-      if (fleetPol && location.hash.indexOf('fleet/custom-security') >= 0) {
+      gon('policy-use-template', 'click', () => {
         (function(){var _q=document.querySelector('.policy-tab[data-policy-tab="custom"]');if(_q)_q.click();})();
-      }
-    });
+      });
+
+      gon('policy-check-all', 'click', () => {
+        policySelectedChecks = new Set(POLICY_CHECKS.map(c => c.id));
+        renderPolicyChecks();
+      });
+      gon('policy-check-none', 'click', () => {
+        policySelectedChecks.clear();
+        renderPolicyChecks();
+      });
+      gon('policy-save', 'click', () => {
+        const st = document.getElementById('policy-save-status');
+        const name = gval('policy-name', 'custom_policy');
+        if (st) { st.textContent = 'Saved "' + name + '" with ' + policySelectedChecks.size + ' checks'; st.style.color = 'var(--success)'; }
+      });
+
+      gon('policy-add-group', 'click', () => {
+        const name = (gval('policy-new-group', '')).trim();
+        const policy = gval('policy-new-group-policy');
+        if (!name) return;
+        POLICY_GROUPS.push({ name, hosts: 0, policy: policy || 'prod_standard_policy', schedule: '0 2 1 * *' });
+        renderPolicyGroups();
+        fillPolicySelects();
+      });
+
+      gon('policy-host-assign', 'click', () => {
+        const host = gval('policy-host-pick');
+        const policy = gval('policy-host-policy');
+        const row = POLICY_HOST_MAP.find(h => h.host === host);
+        if (row && policy) { row.policy = policy; row.override = true; renderPolicyHosts(); }
+      });
+
+      gon('policy-sched-save', 'click', () => {
+        const pre = document.getElementById('policy-cron-toml');
+        if (pre) pre.textContent = buildCronToml();
+      });
+
+      gon('policy-email-save', 'click', () => {
+        const pre = document.getElementById('policy-email-toml');
+        const st = document.getElementById('policy-email-status');
+        if (pre) pre.textContent = buildEmailToml();
+        if (st) { st.textContent = 'Email config preview updated'; st.style.color = 'var(--success)'; }
+      });
+
+      gon('policy-sched-freq', 'change', e => {
+        const cronIn = document.getElementById('policy-sched-cron');
+        if (cronIn && e.target.value !== 'custom') cronIn.value = e.target.value;
+      });
+
+      document.addEventListener('click', e => {
+        const jump = e.target.closest('[data-policy-tab-jump]');
+        if (jump) {
+          e.preventDefault();
+          (function(){var _q=document.querySelector('.policy-tab[data-policy-tab="' + jump.dataset.policyTabJump + '"]');if(_q)_q.click();})();
+        }
+        const fleetPol = e.target.closest('[data-goto="policies"]');
+        if (fleetPol && location.hash.indexOf('fleet/custom-security') >= 0) {
+          (function(){var _q=document.querySelector('.policy-tab[data-policy-tab="custom"]');if(_q)_q.click();})();
+        }
+      });
+    }
 
     /* Policies page: initPoliciesPage() on navigate — see pages/policies-page.js */
 
-    window.addEventListener('hashchange', applyRouteFromHash);
-    applyRouteFromHash();
+    window.addEventListener('hashchange', () => { void applyRouteFromHash(); });
+    void applyRouteFromHash();

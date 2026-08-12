@@ -41,7 +41,11 @@ func fetchGucSettingsMap(pg *postgresdb.Postgres) (map[string]string, error) {
 	cp := *pg
 	cp.DBName = cp.PrimaryDBName()
 	connStr := postgresdb.BuildConnectionString(cp)
-	return postgresconfig.GetAllConfigValuesFromConnectionString(connStr)
+	bundle, err := postgresconfig.GetPgSettingsBundleFromConnectionString(connStr)
+	if err != nil {
+		return nil, err
+	}
+	return postgresconfig.PackGucSnapshotBundle(bundle), nil
 }
 
 func embedGucSettingsInFileData(fileData map[string]interface{}, settings map[string]string, startedAt, finishedAt time.Time) {
@@ -50,12 +54,13 @@ func embedGucSettingsInFileData(fileData map[string]interface{}, settings map[st
 	}
 	fileData[gucSettingsReportKey] = map[string]interface{}{
 		"settings":    settings,
+		"source":      "pg_settings",
 		"started_at":  startedAt.UTC(),
 		"finished_at": finishedAt.UTC(),
 	}
 }
 
-// collectGucIntoScanPayload runs SHOW ALL and embeds settings into the scan payload.
+// collectGucIntoScanPayload runs pg_settings and embeds settings into the scan payload.
 func collectGucIntoScanPayload(
 	cnf *config.Config,
 	pg *postgresdb.Postgres,

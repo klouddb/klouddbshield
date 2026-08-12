@@ -23,8 +23,12 @@ func schemaStatements() []string {
 			report_json JSONB NOT NULL,
 			pii_report_json JSONB,
 			pii_scanned_at TEXT,
+			backup_compliance_json JSONB,
+			backup_compliance_scanned_at TEXT,
 			error_message TEXT
 		)`,
+		`ALTER TABLE scan_results ADD COLUMN IF NOT EXISTS backup_compliance_json JSONB`,
+		`ALTER TABLE scan_results ADD COLUMN IF NOT EXISTS backup_compliance_scanned_at TEXT`,
 		`CREATE INDEX IF NOT EXISTS idx_scan_results_target ON scan_results(target_id, started_at DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_scan_results_node ON scan_results(node_id, started_at DESC)`,
 		`CREATE TABLE IF NOT EXISTS guc_baseline (
@@ -39,6 +43,33 @@ func schemaStatements() []string {
 			node_id TEXT NOT NULL,
 			settings_json JSONB NOT NULL,
 			collected_at TEXT NOT NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS guc_drift_ignores (
+			id TEXT PRIMARY KEY,
+			scope TEXT NOT NULL,
+			target_id TEXT NOT NULL,
+			instance_key TEXT NOT NULL,
+			guc_name TEXT NOT NULL DEFAULT '',
+			ignored_at TEXT NOT NULL
+		)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_guc_drift_ignores_unique
+			ON guc_drift_ignores(scope, instance_key, guc_name)`,
+		`CREATE TABLE IF NOT EXISTS guc_server_groups (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL UNIQUE,
+			description TEXT NOT NULL DEFAULT '',
+			baseline_json JSONB NOT NULL,
+			updated_at TEXT NOT NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS guc_server_group_members (
+			group_id TEXT NOT NULL,
+			target_id TEXT NOT NULL,
+			PRIMARY KEY (group_id, target_id)
+		)`,
+		`CREATE TABLE IF NOT EXISTS backup_compliance_policy (
+			id TEXT PRIMARY KEY,
+			policy_json JSONB NOT NULL,
+			updated_at TEXT NOT NULL
 		)`,
 		`CREATE TABLE IF NOT EXISTS collector_status (
 			node_id TEXT PRIMARY KEY,

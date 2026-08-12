@@ -26,7 +26,7 @@ func PushPiiReport(ctx context.Context, cnf *config.Config, client *Client, pg *
 	if cnf == nil || client == nil || pg == nil || len(piiJSON) == 0 {
 		return nil
 	}
-	h := reportstore.NormalizeHost(pg.Host)
+	h := reportstore.ResolveTargetHost(pg.Host, client.Hostname())
 	port := pg.Port
 	if port == "" {
 		port = "5432"

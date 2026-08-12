@@ -14,9 +14,6 @@ import (
 )
 
 type ServerConfig struct {
-	ID          string `yaml:"id"`
-	ClusterID   string `yaml:"cluster_id"`
-	ClusterName string `yaml:"cluster_name"`
 	URL         string `yaml:"url"`
 	Token       string `yaml:"token,omitempty"`
 	Hostname    string `yaml:"hostname"`
@@ -72,15 +69,6 @@ func generateConfigFile() (ServerConfig, error) {
 
 	changed := false
 
-	if cfg.ClusterID == "" {
-		cfg.ClusterID = uuid.NewString()
-		changed = true
-	}
-	if cfg.ClusterName == "" {
-		cfg.ClusterName = "prod-cluster"
-		changed = true
-	}
-
 	if cfg.URL == "" {
 		fmt.Println("Add a server URL")
 	}
@@ -128,9 +116,6 @@ func generateConfigFile() (ServerConfig, error) {
 func defaultServerConfig() ServerConfig {
 	var cfg ServerConfig
 
-	cfg.ID = uuid.NewString()
-	cfg.ClusterID = uuid.NewString()
-	cfg.ClusterName = "prod-cluster"
 	cfg.URL = defaultServerURL()
 
 	h, _ := os.Hostname()
@@ -144,7 +129,6 @@ func defaultServerConfig() ServerConfig {
 	} else {
 		cfg.Token = token
 	}
-	// cfg.Token = uuid.NewString()
 
 	return cfg
 }

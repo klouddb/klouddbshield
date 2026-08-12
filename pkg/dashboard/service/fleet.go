@@ -111,7 +111,7 @@ func (s *Service) FleetCategories(ctx context.Context) (*FleetCategoriesResponse
 			}
 			if strings.Contains(title, "password") || strings.Contains(title, "leak") {
 				agg.passwordHosts[host] = true
-				agg.passwordRows = append(agg.passwordRows, []string{host, "1", trimForTable(r.FailReason, 40), "Investigate"})
+				agg.passwordRows = append(agg.passwordRows, []string{host, "1", fleetTableDetailText(r.FailReason, r.Title), "Investigate"})
 			}
 		}
 		if hostSSL {
@@ -266,7 +266,7 @@ func buildFleetCategoryList(agg *fleetAccumulator, instanceDBs map[string][]stri
 		{
 			ID: "password-leakage", Title: "Password Leakage", Level: fleetLevel(hostCount(agg.passwordHosts)),
 			Count: fmt.Sprintf("%d hosts", hostCount(agg.passwordHosts)), Menu: "Menu 10 · Password Leak",
-			Cols: []string{"Host", "Events (7d)", "Last seen", "Action"}, Rows: passwordRows,
+			Cols: []string{"Host", "Databases", "Events (7d)", "Last seen", "Action"}, Rows: passwordRows,
 		},
 		{
 			ID: "hba-issues", Title: "HBA Issues", Level: fleetLevel(hostCount(agg.hbaHosts)),
@@ -276,12 +276,12 @@ func buildFleetCategoryList(agg *fleetAccumulator, instanceDBs map[string][]stri
 		{
 			ID: "usage-of-defaults", Title: "Usage of Defaults", Level: fleetLevel(hostCount(agg.defaultsHosts)),
 			Count: fmt.Sprintf("%d hosts", hostCount(agg.defaultsHosts)), Menu: "Critical Checks · Host Inventory",
-			Cols: []string{"Host", "Issue", "Detail", "Action"}, Rows: defaultsRows,
+			Cols: []string{"Host", "Databases", "Issue", "Detail", "Action"}, Rows: defaultsRows,
 		},
 		{
 			ID: "superuser-counts", Title: "Superuser Counts", Level: fleetLevel(hostCount(agg.superuserHosts)),
 			Count: fmt.Sprintf("%d hosts", hostCount(agg.superuserHosts)), Menu: "Users Report · Top 25 Check #7",
-			Cols: []string{"Host", "Count", "Roles", "Action"}, Rows: superuserRows,
+			Cols: []string{"Host", "Databases", "Count", "Roles", "Action"}, Rows: superuserRows,
 		},
 		{
 			ID: "common-users", Title: "Common Users", Level: fleetLevelUsers(agg.commonUserCount),
