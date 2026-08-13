@@ -127,7 +127,7 @@ func TestLogParserScanner(t *testing.T) {
 
 func TestLogParserScannerIgnoresNewerEmptyReport(t *testing.T) {
 	db := service.OpenTestSQLiteDB(t)
-	defer db.Close()
+	t.Cleanup(func() { _ = db.Close() })
 
 	pg := &postgresdb.Postgres{Host: "lp-host", Port: "5432", DBName: "shielddb"}
 	older := time.Now().UTC().Add(-2 * time.Minute)

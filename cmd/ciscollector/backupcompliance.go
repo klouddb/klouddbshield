@@ -37,7 +37,7 @@ func (b *backupComplianceRunner) run(ctx context.Context, trigger string) error 
 	if err != nil {
 		return fmt.Errorf("error opening postgres connection: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	rows, err := backupcompliance.QueryBackups(ctx, store)
 	if err != nil {

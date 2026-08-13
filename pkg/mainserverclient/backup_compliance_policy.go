@@ -33,7 +33,7 @@ func (c *Client) GetBackupCompliancePolicy(ctx context.Context) (backupcomplianc
 	if err != nil {
 		return backupcompliance.Policy{}, false, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return backupcompliance.Policy{}, false, fmt.Errorf("GET /api/backup-compliance/policy: HTTP %d (%s)",

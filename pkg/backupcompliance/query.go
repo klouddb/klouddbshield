@@ -56,7 +56,7 @@ ORDER BY start_time DESC`
 		}
 		return nil, fmt.Errorf("query pg_backup_compliance: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []RawBackup
 	for rows.Next() {

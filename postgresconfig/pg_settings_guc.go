@@ -129,7 +129,7 @@ func GetPgSettingsBundleFromConnectionString(connectionString string) (GucSnapsh
 	if err != nil {
 		return GucSnapshotBundle{}, fmt.Errorf("error opening postgres connection: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	return GetPgSettingsBundle(db)
 }
 
@@ -139,7 +139,7 @@ func GetPgSettingsBundle(db *sql.DB) (GucSnapshotBundle, error) {
 	if err != nil {
 		return GucSnapshotBundle{}, fmt.Errorf("error querying pg_settings: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	out := GucSnapshotBundle{
 		Settings: map[string]string{},

@@ -16,7 +16,7 @@ func TestBackupComplianceSummaryAndHistory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer repo.Close()
+	t.Cleanup(func() { _ = repo.Close() })
 	if err := repo.EnsureSchema(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestBackupCompliancePolicyPriority_DashboardWhenConfigEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer repo.Close()
+	t.Cleanup(func() { _ = repo.Close() })
 	if err := repo.EnsureSchema(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +193,7 @@ func TestResolveEffectivePolicy_AllCases(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer repo.Close()
+	t.Cleanup(func() { _ = repo.Close() })
 	if err := repo.EnsureSchema(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -295,7 +295,7 @@ func TestBackupComplianceReeval_OvernightAndDays(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer repo.Close()
+	t.Cleanup(func() { _ = repo.Close() })
 	if err := repo.EnsureSchema(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -375,7 +375,7 @@ func TestPutBackupCompliancePolicy_Validation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer repo.Close()
+	t.Cleanup(func() { _ = repo.Close() })
 	if err := repo.EnsureSchema(context.Background()); err != nil {
 		t.Fatal(err)
 	}

@@ -183,7 +183,7 @@ func getProcessorsForCron(schedule string, commnd *config.Command, htmlHelperMap
 			return nil, fmt.Errorf(cons.Err_BackupCompliance_ShieldRequired)
 		}
 		if len(commnd.Postgres) == 0 {
-			return nil, fmt.Errorf(cons.Err_PostgresConfig_Missing)
+			return nil, fmt.Errorf(cons.Err_BackupCompliance_PostgresRequired)
 		}
 		out := make([]Runner, 0, len(commnd.Postgres))
 		for _, p := range commnd.Postgres {
