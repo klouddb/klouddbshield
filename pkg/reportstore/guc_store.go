@@ -174,7 +174,7 @@ func ListServerGucSnapshots(ctx context.Context, db *sql.DB) ([]GucSnapshotSumma
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []GucSnapshotSummary
 	for rows.Next() {

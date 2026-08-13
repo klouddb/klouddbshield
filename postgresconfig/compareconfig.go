@@ -112,7 +112,7 @@ func GetAllConfigValuesFromConnectionString(connectionString string) (map[string
 	if err != nil {
 		return nil, fmt.Errorf("error opening postgres connection: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	configValues, err := utils.GetConfigValueFromPostgres(db)
 	if err != nil {

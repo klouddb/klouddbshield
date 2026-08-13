@@ -474,7 +474,7 @@ func (r *Repository) ListGucIgnores(ctx context.Context) ([]reportstore.GucIgnor
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []reportstore.GucIgnoreEntry
 	for rows.Next() {
 		var e reportstore.GucIgnoreEntry
@@ -567,7 +567,7 @@ func (r *Repository) ListGucServerGroups(ctx context.Context) ([]reportstore.Guc
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []reportstore.GucServerGroup
 	for rows.Next() {
 		var g reportstore.GucServerGroup
@@ -603,7 +603,7 @@ func (r *Repository) listGucServerGroupMembers(ctx context.Context, groupID stri
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []string
 	for rows.Next() {
 		var id string

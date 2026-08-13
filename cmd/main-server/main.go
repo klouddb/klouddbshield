@@ -80,7 +80,7 @@ func main() {
 		fmt.Println("Error opening storage repository:", err)
 		return
 	}
-	defer repo.Close()
+	defer func() { _ = repo.Close() }()
 
 	kshieldCfg := dashboardsvc.ConfigPathFromEnv()
 	mainSvc := mainserversvc.New(repo)
@@ -287,7 +287,7 @@ func embeddedSPAHandler() http.Handler {
 			http.Error(w, "index.html not found in embedded frontend", http.StatusInternalServerError)
 			return
 		}
-		defer index.Close()
+		defer func() { _ = index.Close() }()
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = io.Copy(w, index)

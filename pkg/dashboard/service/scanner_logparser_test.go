@@ -81,7 +81,7 @@ func TestLogParserScanner(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := service.OpenTestSQLiteDB(t)
-			defer db.Close()
+			t.Cleanup(func() { _ = db.Close() })
 
 			pg := &postgresdb.Postgres{Host: "lp-host", Port: "5432", DBName: "shielddb"}
 			service.PersistTestScanResult(t, db, tt.report, reportstore.RunMeta{

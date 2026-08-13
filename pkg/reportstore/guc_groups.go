@@ -106,7 +106,7 @@ func ListGucServerGroups(ctx context.Context, db *sql.DB) ([]GucServerGroup, err
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []GucServerGroup
 	for rows.Next() {
@@ -144,7 +144,7 @@ func ListGucServerGroupMembers(ctx context.Context, db *sql.DB, groupID string) 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var out []string
 	for rows.Next() {
 		var id string

@@ -987,7 +987,7 @@ func getLogParserInputs(postgresConf *postgresdb.Postgres, command string) (*Log
 	if postgresConf != nil {
 		store, _, err := postgresdb.Open(*postgresConf)
 		if err == nil {
-			defer store.Close()
+			defer func() { _ = store.Close() }()
 			prefixSuggestion, _ = utils.GetLoglinePrefix(context.Background(), store)
 			dataDir, _ := utils.GetDataDirectory(context.Background(), store)
 			if dataDir != "" {

@@ -48,7 +48,7 @@ func (l *logParserRunner) run(ctx context.Context) error {
 	if l.postgresConfig != nil {
 		store, _, _ = postgresdb.Open(*l.postgresConfig)
 		if store != nil {
-			defer store.Close()
+			defer func() { _ = store.Close() }()
 		}
 	}
 	if store != nil {
