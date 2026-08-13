@@ -48,7 +48,7 @@ func (l *logParserRunner) run(ctx context.Context) error {
 	if l.postgresConfig != nil {
 		store, _, _ = postgresdb.Open(*l.postgresConfig)
 		if store != nil {
-			defer store.Close()
+			defer func() { _ = store.Close() }()
 		}
 	}
 	if store != nil {
@@ -110,6 +110,8 @@ func runLogParserWithMultipleParser(ctx context.Context, runCmd bool, logParserC
 	} else {
 		logparser.PrintFastRunnerReport(logParserCnf, fastRunnerResp)
 		logparser.PrintTerminalResultsForLogParser(ctx, allParser, outputType)
+		// Keep CLI detailed output, but still persist structured summary for main-server/UI.
+		logparser.PersistLogParserSummary(ctx, allParser, logParserCnf, fastRunnerResp, fileData)
 	}
 
 	htmlReportHelper.RenderLogparserResponse(ctx, allParser)

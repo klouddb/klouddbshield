@@ -1,120 +1,221 @@
-<section id="page-guc-drift" class="page guc-drift-page">
-          <div class="guc-drift-hero">
-            <div>
-              <h1>GUC Drift</h1>
-              <p class="subtitle" id="guc-drift-subtitle">Upload a golden baseline, then compare live SHOW ALL config pushed by collectors</p>
+<section id="page-guc-drift" class="page">
+          <div id="guc-view-landing">
+            <h1>GUC Drift</h1>
+            <p class="subtitle" id="guc-drift-subtitle">Compare collector hosts against a reference baseline · open a server for differences</p>
+
+            <div class="callout guc-fleet-callout" id="guc-fleet-banner" hidden></div>
+
+            <div class="guc-group-bar" id="guc-group-bar">
+              <div class="guc-group-tabs" id="guc-group-tabs" role="tablist" aria-label="Server groups"></div>
+              <div class="guc-group-actions">
+                <button type="button" class="btn btn-row" id="guc-baseline-open-btn">Baseline</button>
+                <button type="button" class="btn btn-row" id="guc-group-create-btn">New group</button>
+                <button type="button" class="btn btn-row" id="guc-group-settings-btn" hidden>Group settings</button>
+              </div>
             </div>
-            <div class="guc-fleet-banner" id="guc-fleet-banner" hidden></div>
+
+            <div class="panel guc-baseline-panel" id="guc-baseline-panel" hidden style="margin-bottom:20px;">
+              <div class="guc-baseline-panel__header">
+                <h2 class="guc-baseline-panel__title">Reference Baseline</h2>
+                <button type="button" class="btn btn-row" id="guc-baseline-close-btn">Close</button>
+              </div>
+              <p class="guc-baseline-panel__hint">
+                One host’s latest <code>pg_settings</code> snapshot is the golden baseline for this fleet/group
+              </p>
+              <div class="guc-baseline-panel__body">
+                <div class="guc-baseline-panel__status">
+                  <div class="guc-baseline-status-main">
+                    <div class="guc-baseline-title" id="guc-baseline-title">Loading…</div>
+                    <div class="guc-baseline-keys" id="guc-baseline-keys"></div>
+                  </div>
+                  <div class="guc-baseline-meta-row" id="guc-baseline-meta-row"></div>
+                </div>
+                <div class="guc-baseline-host-form" id="guc-baseline-host-form">
+                  <label class="guc-upload-field">
+                    <span class="guc-upload-field-label">Search hosts</span>
+                    <input type="search" id="guc-baseline-host-search" class="guc-baseline-host-search" placeholder="Filter reference hosts…" autocomplete="off" />
+                  </label>
+                  <label class="guc-upload-field guc-upload-field--grow">
+                    <span class="guc-upload-field-label">Reference host</span>
+                    <select id="guc-baseline-host-select" class="guc-baseline-select" aria-label="Select reference host">
+                      <option value="">Select a host with a pg_settings snapshot…</option>
+                    </select>
+                  </label>
+                  <div class="guc-upload-field guc-upload-field--action">
+                    <span class="guc-upload-field-label guc-upload-field-label--spacer" aria-hidden="true">&nbsp;</span>
+                    <button type="button" class="btn btn-primary guc-baseline-submit" id="guc-baseline-host-submit">Use as baseline</button>
+                  </div>
+                </div>
+                <p class="guc-baseline-upload-status" id="guc-baseline-upload-status" role="status" aria-live="polite"></p>
+              </div>
+            </div>
+
+            <div class="panel guc-group-settings-panel" id="guc-group-settings-panel" hidden style="margin-bottom:20px;">
+              <div class="guc-group-settings-panel__header">
+                <h2 class="guc-group-settings-panel__title">Group settings</h2>
+                <button type="button" class="btn btn-row" id="guc-group-settings-close">Close</button>
+              </div>
+              <p class="guc-group-settings-panel__hint">
+                Rename this group, add an optional description, and choose which hosts belong to it
+              </p>
+              <div class="guc-group-settings-body">
+                <div class="guc-group-settings-fields">
+                  <label class="guc-upload-field">
+                    <span class="guc-upload-field-label">Group name</span>
+                    <input type="text" id="guc-group-name-input" class="guc-group-settings-input" placeholder="e.g. Prod West" autocomplete="off" />
+                  </label>
+                  <label class="guc-upload-field">
+                    <span class="guc-upload-field-label">Description <span class="guc-modal-optional">(optional)</span></span>
+                    <input type="text" id="guc-group-desc-input" class="guc-group-settings-input" placeholder="Short note for this group" autocomplete="off" />
+                  </label>
+                </div>
+                <div class="guc-group-members-block">
+                  <span class="guc-upload-field-label">Member hosts</span>
+                  <div class="guc-group-members" id="guc-group-members"></div>
+                </div>
+                <div class="guc-group-settings-actions">
+                  <button type="button" class="btn btn-primary" id="guc-group-save-btn">Save group</button>
+                  <button type="button" class="btn btn-row guc-group-delete-btn" id="guc-group-delete-btn">Delete group</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel guc-host-status-panel" style="margin-bottom:20px;">
+              <div class="panel-header">
+                <span>Per-Server Status</span>
+                <span class="guc-panel-hint" id="guc-host-status-hint">—</span>
+              </div>
+              <div class="stats guc-drift-stats ssl-stats" id="guc-drift-stats" style="margin-bottom:16px;">
+                <div class="stat-card ssl-stat-card"><div class="stat-label">Hosts Compared</div><div class="stat-value" id="guc-stat-hosts">—</div></div>
+                <div class="stat-card ssl-stat-card ssl-stat-card--pass"><div class="stat-label">Matched</div><div class="stat-value success" id="guc-stat-matched">—</div></div>
+                <div class="stat-card ssl-stat-card ssl-stat-card--fail"><div class="stat-label">Drifting</div><div class="stat-value danger" id="guc-stat-drifting">—</div></div>
+                <div class="stat-card ssl-stat-card ssl-stat-card--warn"><div class="stat-label">Missing Keys</div><div class="stat-value warning" id="guc-stat-missing">—</div></div>
+              </div>
+              <div class="guc-host-toolbar" id="guc-host-toolbar">
+                <label class="guc-host-search">
+                  <span class="guc-host-search-label">Search</span>
+                  <input type="search" id="guc-host-search" placeholder="Filter by hostname…" autocomplete="off" />
+                </label>
+                <label class="guc-host-filter">
+                  <span class="guc-host-search-label">Status</span>
+                  <select id="guc-host-status-filter" aria-label="Filter by status">
+                    <option value="all">All statuses</option>
+                    <option value="drifted">Drifting</option>
+                    <option value="matched">Matched</option>
+                    <option value="baseline">Reference</option>
+                    <option value="missing">Missing keys</option>
+                    <option value="ignored">Ignored</option>
+                    <option value="no_snapshot">No snapshot</option>
+                    <option value="no_baseline">No baseline</option>
+                  </select>
+                </label>
+                <div class="guc-host-show-ignored-wrap">
+                  <span class="guc-host-search-label guc-upload-field-label--spacer" aria-hidden="true">&nbsp;</span>
+                  <label class="guc-host-show-ignored">
+                    <input type="checkbox" id="guc-show-ignored-hosts" />
+                    <span>Show ignored hosts</span>
+                  </label>
+                </div>
+              </div>
+              <div class="guc-host-table-wrap fleet-detail-table-wrap">
+                <table class="guc-host-status-table">
+                  <thead>
+                    <tr>
+                      <th>Hostname</th>
+                      <th>Status</th>
+                      <th>Drifted keys</th>
+                      <th>Missing keys</th>
+                      <th>Target</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="guc-host-summaries"></tbody>
+                </table>
+              </div>
+              <div id="guc-host-pagination" class="table-pagination"></div>
+            </div>
           </div>
 
-          <article class="guc-baseline-card panel" id="guc-baseline-panel">
-            <div class="guc-baseline-card-head">
-              <div>
-                <span class="guc-section-eyebrow">Golden Baseline</span>
-                <h2 class="guc-baseline-title" id="guc-baseline-title">Loading…</h2>
-              </div>
-              <div class="guc-baseline-meta-row" id="guc-baseline-meta-row"></div>
+          <div id="guc-view-detail" hidden>
+            <div class="guc-detail-nav">
+              <button type="button" class="btn btn-row" id="guc-detail-back">← Back to Per-Server Status</button>
             </div>
-            <div class="guc-baseline-keys" id="guc-baseline-keys"></div>
-            <details class="guc-baseline-upload-details" id="guc-baseline-upload-details">
-              <summary class="guc-baseline-upload-summary">Set Global Baseline</summary>
-              <form class="guc-baseline-upload" id="guc-baseline-form" novalidate>
-              <p class="guc-upload-hint">Paste or upload <code>postgresql.conf</code> (or JSON with <code>{"settings":{...}}</code>). Drift is compared when you open this page.</p>
-              <div class="guc-baseline-source-tabs" role="tablist" aria-label="Baseline input method">
-                <button type="button" class="guc-baseline-tab active" role="tab" id="guc-baseline-tab-file" aria-selected="true" aria-controls="guc-baseline-panel-file" data-baseline-source="file">Select File</button>
-                <button type="button" class="guc-baseline-tab" role="tab" id="guc-baseline-tab-paste" aria-selected="false" aria-controls="guc-baseline-panel-paste" data-baseline-source="paste">Paste Text</button>
-              </div>
-              <div class="guc-baseline-source-panel active" id="guc-baseline-panel-file" role="tabpanel" aria-labelledby="guc-baseline-tab-file" data-baseline-panel="file">
-                <label class="guc-upload-field guc-upload-field--file">
-                  <span class="guc-upload-field-label">Config File</span>
-                  <input type="file" id="guc-baseline-file" name="file" accept=".conf,.txt,.json,application/json,text/plain" />
-                </label>
-              </div>
-              <div class="guc-baseline-source-panel" id="guc-baseline-panel-paste" role="tabpanel" aria-labelledby="guc-baseline-tab-paste" data-baseline-panel="paste" hidden>
-                <label class="guc-upload-field guc-upload-field--paste">
-                  <span class="guc-upload-field-label">Config Text</span>
-                  <textarea id="guc-baseline-paste" name="paste" class="guc-baseline-paste" rows="10" spellcheck="false" placeholder="# postgresql.conf&#10;ssl = on&#10;max_connections = 200"></textarea>
-                </label>
-              </div>
-              <div class="guc-baseline-upload-actions">
-                <button type="submit" class="btn btn-primary" id="guc-baseline-submit">Save baseline</button>
-              </div>
-              <p class="guc-baseline-upload-status" id="guc-baseline-upload-status" role="status" aria-live="polite"></p>
-              </form>
-            </details>
-          </article>
+            <h1 id="guc-detail-title">Configuration Differences</h1>
+            <p class="subtitle" id="guc-detail-subtitle">Compared against the reference baseline</p>
 
-          <div class="stats guc-drift-stats" id="guc-drift-stats">
-            <div class="stat-card"><div class="stat-label">Hosts Compared</div><div class="stat-value" id="guc-stat-hosts">—</div></div>
-            <div class="stat-card guc-stat-card--success"><div class="stat-label">Matched</div><div class="stat-value success" id="guc-stat-matched">—</div></div>
-            <div class="stat-card guc-stat-card--danger"><div class="stat-label">Drifting</div><div class="stat-value danger" id="guc-stat-drifting">—</div></div>
-            <div class="stat-card guc-stat-card--warn"><div class="stat-label">Missing Keys</div><div class="stat-value warning" id="guc-stat-missing">—</div></div>
-            <div class="stat-card"><div class="stat-label">Drifted Settings</div><div class="stat-value" id="guc-stat-total">—</div></div>
+            <div class="panel guc-drift-table-panel" style="margin-bottom:20px;">
+              <div class="panel-header">
+                <span>Configuration Differences</span>
+                <span class="guc-panel-hint" id="guc-drift-table-hint">—</span>
+              </div>
+              <div class="guc-host-toolbar">
+                <label class="guc-host-search">
+                  <span class="guc-host-search-label">Search GUC</span>
+                  <input type="search" id="guc-detail-guc-search" placeholder="Filter by GUC name…" autocomplete="off" />
+                </label>
+                <div class="guc-host-show-ignored-wrap">
+                  <span class="guc-host-search-label guc-upload-field-label--spacer" aria-hidden="true">&nbsp;</span>
+                  <label class="guc-host-show-ignored">
+                    <input type="checkbox" id="guc-show-ignored-gucs" />
+                    <span>Show ignored</span>
+                  </label>
+                </div>
+              </div>
+              <div class="guc-table-wrap fleet-detail-table-wrap">
+                <table class="guc-drift-table">
+                  <thead>
+                    <tr>
+                      <th>GUC</th>
+                      <th>Live Value</th>
+                      <th>Baseline</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="guc-drift-tbody"></tbody>
+                </table>
+              </div>
+              <div id="guc-drift-pagination" class="table-pagination"></div>
+            </div>
           </div>
 
-          <article class="panel guc-host-status-panel">
-            <div class="panel-header">
-              <span>Per-Server Status</span>
-              <span class="guc-panel-hint" id="guc-host-status-hint">—</span>
-            </div>
-            <div class="guc-host-toolbar" id="guc-host-toolbar">
-              <label class="guc-host-search">
-                <span class="guc-host-search-label">Search</span>
-                <input type="search" id="guc-host-search" placeholder="Filter by hostname…" autocomplete="off" />
+          <div id="guc-group-modal" class="reg-modal guc-modal" hidden>
+            <div class="reg-modal-backdrop" data-guc-modal-close></div>
+            <div class="reg-modal-panel guc-modal-panel" role="dialog" aria-modal="true" aria-labelledby="guc-group-modal-title">
+              <div class="guc-modal-header">
+                <h2 id="guc-group-modal-title" class="guc-modal-title">New server group</h2>
+                <button type="button" class="btn btn-row guc-modal-close" data-guc-modal-close aria-label="Close">Close</button>
+              </div>
+              <p class="guc-modal-hint">Create a group to assign hosts and set a separate baseline.</p>
+              <label class="guc-upload-field">
+                <span class="guc-upload-field-label">Group name</span>
+                <input type="text" id="guc-group-modal-name" class="guc-modal-input" placeholder="e.g. Prod West" autocomplete="off" />
               </label>
-              <label class="guc-host-filter">
-                <span class="guc-host-search-label">Status</span>
-                <select id="guc-host-status-filter" aria-label="Filter by status">
-                  <option value="all">All statuses</option>
-                  <option value="drifted">Drifting</option>
-                  <option value="matched">Matched</option>
-                  <option value="missing">Missing keys</option>
-                  <option value="no_snapshot">No snapshot</option>
-                </select>
+              <label class="guc-upload-field" style="margin-top:12px;">
+                <span class="guc-upload-field-label">Description <span class="guc-modal-optional">(optional)</span></span>
+                <input type="text" id="guc-group-modal-desc" class="guc-modal-input" placeholder="Short note for this group" autocomplete="off" />
               </label>
+              <p class="guc-modal-status" id="guc-group-modal-status" role="status" aria-live="polite"></p>
+              <div class="guc-modal-actions">
+                <button type="button" class="btn btn-row" data-guc-modal-close>Cancel</button>
+                <button type="button" class="btn btn-primary" id="guc-group-modal-submit">Create group</button>
+              </div>
             </div>
-            <div class="guc-host-table-wrap fleet-detail-table-wrap">
-              <table class="guc-host-status-table">
-                <thead>
-                  <tr>
-                    <th>Hostname</th>
-                    <th>Status</th>
-                    <th>Drifted keys</th>
-                    <th>Missing keys</th>
-                    <th>Target</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="guc-host-summaries">
-                  <tr><td colspan="6" class="guc-table-empty">Loading hosts…</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="table-pagination" id="guc-host-pagination" hidden></div>
-          </article>
+          </div>
 
-          <article class="panel guc-drift-table-panel">
-            <div class="panel-header">
-              <span>Configuration Differences</span>
-              <span class="guc-panel-hint" id="guc-drift-table-hint">—</span>
+          <div id="guc-confirm-modal" class="reg-modal guc-modal" hidden>
+            <div class="reg-modal-backdrop" data-guc-confirm-close></div>
+            <div class="reg-modal-panel guc-modal-panel" role="dialog" aria-modal="true" aria-labelledby="guc-confirm-modal-title">
+              <div class="guc-modal-header">
+                <h2 id="guc-confirm-modal-title" class="guc-modal-title">Delete group?</h2>
+                <button type="button" class="btn btn-row guc-modal-close" data-guc-confirm-close aria-label="Close">Close</button>
+              </div>
+              <p class="guc-modal-hint" id="guc-confirm-modal-body">This removes the group and its membership. Baselines for Fleet (global) are unchanged.</p>
+              <p class="guc-modal-status" id="guc-confirm-modal-status" role="status" aria-live="polite"></p>
+              <div class="guc-modal-actions">
+                <button type="button" class="btn btn-row" data-guc-confirm-close>Cancel</button>
+                <button type="button" class="btn btn-primary" id="guc-confirm-modal-submit">Delete group</button>
+              </div>
             </div>
-            <table>
-              <thead><tr><th>Hostname</th><th>GUC</th><th>Live Value</th><th>Baseline</th><th>Status</th></tr></thead>
-              <tbody id="guc-drift-tbody">
-                <tr><td colspan="5" class="guc-table-empty">Loading…</td></tr>
-              </tbody>
-            </table>
-            <div class="table-pagination" id="guc-drift-pagination" hidden></div>
-          </article>
-
-          <article class="panel guc-snapshots-history" id="guc-snapshots-history">
-            <div class="panel-header">
-              <span>Configuration Snapshot History</span>
-            </div>
-            <table>
-              <thead><tr><th>Host</th><th>Collected</th><th>Keys</th><th>Collector node</th></tr></thead>
-              <tbody id="guc-snapshots-tbody"><tr><td colspan="4" class="guc-table-empty">Loading…</td></tr></tbody>
-            </table>
-            <div class="table-pagination" id="guc-snapshots-pagination" hidden></div>
-          </article>
+          </div>
         </section>

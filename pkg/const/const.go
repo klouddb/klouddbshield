@@ -176,6 +176,7 @@ const (
 	RootCMD_Exit                  = "exit"
 	RootCMD_GucDrift              = "guc_drift"
 	RootCMD_BackupAuditTool       = "backup_audit_tool"
+	RootCMD_BackupCompliance      = "backup_compliance"
 	// LogParserCMD_MismatchIPs         = "mismatch_ips"
 	LogParserCMD_UniqueIPs           = "unique_ip"
 	LogParserCMD_InactiveUser        = "inactive_users"

@@ -1,6 +1,3 @@
-id: e2e-main-server-id
-cluster_id: e2e-cluster-id
-cluster_name: e2e-test-cluster
 url: http://localhost:8081
 token: e2e-test-collector-token-do-not-use-in-prod
 hostname: main-server

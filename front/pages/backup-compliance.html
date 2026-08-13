@@ -1,0 +1,189 @@
+<section id="page-backup-compliance" class="page">
+  <h1>Backup Compliance</h1>
+  <p class="subtitle">pg_backup_compliance extension · Authorized backup windows across monitored servers</p>
+
+  <div class="bc-scope-bar" id="bc-scope-bar" hidden>
+    <span class="bc-scope-label">Viewing</span>
+    <strong id="bc-scope-label-text">All servers</strong>
+    <button type="button" class="btn btn-secondary bc-scope-clear" id="bc-scope-clear" hidden>Show all servers</button>
+  </div>
+
+  <div class="panel bc-auth-window" style="margin-bottom:20px;">
+    <div class="bc-auth-window__header">
+      <h2 class="bc-auth-window__title">Authorized Window</h2>
+      <p class="bc-auth-window__hint" id="bc-policy-hint">
+        The collector configuration on the PostgreSQL node overrides the global authorized window
+      </p>
+    </div>
+    <div class="bc-auth-window__body">
+      <form id="bc-policy-form" class="bc-auth-window__bar" autocomplete="off">
+        <div class="bc-auth-window__field">
+          <label for="bc-policy-start">Start</label>
+          <input type="time" id="bc-policy-start" name="allowed_start" aria-label="Window start time" />
+        </div>
+        <div class="bc-auth-window__field">
+          <label for="bc-policy-end">End</label>
+          <input type="time" id="bc-policy-end" name="allowed_end" aria-label="Window end time" />
+        </div>
+        <div class="bc-auth-window__field bc-auth-window__days">
+          <label>Allowed days</label>
+          <div class="bc-auth-window__days-row">
+            <div class="bc-auth-window__days-main">
+              <div class="bc-auth-window__chips" id="bc-policy-days" role="group" aria-label="Allowed weekdays">
+                <button type="button" class="bc-day-chip" data-day="monday">Mon</button>
+                <button type="button" class="bc-day-chip" data-day="tuesday">Tue</button>
+                <button type="button" class="bc-day-chip" data-day="wednesday">Wed</button>
+                <button type="button" class="bc-day-chip" data-day="thursday">Thu</button>
+                <button type="button" class="bc-day-chip" data-day="friday">Fri</button>
+                <button type="button" class="bc-day-chip" data-day="saturday">Sat</button>
+                <button type="button" class="bc-day-chip" data-day="sunday">Sun</button>
+              </div>
+              <span class="bc-auth-window__note">Leave empty for every day</span>
+            </div>
+            <button type="button" class="bc-auth-window__save" id="bc-policy-save">Save Window</button>
+          </div>
+        </div>
+      </form>
+      <p class="bc-auth-window__meta" id="bc-policy-meta" hidden></p>
+    </div>
+  </div>
+
+  <div class="stats ssl-stats" style="margin-bottom:20px;">
+    <div class="stat-card ssl-stat-card"><div class="stat-label">Servers</div><div class="stat-value" id="bc-stat-servers">—</div></div>
+    <div class="stat-card ssl-stat-card"><div class="stat-label">Total Backups</div><div class="stat-value" id="bc-stat-total">—</div></div>
+    <div class="stat-card ssl-stat-card ssl-stat-card--pass"><div class="stat-label">Successful</div><div class="stat-value success" id="bc-stat-success">—</div></div>
+    <div class="stat-card ssl-stat-card ssl-stat-card--fail"><div class="stat-label">Failed</div><div class="stat-value danger" id="bc-stat-failed">—</div></div>
+    <div class="stat-card ssl-stat-card ssl-stat-card--warn"><div class="stat-label">Unauthorized</div><div class="stat-value warning" id="bc-stat-unauthorized">—</div></div>
+  </div>
+
+  <div class="panel" style="margin-bottom:20px;">
+    <div class="panel-header bc-servers-header">
+      <span>Monitored Servers</span>
+      <span class="bc-servers-hint" id="bc-servers-hint">Select a server to focus charts and history, or keep All servers for the fleet view.</span>
+    </div>
+    <div class="bc-meta-empty" id="bc-meta-empty" hidden>No backup compliance data yet.</div>
+    <div style="overflow-x:auto;">
+      <table id="bc-servers-table">
+        <thead>
+          <tr>
+            <th>Server</th>
+            <th>Policy Window</th>
+            <th>Last Scan</th>
+            <th>Total</th>
+            <th>Success</th>
+            <th>Failed</th>
+            <th>Unauthorized</th>
+          </tr>
+        </thead>
+        <tbody id="bc-servers-body">
+          <tr><td colspan="7" style="color:var(--muted);">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bc-charts grid-2">
+    <div class="panel bc-chart-panel">
+      <div class="panel-header">Backup Status <span class="bc-chart-scope" id="bc-chart-scope-status"></span></div>
+      <div class="bc-bar-chart bc-bar-chart--status" id="bc-chart-status"></div>
+    </div>
+    <div class="panel bc-chart-panel">
+      <div class="panel-header">Backup Type <span class="bc-chart-scope" id="bc-chart-scope-type"></span></div>
+      <div class="bc-bar-chart bc-bar-chart--type" id="bc-chart-type"></div>
+    </div>
+  </div>
+
+  <div class="bc-filters" id="bc-filters-bar">
+    <div class="bc-filter-field">
+      <label for="bc-filter-server">Server</label>
+      <select id="bc-filter-server" aria-label="Server filter">
+        <option value="all">All servers</option>
+      </select>
+    </div>
+    <div class="bc-filter-field">
+      <label for="bc-filter-date">Date</label>
+      <select id="bc-filter-date" aria-label="Date filter">
+        <option value="today">Today</option>
+        <option value="last_7_days" selected>Last 7 days</option>
+        <option value="last_30_days">Last Month</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+    <div class="bc-filter-field bc-filter-custom" id="bc-custom-range" hidden>
+      <label for="bc-filter-from">From</label>
+      <input type="date" id="bc-filter-from" aria-label="From date" />
+    </div>
+    <div class="bc-filter-field bc-filter-custom" id="bc-custom-range-to" hidden>
+      <label for="bc-filter-to">To</label>
+      <input type="date" id="bc-filter-to" aria-label="To date" />
+    </div>
+    <div class="bc-filter-field">
+      <label for="bc-filter-type">Backup Type</label>
+      <select id="bc-filter-type" aria-label="Backup type filter">
+        <option value="all">All</option>
+        <option value="pg_dump">pg_dump</option>
+        <option value="pg_dumpall">pg_dumpall</option>
+        <option value="pg_basebackup">pg_basebackup</option>
+        <option value="pgbackrest">pgbackrest</option>
+      </select>
+    </div>
+    <div class="bc-filter-field">
+      <label for="bc-filter-status">Status</label>
+      <select id="bc-filter-status" aria-label="Status filter">
+        <option value="all">All</option>
+        <option value="success">Success</option>
+        <option value="failed">Failed</option>
+        <option value="unauthorized">Unauthorized</option>
+      </select>
+    </div>
+    <div class="bc-filter-apply">
+      <span class="bc-filter-apply-spacer" aria-hidden="true">&nbsp;</span>
+      <button type="button" class="btn btn-primary" id="bc-apply-filters">Apply Filters</button>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:20px;">
+    <div class="panel-header">Backup History</div>
+    <div style="overflow-x:auto;">
+      <table id="bc-history-table">
+        <thead>
+          <tr>
+            <th>Backup Time</th>
+            <th>Server</th>
+            <th>Database</th>
+            <th>Backup Type</th>
+            <th>User</th>
+            <th>Client</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th>Compliance</th>
+          </tr>
+        </thead>
+        <tbody id="bc-history-body">
+          <tr><td colspan="9" style="color:var(--muted);">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">Unauthorized Backup Attempts</div>
+    <div style="overflow-x:auto;">
+      <table id="bc-unauthorized-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>User</th>
+            <th>Database</th>
+            <th>Tool</th>
+            <th>Server</th>
+            <th>Expected Window</th>
+          </tr>
+        </thead>
+        <tbody id="bc-unauthorized-body">
+          <tr><td colspan="6" style="color:var(--muted);">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

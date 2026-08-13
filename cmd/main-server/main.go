@@ -80,7 +80,7 @@ func main() {
 		fmt.Println("Error opening storage repository:", err)
 		return
 	}
-	defer repo.Close()
+	defer func() { _ = repo.Close() }()
 
 	kshieldCfg := dashboardsvc.ConfigPathFromEnv()
 	mainSvc := mainserversvc.New(repo)
@@ -123,6 +123,12 @@ func main() {
 	r.HandleFunc("/api/guc/baseline", app.gucBaselineGetHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/guc/baseline", app.gucBaselinePutHandler).Methods(http.MethodPut)
 	r.HandleFunc("/api/guc/snapshots", app.gucSnapshotsHandler).Methods(http.MethodGet)
+	r.HandleFunc("/api/guc/ignores", app.gucIgnoresGetHandler).Methods(http.MethodGet)
+	r.HandleFunc("/api/guc/ignores", app.gucIgnoresPutHandler).Methods(http.MethodPut)
+	r.HandleFunc("/api/guc/groups", app.gucGroupsGetHandler).Methods(http.MethodGet)
+	r.HandleFunc("/api/guc/groups", app.gucGroupsPostHandler).Methods(http.MethodPost)
+	r.HandleFunc("/api/guc/groups/{groupId}", app.gucGroupDeleteHandler).Methods(http.MethodDelete)
+	r.HandleFunc("/api/guc/groups/{groupId}/members", app.gucGroupMembersPutHandler).Methods(http.MethodPut)
 	r.HandleFunc("/api/policies", app.policiesHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/collector/config", app.collectorConfigHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/scanner/hba", app.hbaScannerHandler).Methods(http.MethodGet)
@@ -135,6 +141,10 @@ func main() {
 	r.HandleFunc("/api/runs/{runId}/html", app.runHTMLHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/servers", app.serverHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/servers/{serverId}", app.serverHandler).Methods(http.MethodGet)
+	r.HandleFunc("/api/backup-compliance/summary", app.backupComplianceSummaryHandler).Methods(http.MethodGet)
+	r.HandleFunc("/api/backup-compliance/history", app.backupComplianceHistoryHandler).Methods(http.MethodGet)
+	r.HandleFunc("/api/backup-compliance/policy", app.backupCompliancePolicyGetHandler).Methods(http.MethodGet)
+	r.HandleFunc("/api/backup-compliance/policy", app.backupCompliancePolicyPutHandler).Methods(http.MethodPut)
 
 	r.HandleFunc("/ws", app.WebSocketHandler).Methods(http.MethodGet)
 
@@ -145,6 +155,7 @@ func main() {
 	r.HandleFunc("/api/collector/runs", app.requireCollectorToken(app.collectorRunsHandler)).Methods(http.MethodPost)
 	r.HandleFunc("/api/collector/data", app.requireCollectorToken(app.clientDataPostHandler)).Methods(http.MethodPost)
 	r.HandleFunc("/api/collector/pii", app.requireCollectorToken(app.piiDataPostHandler)).Methods(http.MethodPost)
+	r.HandleFunc("/api/collector/backup-compliance", app.requireCollectorToken(app.backupComplianceDataPostHandler)).Methods(http.MethodPost)
 	r.HandleFunc("/api/collector/nodes", app.collectorNodesHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/collector/nodes/{id}", app.collectorNodeHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/collector/nodes/{id}/runs", app.collectorNodeRunsHandler).Methods(http.MethodGet)
@@ -240,7 +251,7 @@ func embeddedSPAHandler() http.Handler {
 		log.Fatal().Err(err).Msg("failed to create sub FS")
 	}
 
-	fileServer := http.FileServer(http.FS(subFS))
+	fileServer := cacheStaticAssets(http.FileServer(http.FS(subFS)))
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Backend routes must not be handled by SPA
@@ -276,9 +287,30 @@ func embeddedSPAHandler() http.Handler {
 			http.Error(w, "index.html not found in embedded frontend", http.StatusInternalServerError)
 			return
 		}
-		defer index.Close()
+		defer func() { _ = index.Close() }()
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = io.Copy(w, index)
+	})
+}
+
+func cacheStaticAssets(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet || r.Method == http.MethodHead {
+			path := r.URL.Path
+			switch {
+			case strings.HasSuffix(path, ".css"),
+				strings.HasSuffix(path, ".js"),
+				strings.HasSuffix(path, ".png"),
+				strings.HasSuffix(path, ".jpg"),
+				strings.HasSuffix(path, ".jpeg"),
+				strings.HasSuffix(path, ".webp"),
+				strings.HasSuffix(path, ".svg"),
+				strings.HasSuffix(path, ".woff"),
+				strings.HasSuffix(path, ".woff2"):
+				w.Header().Set("Cache-Control", "public, max-age=86400")
+			}
+		}
+		next.ServeHTTP(w, r)
 	})
 }

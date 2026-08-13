@@ -47,7 +47,7 @@ func (s *Service) StoreScanResult(ctx context.Context, req ScanDataRequest) erro
 			serverName = req.ScanRun.TargetHost
 		}
 		if err := s.Repo.UpsertServerGucSnapshot(ctx,
-			reportstore.TargetID(pg),
+			reportstore.GucTargetID(pg),
 			serverName,
 			req.Node.ID,
 			req.Data.GucSettings.Settings,
@@ -78,6 +78,14 @@ func (s *Service) PersistPIIReport(ctx context.Context, pg *postgresdb.Postgres,
 		return err
 	}
 	return s.Repo.PersistPIIReport(ctx, pg, piiJSON)
+}
+
+// PersistBackupComplianceReport stores backup compliance scan results for a postgres target.
+func (s *Service) PersistBackupComplianceReport(ctx context.Context, meta reportstore.BackupComplianceReportMeta, reportJSON map[string]interface{}) error {
+	if err := s.requireRepo(); err != nil {
+		return err
+	}
+	return s.Repo.PersistBackupComplianceReport(ctx, meta, reportJSON)
 }
 
 // ScanDataRequest is the v2 collector scan payload.

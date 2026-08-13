@@ -69,8 +69,7 @@ type ScanMetadata struct {
 
 type AgentConfig struct {
 	Agent struct {
-		ID        string `json:"id"`
-		ClusterID string `json:"cluster_id"`
+		ID string `json:"id"`
 	} `json:"agent"`
 
 	Server struct {

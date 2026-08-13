@@ -180,6 +180,7 @@ type RunPayload struct {
 	Trigger    string    `json:"trigger"`
 	StartedAt  time.Time `json:"started_at"`
 	FinishedAt time.Time `json:"finished_at,omitempty"`
+	DurationMs int64     `json:"duration_ms,omitempty"`
 	Features   []string  `json:"features,omitempty"`
 	Success    bool      `json:"success"`
 	Error      string    `json:"error,omitempty"`
@@ -267,7 +268,7 @@ func (c *Client) postDirect(ctx context.Context, path string, body any) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return &APIError{

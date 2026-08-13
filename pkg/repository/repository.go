@@ -29,8 +29,11 @@ type Repository interface {
 
 	PersistScanResult(ctx context.Context, fileData map[string]interface{}, meta reportstore.ScanResultMeta) (string, error)
 	PersistPIIReport(ctx context.Context, pg *postgresdb.Postgres, piiJSON map[string]interface{}) error
+	PersistBackupComplianceReport(ctx context.Context, meta reportstore.BackupComplianceReportMeta, reportJSON map[string]interface{}) error
 	GetLatestRun(ctx context.Context, targetID string) (*reportstore.RunRow, error)
 	GetLatestRunWithPII(ctx context.Context, targetID string) (*reportstore.RunRow, error)
+	ListLatestBackupComplianceReports(ctx context.Context) ([]reportstore.BackupComplianceRow, error)
+	GetLatestRunWithBackupCompliance(ctx context.Context, targetID string) (*reportstore.BackupComplianceRow, error)
 	GetRunByID(ctx context.Context, id string) (*reportstore.RunRow, error)
 	GetRuns(ctx context.Context, limit int) ([]reportstore.RunRow, error)
 	ListRunTargetIDs(ctx context.Context) ([]string, error)
@@ -41,6 +44,20 @@ type Repository interface {
 	UpsertServerGucSnapshot(ctx context.Context, targetID, targetHost, nodeID string, settings map[string]string) error
 	GetServerGucSnapshot(ctx context.Context, targetID string) (map[string]string, string, string, error)
 	ListServerGucSnapshots(ctx context.Context) ([]reportstore.GucSnapshotSummary, error)
+
+	UpsertGucIgnore(ctx context.Context, scope, targetID, gucName string) error
+	DeleteGucIgnore(ctx context.Context, scope, targetID, gucName string) error
+	ListGucIgnores(ctx context.Context) ([]reportstore.GucIgnoreEntry, error)
+
+	UpsertGucServerGroup(ctx context.Context, id, name, description string, baseline map[string]string) (string, error)
+	DeleteGucServerGroup(ctx context.Context, id string) error
+	GetGucServerGroup(ctx context.Context, id string) (*reportstore.GucServerGroup, error)
+	ListGucServerGroups(ctx context.Context) ([]reportstore.GucServerGroup, error)
+	SetGucServerGroupMembers(ctx context.Context, groupID string, targetIDs []string) error
+	SetGucServerGroupBaseline(ctx context.Context, groupID string, baseline map[string]string) error
+
+	UpsertBackupCompliancePolicy(ctx context.Context, policy reportstore.BackupCompliancePolicyStored) error
+	GetBackupCompliancePolicy(ctx context.Context) (policy reportstore.BackupCompliancePolicyStored, updatedAt string, err error)
 
 	UpsertCollectorStatus(ctx context.Context, nodeID, hostname, ip string, ts time.Time, cronRunning bool, scheduledJobs int, lastError string) error
 	InsertCollectorActivity(ctx context.Context, nodeID, kind, message, level string, ts time.Time) error

@@ -34,7 +34,8 @@ type NodeData struct {
 	GucSettings                 *GucSettingsPayload          `json:"guc_settings,omitempty"`
 }
 
-// GucSettingsPayload is SHOW ALL output pushed for GUC drift comparison.
+// GucSettingsPayload is pg_settings output pushed for GUC drift comparison
+// (setting values plus packed unit/vartype metadata in reserved keys).
 type GucSettingsPayload struct {
 	Settings map[string]string `json:"settings"`
 	ScanMeta ScanMetadata      `json:"scan_meta"`
@@ -84,8 +85,7 @@ type ScanMetadata struct {
 
 type AgentConfig struct {
 	Agent struct {
-		ID        string `json:"id"`
-		ClusterID string `json:"cluster_id"`
+		ID string `json:"id"`
 	} `json:"agent"`
 	Server struct {
 		URL   string `json:"url"`
@@ -111,6 +111,7 @@ type ScanRunMeta struct {
 	ErrorMessage string    `json:"error_message,omitempty"`
 	StartedAt    time.Time `json:"started_at"`
 	FinishedAt   time.Time `json:"finished_at"`
+	DurationMs   int64     `json:"duration_ms"`
 }
 
 // ScanDataRequest is the v2 collector data payload.
@@ -144,16 +145,24 @@ func BuildScanPayload(
 	host, port, dbName := "", "", ""
 	tid := reportstore.TargetID(pg)
 	if pg != nil {
-		host = reportstore.NormalizeHost(pg.Host)
+		host = reportstore.ResolveTargetHost(pg.Host, c.Hostname())
 		port = pg.Port
 		if port == "" {
 			port = "5432"
 		}
 		dbName = pg.DBName
+		// Rebuild target id with resolved host so loopback configs stay unique per agent.
+		pgResolved := *pg
+		pgResolved.Host = host
+		tid = reportstore.TargetID(&pgResolved)
 	}
 	status := "success"
 	if runErr != "" {
 		status = "failed"
+	}
+	durationMs := finishedAt.Sub(startedAt).Milliseconds()
+	if durationMs < 0 {
+		durationMs = 0
 	}
 	report := map[string]interface{}{}
 	for k, v := range fileData {
@@ -176,6 +185,7 @@ func BuildScanPayload(
 			ErrorMessage: runErr,
 			StartedAt:    startedAt.UTC(),
 			FinishedAt:   finishedAt.UTC(),
+			DurationMs:   durationMs,
 		},
 	}
 }

@@ -126,6 +126,24 @@ func trimForTable(s string, max int) string {
 	return s[:max] + "…"
 }
 
+// fleetTableDetailText keeps the full finding text and wraps after commas
+// so fleet tables can show it line-by-line instead of truncating.
+func fleetTableDetailText(primary, fallback string) string {
+	s := strings.TrimSpace(primary)
+	if s == "" {
+		s = strings.TrimSpace(fallback)
+	}
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return "-"
+	}
+	if !strings.Contains(s, "\n") && strings.Contains(s, ", ") {
+		s = strings.ReplaceAll(s, ", ", ",\n")
+	}
+	return s
+}
+
 func passwordManagerText(report map[string]interface{}) string {
 	raw, ok := report["Password Manager Report"]
 	if !ok {

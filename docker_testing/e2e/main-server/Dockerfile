@@ -19,9 +19,11 @@ RUN apt-get update && \
 WORKDIR /app
 COPY --from=builder /out/main-server /app/main-server
 COPY docker_testing/e2e/main-server/entrypoint.sh /app/entrypoint.sh
+COPY docker_testing/e2e/main-server/seed-guc-baseline.sh /app/seed-guc-baseline.sh
 COPY docker_testing/e2e/main-server/server-node.yaml /app/server-node.yaml
+COPY docker_testing/e2e/guc-baseline.json /app/guc-baseline.json
 
-RUN chmod +x /app/main-server /app/entrypoint.sh
+RUN chmod +x /app/main-server /app/entrypoint.sh /app/seed-guc-baseline.sh
 
 EXPOSE 8081
 ENTRYPOINT ["/app/entrypoint.sh"]

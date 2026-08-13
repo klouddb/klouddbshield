@@ -86,6 +86,7 @@ func insertPIIOnlyRun(ctx context.Context, db *sql.DB, pg *postgresdb.Postgres, 
 				"postgres", tid, host, port, dbName,
 				"success", string(featuresJSON), 0, 0, 0, emptyReport,
 				piiBlob, scannedAt,
+				nil, nil,
 				"",
 			)
 		}
@@ -95,6 +96,7 @@ func insertPIIOnlyRun(ctx context.Context, db *sql.DB, pg *postgresdb.Postgres, 
 			"postgres", tid, host, port, dbName,
 			"success", string(featuresJSON), 0, 0, 0, emptyReport,
 			piiBlob, scannedAt,
+			nil, nil,
 		)
 	})
 }

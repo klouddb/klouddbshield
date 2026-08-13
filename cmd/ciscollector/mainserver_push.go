@@ -157,10 +157,15 @@ func (c *cronHelper) pushCronRunFinishWithClient(client *mainserverclient.Client
 			runErr = "main-server unreachable; scan data pending retry"
 		}
 	}
+	durationMs := finished.Sub(started).Milliseconds()
+	if durationMs < 0 {
+		durationMs = 0
+	}
 	_ = client.PushRun(ctx, mainserverclient.RunPayload{
 		Trigger:    "cron",
 		StartedAt:  started,
 		FinishedAt: finished,
+		DurationMs: durationMs,
 		Features:   append([]string(nil), features...),
 		Success:    success,
 		Error:      runErr,

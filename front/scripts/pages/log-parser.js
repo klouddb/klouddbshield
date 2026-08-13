@@ -141,10 +141,14 @@ function renderLogParserResults(data) {
   const pagerEl = document.getElementById('log-parser-command-pagination');
   if (!list) return;
 
-  const commands = visibleLogParserCommands(data?.commands);
+  const allCommands = data?.commands || [];
+  const commands = visibleLogParserCommands(allCommands);
   if (!commands.length) {
-    list.innerHTML = '<p style="color:var(--muted);padding:16px;">' +
-      escapeHtml(data?.message || 'No log parser data. Add unique_ip, unused_lines, or password_leak_scanner to scan_commands.') + '</p>';
+    let emptyMsg = data?.message || 'No log parser data. Add unique_ip, unused_lines, or password_leak_scanner to scan_commands.';
+    if (allCommands.length && allCommands.every((c) => c.command === 'inactive_users')) {
+      emptyMsg = 'Inactive users are on the Inactive Users Report page. This page shows unique_ip, unused_lines, and password_leak_scanner.';
+    }
+    list.innerHTML = '<p style="color:var(--muted);padding:16px;">' + escapeHtml(emptyMsg) + '</p>';
     mountTablePagination(pagerEl, {
       page: 1, totalPages: 1, total: 0, start: 0, end: 0, pageSize: logParserCmdPager.pageSize,
       onPage: () => {},

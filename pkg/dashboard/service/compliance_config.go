@@ -133,29 +133,47 @@ func buildGucDriftStrategicChart(ctx context.Context, s *Service) ([]StrategicDr
 	if s == nil || s.Repo == nil {
 		return nil, nil
 	}
-	_, baseline, _, err := s.Repo.GetGucBaseline(ctx)
-	if err != nil || len(baseline) == 0 {
+	base, err := s.resolveEffectiveGucBaseline(ctx)
+	if err != nil || len(base.Settings) == 0 {
 		return nil, nil
 	}
+	baseline := base.Settings
 	snapshots, err := s.Repo.ListServerGucSnapshots(ctx)
 	if err != nil || len(snapshots) == 0 {
 		return nil, nil
 	}
 
+	ignoreIdx := reportstore.GucIgnoreIndex{Hosts: map[string]bool{}, Gucs: map[string]map[string]bool{}}
+	if ignores, err := s.Repo.ListGucIgnores(ctx); err == nil {
+		ignoreIdx = reportstore.BuildGucIgnoreIndex(ignores)
+	}
+
 	drift := make([]StrategicDrift, 0, len(snapshots))
 	labels := make([]string, 0, len(snapshots))
-	for _, snap := range snapshots {
+	for _, snap := range dedupeGucSnapshotsByInstance(snapshots) {
+		if base.Source == "host" &&
+			(snap.TargetID == base.TargetID ||
+				reportstore.GucInstanceKey(snap.TargetID) == reportstore.GucInstanceKey(base.TargetID)) {
+			continue
+		}
+		if ignoreIdx.HostIgnored(snap.TargetID) {
+			continue
+		}
 		live, _, _, err := s.Repo.GetServerGucSnapshot(ctx, snap.TargetID)
 		if err != nil || len(live) == 0 {
 			continue
 		}
 		matched, deviated := 0, 0
 		for _, row := range postgresconfig.CompareAgainstBaseline(baseline, live) {
-			if row.Status == postgresconfig.DriftMatch {
+			if row.Status == postgresconfig.DriftMatch || postgresconfig.IsVersionExpectedStatus(row.Status) {
 				matched++
-			} else {
-				deviated++
+				continue
 			}
+			if ignoreIdx.GucIgnored(snap.TargetID, row.GUC) {
+				matched++ // ignored findings count as non-drift for fleet KPI consistency
+				continue
+			}
+			deviated++
 		}
 		if matched+deviated == 0 {
 			continue

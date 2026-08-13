@@ -20,4 +20,9 @@ if [ -n "${PG_URL}" ]; then
   ARGS+=(-postgres-url "${PG_URL}")
 fi
 
+# Seed fleet-wide GUC drift golden baseline once main-server is listening.
+(
+  /app/seed-guc-baseline.sh || echo "GUC baseline seed failed (dashboard GUC drift page may be empty until upload)" >&2
+) &
+
 exec /app/main-server "${ARGS[@]}"

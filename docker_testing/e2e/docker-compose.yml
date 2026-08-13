@@ -73,6 +73,9 @@ services:
       LOG_PARSER_HBAFILE: ${LOG_PARSER_HBAFILE:-/var/lib/postgresql/data/pg_hba.conf}
     networks:
       kshield-net:
+    volumes:
+      # Local e2e only: resolve e2e-collector-N identity when compose scale uses container-id hostname.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
 networks:
   kshield-net:

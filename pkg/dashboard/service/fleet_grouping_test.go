@@ -1,6 +1,7 @@
 package service
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -115,5 +116,44 @@ func TestFleetRowsWithDatabaseColumn(t *testing.T) {
 	}
 	if got[0][0] != "localhost:5432" || got[0][1] != "hej" {
 		t.Fatalf("got %v", got[0])
+	}
+}
+
+func TestFleetTableDetailTextWrapsFullMessage(t *testing.T) {
+	got := fleetTableDetailText("password_encryption is md5, expected scram-sha-256", "")
+	if !strings.Contains(got, "expected scram-sha-256") {
+		t.Fatalf("truncated: %q", got)
+	}
+	if !strings.Contains(got, ",\n") {
+		t.Fatalf("expected line wrap after comma: %q", got)
+	}
+}
+
+func TestGroupFleetSingletonRowsShowsSingleDatabase(t *testing.T) {
+	instanceDBs := map[string][]string{
+		"laptop-f3dnr67k:5432": {"hej"},
+		"localhost:5432":       {"hej", "hej1", "hej3"},
+	}
+	got := groupFleetSingletonRows([][]string{
+		{"LAPTOP-F3DNR67K:5432/hej", "1", "Log/password audit", "Investigate"},
+		{"localhost:5432/hej", "1", "Log/password audit", "Investigate"},
+	}, instanceDBs)
+	if len(got) != 2 {
+		t.Fatalf("rows=%d want 2: %v", len(got), got)
+	}
+	byInst := map[string][]string{}
+	for _, row := range got {
+		byInst[strings.ToLower(row[0])] = row
+	}
+	laptop := byInst["laptop-f3dnr67k:5432"]
+	if laptop[1] != "1 (hej)" {
+		t.Fatalf("single db label=%q want %q row=%v", laptop[1], "1 (hej)", laptop)
+	}
+	if laptop[4] != "Investigate" {
+		t.Fatalf("action shifted: %v", laptop)
+	}
+	local := byInst["localhost:5432"]
+	if local[1] != "3 (hej, hej1, hej3)" {
+		t.Fatalf("multi db label=%q row=%v", local[1], local)
 	}
 }

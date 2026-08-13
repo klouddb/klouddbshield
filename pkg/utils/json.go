@@ -282,7 +282,10 @@ func GetConfigValueFromPostgres(db *sql.DB) (map[string]string, error) {
 
 	configValues := make(map[string]string)
 	for _, obj := range data {
-		name := fmt.Sprint(obj["name"])
+		name := strings.ToLower(strings.TrimSpace(fmt.Sprint(obj["name"])))
+		if name == "" {
+			continue
+		}
 		setting := fmt.Sprint(obj["setting"])
 		configValues[name] = setting
 	}

@@ -29,6 +29,37 @@ func TargetID(pg *postgresdb.Postgres) string {
 	return fmt.Sprintf("postgres:%s:%s:%s", host, port, db)
 }
 
+// GucTargetID is instance-scoped (host:port). SHOW ALL is cluster-wide, not per-database,
+// so snapshots must not be keyed by dbname or the same host repeats in GUC drift.
+func GucTargetID(pg *postgresdb.Postgres) string {
+	if pg == nil {
+		return "postgres:unknown:5432"
+	}
+	host := NormalizeHost(pg.Host)
+	port := pg.Port
+	if port == "" {
+		port = "5432"
+	}
+	return fmt.Sprintf("postgres:%s:%s", host, port)
+}
+
+// GucInstanceKey collapses per-database target ids onto host:port for dedupe.
+// Accepts "postgres:host:port:db", "postgres:host:port", or "host:port".
+func GucInstanceKey(targetID string) string {
+	targetID = strings.TrimSpace(targetID)
+	if targetID == "" {
+		return ""
+	}
+	parts := strings.Split(targetID, ":")
+	if len(parts) >= 3 && strings.EqualFold(parts[0], "postgres") {
+		return parts[1] + ":" + parts[2]
+	}
+	if len(parts) >= 2 {
+		return parts[0] + ":" + parts[1]
+	}
+	return targetID
+}
+
 func targetFields(pg *postgresdb.Postgres) (host, port, db string) {
 	if pg == nil {
 		return "unknown", "5432", "postgres"
@@ -85,6 +116,7 @@ func Persist(ctx context.Context, db *sql.DB, fileData map[string]interface{}, m
 			"postgres", tid, host, port, dbName,
 			status, string(featuresJSON), score, pass, fail, blob,
 			nil, nil,
+			nil, nil,
 		)
 	})
 	if err != nil {
@@ -111,8 +143,9 @@ func insertRunImmediate(ctx context.Context, db *sql.DB, args ...interface{}) er
 			id, started_at, finished_at, trigger, runner_name,
 			target_type, target_id, target_host, target_port, target_db,
 			run_status, features_run, overall_score, total_pass, total_fail, report_json,
-			pii_report_json, pii_scanned_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			pii_report_json, pii_scanned_at,
+			backup_compliance_json, backup_compliance_scanned_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, args...)
 }
 

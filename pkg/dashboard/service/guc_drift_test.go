@@ -41,6 +41,24 @@ func TestGucDriftFromSnapshots(t *testing.T) {
 			wantDrifting: 0,
 		},
 		{
+			name: "valid empty values are matched not missing",
+			baseline: map[string]string{
+				"application_name":   "",
+				"cluster_name":       "",
+				"default_tablespace": "",
+			},
+			snapshots: map[string]map[string]string{
+				"postgres:host:5432:db": {
+					"application_name":   "",
+					"cluster_name":       "",
+					"default_tablespace": "",
+				},
+			},
+			wantHosts:   1,
+			wantMatched: 1,
+			wantMissing: 0,
+		},
+		{
 			name:     "drift and missing",
 			baseline: map[string]string{"ssl": "on", "max_connections": "200"},
 			snapshots: map[string]map[string]string{
@@ -53,6 +71,19 @@ func TestGucDriftFromSnapshots(t *testing.T) {
 			wantMissing:     1,
 			wantDriftRows:   1,
 			wantMissingRows: 1,
+		},
+		{
+			name:     "dedupe per-db snapshots same instance",
+			baseline: map[string]string{"max_connections": "100", "ssl": "on"},
+			snapshots: map[string]map[string]string{
+				"postgres:localhost:5432:postgres": {"max_connections": "200", "ssl": "off"},
+				"postgres:localhost:5432:mydb":     {"max_connections": "200", "ssl": "off"},
+				"postgres:localhost:5432:hej":      {"max_connections": "200", "ssl": "off"},
+			},
+			wantHosts:     1,
+			wantMatched:   0,
+			wantDrifting:  1,
+			wantDriftRows: 2, // max_connections + ssl once each
 		},
 	}
 
@@ -103,6 +134,56 @@ func TestGucDriftFromSnapshots(t *testing.T) {
 				t.Fatalf("missing_rows=%d want %d", missingRows, tt.wantMissingRows)
 			}
 		})
+	}
+}
+
+func TestGucDriftFromHostBaseline(t *testing.T) {
+	db := openTestGucDB(t)
+	ctx := context.Background()
+	if err := reportstore.UpsertServerGucSnapshot(ctx, db, "postgres:a:5432", "host-a", "n1", map[string]string{
+		"ssl": "on", "work_mem": "4MB", "max_connections": "100",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := reportstore.UpsertServerGucSnapshot(ctx, db, "postgres:b:5432", "host-b", "n2", map[string]string{
+		"ssl": "on", "work_mem": "32MB", "max_connections": "100",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := reportstore.UpsertGucBaseline(ctx, db, "host-a", reportstore.HostBaselineSettings("postgres:a:5432")); err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := NewSQLiteService(db).GucDrift(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Stats.BaselineSource != "host" {
+		t.Fatalf("source=%q", resp.Stats.BaselineSource)
+	}
+	if resp.Stats.HostsCompared != 2 {
+		t.Fatalf("hosts=%d", resp.Stats.HostsCompared)
+	}
+	if resp.Stats.DriftingServers != 1 {
+		t.Fatalf("drifting=%d", resp.Stats.DriftingServers)
+	}
+	foundWorkMem := false
+	for _, row := range resp.Rows {
+		if row.Guc == "work_mem" && row.Live == "32MB" && row.Baseline == "4MB" {
+			foundWorkMem = true
+		}
+	}
+	if !foundWorkMem {
+		t.Fatalf("expected work_mem drift row, got %+v", resp.Rows)
+	}
+	var baselineStatus string
+	for _, h := range resp.HostSummaries {
+		if h.TargetID == "postgres:a:5432" {
+			baselineStatus = h.Status
+		}
+	}
+	if baselineStatus != "baseline" {
+		t.Fatalf("reference host status=%q", baselineStatus)
 	}
 }
 

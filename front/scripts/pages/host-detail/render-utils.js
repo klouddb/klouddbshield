@@ -255,12 +255,20 @@ export function renderPgHbaModule(mod, hbaScanResult, hbaChecks) {
 function gucDriftStatusBadge(status) {
   if (status === 'drift') return 'badge-danger';
   if (status === 'missing') return 'badge-warning';
+  if (status === 'version_updated') return 'badge-info';
+  if (status === 'version_new') return 'badge-success';
+  if (status === 'version_removed') return 'badge-muted';
+  if (status === 'ignored') return 'badge-muted';
   return 'badge-muted';
 }
 
 function gucDriftStatusLabel(status) {
   if (status === 'drift') return 'Drift';
   if (status === 'missing') return 'Missing';
+  if (status === 'version_updated') return 'Updated (version)';
+  if (status === 'version_new') return 'New (version)';
+  if (status === 'version_removed') return 'Removed (version)';
+  if (status === 'ignored') return 'Ignored';
   return status || '—';
 }
 
@@ -277,15 +285,16 @@ export function renderGucDriftModule(detail) {
   let html = '<p class="guc-host-drift-meta" style="font-size:12px;color:var(--muted);margin:0 0 12px;">' +
     meta.join(' · ') + ' · <span class="link" data-goto="guc-drift">Fleet GUC drift →</span></p>';
 
-  if (!detail.available || detail.status === 'no_baseline' || detail.status === 'no_snapshot') {
+  if (!detail.available || detail.status === 'no_baseline' || detail.status === 'no_snapshot' || detail.status === 'ignored') {
     return html + '<p class="module-empty" style="color:var(--muted);font-size:13px;">' +
       escapeHtml(detail.empty_reason || 'No GUC drift data for this host.') + '</p>';
   }
-  if (!detail.rows?.length) {
+  const activeRows = (detail.rows || []).filter((row) => !row.ignored);
+  if (!activeRows.length) {
     return html + '<p class="module-empty" style="font-size:13px;color:var(--success);">' +
       escapeHtml(detail.empty_reason || 'All baseline keys match live SHOW ALL.') + '</p>';
   }
-  const body = detail.rows.map((row) =>
+  const body = activeRows.map((row) =>
     '<tr><td><code>' + escapeHtml(row.guc) + '</code></td>' +
     '<td><span class="guc-val-live">' + escapeHtml(row.live || '—') + '</span></td>' +
     '<td><span class="guc-val-baseline">' + escapeHtml(row.baseline) + '</span></td>' +

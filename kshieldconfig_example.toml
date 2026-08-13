@@ -39,11 +39,16 @@
 # include_tables = ""
 
 
+# [backup_compliance]
+# enabled = true
+# allowed_start = "02:00"
+# allowed_end = "04:00"
+# allowed_days = ["saturday", "sunday"]
+# timezone = "Asia/Kolkata"
+
 # [app]
 # hostname = "postgreshost1"
 # debug = true
-
-
 
 # [mainserver]
 # enabled = true

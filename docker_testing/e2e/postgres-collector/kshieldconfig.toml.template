@@ -5,7 +5,10 @@ port = "5432"
 user = "${POSTGRES_USER}"
 password = "${POSTGRES_PASSWORD}"
 dbname = "${POSTGRES_DB}"
-sslmode = "disable"
+sslmode = "${POSTGRES_SSLMODE}"
+sslcert = "${POSTGRES_SSLCERT}"
+sslkey = "${POSTGRES_SSLKEY}"
+sslrootcert = "${POSTGRES_SSLROOTCERT}"
 maxIdleConn = 2
 maxOpenConn = 2
 

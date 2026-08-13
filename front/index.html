@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="KloudDB Shield DBA Console — PostgreSQL fleet security posture, CIS compliance, and scan dashboards." />
   <title>KloudDB Shield — DBA Console</title>
   <link rel="stylesheet" href="/styles/tokens.css" />
   <link rel="stylesheet" href="/styles/main.css" />
-  <link rel="stylesheet" href="/styles/html-report.css" />
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js" defer></script>
+  <link rel="modulepreload" href="/scripts/main.js" />
+  <link rel="preload" href="/assets/kloulddb_shield_logo.png" as="image" type="image/png" fetchpriority="high" />
 </head>
 <body>
   <div class="app" id="app-root" aria-busy="true">
-    <div style="padding:2rem;color:var(--muted,#a8b0c4);font-family:sans-serif">Loading KloudDB Shield…</div>
+    <div class="app-loading" role="status" aria-live="polite">Loading KloudDB Shield…</div>
   </div>
   <script type="module" src="/scripts/main.js"></script>
 </body>

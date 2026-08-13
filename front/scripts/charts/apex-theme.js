@@ -2,6 +2,23 @@
  * ApexCharts dark theme defaults for KloudDB Shield dashboards.
  * Charts are optional — CSS-based strategic visuals remain the default.
  */
+const APEX_CDN = 'https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js';
+let apexScriptPromise = null;
+
+function loadApexChartsScript() {
+  if (typeof window.ApexCharts !== 'undefined') return Promise.resolve();
+  if (apexScriptPromise) return apexScriptPromise;
+  apexScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = APEX_CDN;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load ApexCharts'));
+    document.head.appendChild(script);
+  });
+  return apexScriptPromise;
+}
+
 export function apexDarkTheme() {
   return {
     chart: {
@@ -16,7 +33,13 @@ export function apexDarkTheme() {
   };
 }
 
-export function mountApexChart(el, options) {
+export async function mountApexChart(el, options) {
+  try {
+    await loadApexChartsScript();
+  } catch (err) {
+    console.warn('ApexCharts not loaded', err);
+    return null;
+  }
   if (typeof window.ApexCharts === 'undefined') {
     console.warn('ApexCharts not loaded');
     return null;

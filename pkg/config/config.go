@@ -52,6 +52,8 @@ type Config struct {
 	PiiScanner       PiiScannerInput    `toml:"piiscanner"`
 	PiiScannerConfig *piiscanner.Config `toml:"-"`
 
+	BackupCompliance BackupComplianceInput `toml:"backup_compliance"`
+
 	OutputType           string `toml:"outputType"`
 	CreatePostgresConfig bool   `toml:"-"`
 	ConfigAudit          bool   `toml:"-"`
@@ -386,6 +388,9 @@ func NewConfig() (*Config, error) {
 	var sslCheck bool
 	flag.BoolVar(&sslCheck, "ssl-check", sslCheck, "SSL check")
 
+	var backupCompliance bool
+	flag.BoolVar(&backupCompliance, "backup-compliance", false, "Run backup compliance scan (requires pg_backup_compliance extension)")
+
 	var backupHistoryInput backuphistory.BackupHistoryInput
 	flag.StringVar(&backupHistoryInput.BackupPath, "backup-path", "", "Backup path")
 	flag.StringVar(&backupHistoryInput.BackupTool, "backup-tool", "", "Backup tool")
@@ -439,7 +444,7 @@ func NewConfig() (*Config, error) {
 		!runPostgres && !runMySql && !runRds && !hbaScanner &&
 		!runPostgresConnTest && !runGeneratePassword && !runGenerateEncryptedPassword &&
 		!runPwnedUsers && !runPwnedPassword && backupHistoryInput.BackupTool == "" &&
-		!createPostgresConfig && len(compareConfig) == 0 {
+		!createPostgresConfig && len(compareConfig) == 0 && !backupCompliance {
 		fmt.Println("> For Help: " + text.FgGreen.Sprint("ciscollector --help"))
 		os.Exit(0)
 	}
@@ -650,6 +655,12 @@ func NewConfig() (*Config, error) {
 	c.CreatePostgresConfig = createPostgresConfig
 	c.ConfigAudit = configAudit
 	c.SSLCheck = sslCheck
+	if backupCompliance {
+		c.BackupCompliance.Enabled = true
+	}
+	if customTemplatePath != "" {
+		c.CustomTemplate = customTemplatePath
+	}
 	if c.CustomTemplate != "" {
 		var checkNumbers []string
 		var err error
@@ -818,7 +829,7 @@ func NewConfig() (*Config, error) {
 			return nil, fmt.Errorf("getting hostname: %v", err)
 		}
 	}
-	if c.MySQL == nil && c.Postgres == nil && !runRds && c.LogParser == nil && c.BackupHistoryInput.BackupTool == "" {
+	if c.MySQL == nil && c.Postgres == nil && !runRds && c.LogParser == nil && c.BackupHistoryInput.BackupTool == "" && !c.HasCronPostgres() {
 		return nil, fmt.Errorf(cons.Err_PostgresConfig_Missing)
 	}
 	if c.MySQL != nil && c.Postgres != nil && !runRds {
@@ -828,7 +839,9 @@ func NewConfig() (*Config, error) {
 		return nil, fmt.Errorf(cons.Err_OldversionSuggestion_Postgres)
 	}
 
-	postgresConfigNeeded := runPostgres || c.App.HBASacanner || c.PiiScannerConfig != nil || c.App.TransactionWraparound || c.SSLCheck
+	// Backup compliance may use only [[crons.commands.postgres]]; top-level [postgres] is optional then.
+	backupNeedsTopLevelPostgres := c.BackupCompliance.Enabled && len(c.BackupComplianceTargets()) == 0
+	postgresConfigNeeded := runPostgres || c.App.HBASacanner || c.PiiScannerConfig != nil || c.App.TransactionWraparound || c.SSLCheck || backupNeedsTopLevelPostgres
 	if c.Postgres == nil && postgresConfigNeeded {
 		return nil, fmt.Errorf(cons.Err_OldversionSuggestion_Mysql)
 	}
@@ -974,7 +987,7 @@ func getLogParserInputs(postgresConf *postgresdb.Postgres, command string) (*Log
 	if postgresConf != nil {
 		store, _, err := postgresdb.Open(*postgresConf)
 		if err == nil {
-			defer store.Close()
+			defer func() { _ = store.Close() }()
 			prefixSuggestion, _ = utils.GetLoglinePrefix(context.Background(), store)
 			dataDir, _ := utils.GetDataDirectory(context.Background(), store)
 			if dataDir != "" {

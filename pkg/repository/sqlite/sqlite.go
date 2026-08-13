@@ -96,12 +96,26 @@ func (r *Repository) PersistPIIReport(ctx context.Context, pg *postgresdb.Postgr
 	})
 }
 
+func (r *Repository) PersistBackupComplianceReport(ctx context.Context, meta reportstore.BackupComplianceReportMeta, reportJSON map[string]interface{}) error {
+	return r.withWriteLock(func() error {
+		return reportstore.PersistBackupComplianceReport(ctx, r.db, meta, reportJSON)
+	})
+}
+
 func (r *Repository) GetLatestRun(ctx context.Context, targetID string) (*reportstore.RunRow, error) {
 	return reportstore.GetLatestRun(ctx, r.db, targetID)
 }
 
 func (r *Repository) GetLatestRunWithPII(ctx context.Context, targetID string) (*reportstore.RunRow, error) {
 	return reportstore.GetLatestRunWithPII(ctx, r.db, targetID)
+}
+
+func (r *Repository) ListLatestBackupComplianceReports(ctx context.Context) ([]reportstore.BackupComplianceRow, error) {
+	return reportstore.ListLatestBackupComplianceReports(ctx, r.db)
+}
+
+func (r *Repository) GetLatestRunWithBackupCompliance(ctx context.Context, targetID string) (*reportstore.BackupComplianceRow, error) {
+	return reportstore.GetLatestRunWithBackupCompliance(ctx, r.db, targetID)
 }
 
 func (r *Repository) GetRunByID(ctx context.Context, id string) (*reportstore.RunRow, error) {
@@ -142,6 +156,68 @@ func (r *Repository) GetServerGucSnapshot(ctx context.Context, targetID string) 
 
 func (r *Repository) ListServerGucSnapshots(ctx context.Context) ([]reportstore.GucSnapshotSummary, error) {
 	return reportstore.ListServerGucSnapshots(ctx, r.db)
+}
+
+func (r *Repository) UpsertGucIgnore(ctx context.Context, scope, targetID, gucName string) error {
+	return r.withWriteLock(func() error {
+		return reportstore.UpsertGucIgnore(ctx, r.db, scope, targetID, gucName)
+	})
+}
+
+func (r *Repository) DeleteGucIgnore(ctx context.Context, scope, targetID, gucName string) error {
+	return r.withWriteLock(func() error {
+		return reportstore.DeleteGucIgnore(ctx, r.db, scope, targetID, gucName)
+	})
+}
+
+func (r *Repository) ListGucIgnores(ctx context.Context) ([]reportstore.GucIgnoreEntry, error) {
+	return reportstore.ListGucIgnores(ctx, r.db)
+}
+
+func (r *Repository) UpsertGucServerGroup(ctx context.Context, id, name, description string, baseline map[string]string) (string, error) {
+	var out string
+	err := r.withWriteLock(func() error {
+		var err error
+		out, err = reportstore.UpsertGucServerGroup(ctx, r.db, id, name, description, baseline)
+		return err
+	})
+	return out, err
+}
+
+func (r *Repository) DeleteGucServerGroup(ctx context.Context, id string) error {
+	return r.withWriteLock(func() error {
+		return reportstore.DeleteGucServerGroup(ctx, r.db, id)
+	})
+}
+
+func (r *Repository) GetGucServerGroup(ctx context.Context, id string) (*reportstore.GucServerGroup, error) {
+	return reportstore.GetGucServerGroup(ctx, r.db, id)
+}
+
+func (r *Repository) ListGucServerGroups(ctx context.Context) ([]reportstore.GucServerGroup, error) {
+	return reportstore.ListGucServerGroups(ctx, r.db)
+}
+
+func (r *Repository) SetGucServerGroupMembers(ctx context.Context, groupID string, targetIDs []string) error {
+	return r.withWriteLock(func() error {
+		return reportstore.SetGucServerGroupMembers(ctx, r.db, groupID, targetIDs)
+	})
+}
+
+func (r *Repository) SetGucServerGroupBaseline(ctx context.Context, groupID string, baseline map[string]string) error {
+	return r.withWriteLock(func() error {
+		return reportstore.SetGucServerGroupBaseline(ctx, r.db, groupID, baseline)
+	})
+}
+
+func (r *Repository) UpsertBackupCompliancePolicy(ctx context.Context, policy reportstore.BackupCompliancePolicyStored) error {
+	return r.withWriteLock(func() error {
+		return reportstore.UpsertBackupCompliancePolicy(ctx, r.db, policy)
+	})
+}
+
+func (r *Repository) GetBackupCompliancePolicy(ctx context.Context) (reportstore.BackupCompliancePolicyStored, string, error) {
+	return reportstore.GetBackupCompliancePolicy(ctx, r.db)
 }
 
 func (r *Repository) UpsertCollectorStatus(ctx context.Context, nodeID, hostname, ip string, ts time.Time, cronRunning bool, scheduledJobs int, lastError string) error {

@@ -67,6 +67,7 @@ func PersistScanResult(ctx context.Context, db *sql.DB, fileData map[string]inte
 			"postgres", tid, host, port, dbName,
 			status, string(featuresJSON), score, pass, fail, blob,
 			nil, nil,
+			nil, nil,
 			meta.ErrorMessage,
 		)
 	})
@@ -82,8 +83,9 @@ func insertScanResultImmediate(ctx context.Context, db *sql.DB, args ...interfac
 			id, node_id, hostname, started_at, finished_at, trigger, runner_name,
 			target_type, target_id, target_host, target_port, target_db,
 			run_status, features_run, overall_score, total_pass, total_fail, report_json,
-			pii_report_json, pii_scanned_at, error_message
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			pii_report_json, pii_scanned_at,
+			backup_compliance_json, backup_compliance_scanned_at, error_message
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, args...)
 }
 
@@ -111,8 +113,16 @@ func EnsureScanResultsSchema(ctx context.Context, db *sql.DB) error {
 			report_json JSON NOT NULL,
 			pii_report_json JSON,
 			pii_scanned_at TEXT,
+			backup_compliance_json JSON,
+			backup_compliance_scanned_at TEXT,
 			error_message TEXT
 		)`,
+		// ALTERs for older DBs; ignore duplicate column.
+		`ALTER TABLE scan_results ADD COLUMN pii_report_json JSON`,
+		`ALTER TABLE scan_results ADD COLUMN pii_scanned_at TEXT`,
+		`ALTER TABLE scan_results ADD COLUMN backup_compliance_json JSON`,
+		`ALTER TABLE scan_results ADD COLUMN backup_compliance_scanned_at TEXT`,
+		`ALTER TABLE scan_results ADD COLUMN error_message TEXT`,
 		`CREATE INDEX IF NOT EXISTS idx_scan_results_target ON scan_results(target_id, started_at DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_scan_results_node ON scan_results(node_id, started_at DESC)`,
 		`CREATE TABLE IF NOT EXISTS guc_baseline (
@@ -128,9 +138,39 @@ func EnsureScanResultsSchema(ctx context.Context, db *sql.DB) error {
 			settings_json JSON NOT NULL,
 			collected_at TEXT NOT NULL
 		)`,
+		`CREATE TABLE IF NOT EXISTS guc_drift_ignores (
+			id TEXT PRIMARY KEY,
+			scope TEXT NOT NULL,
+			target_id TEXT NOT NULL,
+			instance_key TEXT NOT NULL,
+			guc_name TEXT NOT NULL DEFAULT '',
+			ignored_at TEXT NOT NULL
+		)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_guc_drift_ignores_unique
+			ON guc_drift_ignores(scope, instance_key, guc_name)`,
+		`CREATE TABLE IF NOT EXISTS guc_server_groups (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL UNIQUE,
+			description TEXT NOT NULL DEFAULT '',
+			baseline_json JSON NOT NULL,
+			updated_at TEXT NOT NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS guc_server_group_members (
+			group_id TEXT NOT NULL,
+			target_id TEXT NOT NULL,
+			PRIMARY KEY (group_id, target_id)
+		)`,
+		`CREATE TABLE IF NOT EXISTS backup_compliance_policy (
+			id TEXT PRIMARY KEY,
+			policy_json JSON NOT NULL,
+			updated_at TEXT NOT NULL
+		)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.ExecContext(ctx, s); err != nil {
+			if isIgnorableMigrationErr(err) {
+				continue
+			}
 			return err
 		}
 	}

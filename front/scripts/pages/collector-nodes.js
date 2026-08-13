@@ -31,6 +31,16 @@ function fmtTime(iso) {
   }
 }
 
+function formatDurationMs(ms) {
+  const n = Number(ms);
+  if (ms == null || ms === '' || Number.isNaN(n) || n < 0) return '—';
+  if (n < 1000) return `${Math.round(n)} ms`;
+  const sec = n / 1000;
+  if (sec < 60) return `${sec.toFixed(1)} sec`;
+  if (sec < 3600) return `${Math.round(sec / 60)} min`;
+  return `${(sec / 3600).toFixed(1)} hr`;
+}
+
 function normalizeLogLevel(level) {
   const s = String(level || '').toLowerCase();
   if (s === 'warning') return 'warn';
@@ -204,12 +214,12 @@ function renderNodesTable() {
 async function renderRuns(nodeId) {
   const tbody = document.getElementById('cn-runs-tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);padding:16px;">Loading…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);padding:16px;">Loading…</td></tr>';
   try {
     const data = await fetchCollectorNodeRuns(nodeId);
     const runs = data?.runs || [];
     if (!runs.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);padding:16px;">No runs recorded yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);padding:16px;">No runs recorded yet.</td></tr>';
       return;
     }
     tbody.innerHTML = runs.map((r) => {
@@ -219,15 +229,25 @@ async function renderRuns(nodeId) {
       const err = r.error
         ? `<span style="color:var(--critical);font-size:12px;">${escapeHtml(r.error)}</span>`
         : '—';
+      let durationMs = r.duration_ms;
+      if ((durationMs == null || durationMs === 0) && r.started_at && r.finished_at) {
+        const start = new Date(r.started_at).getTime();
+        const end = new Date(r.finished_at).getTime();
+        if (!Number.isNaN(start) && !Number.isNaN(end) && end >= start) {
+          durationMs = end - start;
+        }
+      }
       return `<tr>
         <td>${fmtTime(r.started_at)}</td>
+        <td>${fmtTime(r.finished_at)}</td>
+        <td>${formatDurationMs(durationMs)}</td>
         <td>${escapeHtml(r.trigger || '')}</td>
         <td>${ok}</td>
         <td>${err}</td>
       </tr>`;
     }).join('');
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--critical);padding:16px;">${escapeHtml(errorMessageFromCaught(e))}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--critical);padding:16px;">${escapeHtml(errorMessageFromCaught(e))}</td></tr>`;
   }
 }
 

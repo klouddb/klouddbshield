@@ -1,11 +1,9 @@
 package logparser
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"sort"
 	"strings"
@@ -199,14 +197,19 @@ func PrintFastRunnerReport(logParserCnf *config.LogParser, fastRunnerResp *runne
 
 }
 
-func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *config.LogParser,
-	fastRunnerResp *runner.FastRunnerResponse, fileData map[string]interface{}, outputType string) {
+// BuildLogParserSummary builds table rows for the terminal and structured
+// entries for fileData / main-server push. Dashboard APIs require the
+// structured form (Command + Value), including inactive_users usernames.
+func BuildLogParserSummary(ctx context.Context, runners []runner.Parser, logParserCnf *config.LogParser,
+	fastRunnerResp *runner.FastRunnerResponse) (data [][]string, allValues []interface{}) {
+	if logParserCnf == nil || fastRunnerResp == nil {
+		return nil, nil
+	}
 
-	PrintFileParsingError(fastRunnerResp.FileErrors)
-
-	data := [][]string{}
-	allValues := []interface{}{}
 	for i, cmd := range logParserCnf.Commands {
+		if i >= len(runners) || i >= len(fastRunnerResp.SuccessLines) {
+			break
+		}
 		parseStatus := "All lines parsed successfully"
 		if fastRunnerResp.SuccessLines[i] == 0 {
 			parseStatus = "No lines parsed successfully"
@@ -282,20 +285,39 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *co
 		})
 	}
 
-	data = append(data, []string{
-		fmt.Sprintf("Parsed %d files which took: %s", len(logParserCnf.LogFiles), time.Since(fastRunnerResp.StartTime)),
-		"",
-		"",
-	})
-	allValues = append(allValues, fmt.Sprintf("Parsed %d files which took: %s", len(logParserCnf.LogFiles), time.Since(fastRunnerResp.StartTime)))
+	timing := fmt.Sprintf("Parsed %d files which took: %s", len(logParserCnf.LogFiles), time.Since(fastRunnerResp.StartTime))
+	data = append(data, []string{timing, "", ""})
+	allValues = append(allValues, timing)
+	return data, allValues
+}
 
-	var buffer bytes.Buffer
+// PersistLogParserSummary stores structured Log Parser Summary into fileData
+// without changing terminal output. Used when CLI prints detailed results only.
+func PersistLogParserSummary(ctx context.Context, runners []runner.Parser, logParserCnf *config.LogParser,
+	fastRunnerResp *runner.FastRunnerResponse, fileData map[string]interface{}) {
+	if fileData == nil {
+		return
+	}
+	_, allValues := BuildLogParserSummary(ctx, runners, logParserCnf, fastRunnerResp)
+	if len(allValues) == 0 {
+		return
+	}
+	fileData["Log Parser Summary"] = allValues
+}
 
-	mult := io.MultiWriter(&buffer, os.Stdout)
+func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *config.LogParser,
+	fastRunnerResp *runner.FastRunnerResponse, fileData map[string]interface{}, outputType string) {
+
+	PrintFileParsingError(fastRunnerResp.FileErrors)
+
+	data, allValues := BuildLogParserSummary(ctx, runners, logParserCnf, fastRunnerResp)
+	// Always persist structured summary so main-server / frontend can read
+	// Command + Value (e.g. inactive_users). Terminal rendering is unchanged.
+	if fileData != nil && len(allValues) > 0 {
+		fileData["Log Parser Summary"] = allValues
+	}
 
 	if outputType == "json" {
-		fileData["Log Parser Summary"] = allValues
-
 		jsonData, err := json.MarshalIndent(fileData, "", "    ")
 		if err != nil {
 			fmt.Println("Error while marshalling data to json")
@@ -304,7 +326,7 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *co
 		fmt.Println(string(jsonData))
 		return
 	}
-	table := tablewriter.NewWriter(mult)
+	table := tablewriter.NewWriter(os.Stdout)
 	for _, v := range data {
 		table.Append(v)
 	}
@@ -314,8 +336,6 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *co
 	table.SetAutoWrapText(false)
 	table.Render()
 	fmt.Println("")
-
-	fileData["Log Parser Summary"] = buffer.String()
 }
 
 func PrintFileParsingError(fileError map[string]string) {

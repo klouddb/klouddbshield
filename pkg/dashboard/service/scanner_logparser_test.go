@@ -81,7 +81,7 @@ func TestLogParserScanner(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db := service.OpenTestSQLiteDB(t)
-			defer db.Close()
+			t.Cleanup(func() { _ = db.Close() })
 
 			pg := &postgresdb.Postgres{Host: "lp-host", Port: "5432", DBName: "shielddb"}
 			service.PersistTestScanResult(t, db, tt.report, reportstore.RunMeta{
@@ -122,5 +122,45 @@ func TestLogParserScanner(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestLogParserScannerIgnoresNewerEmptyReport(t *testing.T) {
+	db := service.OpenTestSQLiteDB(t)
+	t.Cleanup(func() { _ = db.Close() })
+
+	pg := &postgresdb.Postgres{Host: "lp-host", Port: "5432", DBName: "shielddb"}
+	older := time.Now().UTC().Add(-2 * time.Minute)
+	newer := time.Now().UTC()
+
+	service.PersistTestScanResult(t, db, map[string]interface{}{
+		"Log Parser Summary": []interface{}{
+			map[string]interface{}{
+				"Command":      cons.LogParserCMD_UniqueIPs,
+				"Parse Status": "All lines parsed successfully",
+				"Result":       "1 unique IPs found from log file\n",
+				"Value":        []interface{}{"10.0.0.9"},
+			},
+		},
+	}, reportstore.RunMeta{
+		Trigger: "cron", RunnerName: "ciscollector", Postgres: pg,
+		StartedAt: older, FinishedAt: older, RunStatus: "success",
+	}, "test-node", pg.Host)
+
+	// Newer PII-only style row with empty report_json (same target).
+	service.PersistTestScanResult(t, db, map[string]interface{}{}, reportstore.RunMeta{
+		Trigger: "cron", RunnerName: "ciscollector", Postgres: pg,
+		StartedAt: newer, FinishedAt: newer, RunStatus: "success",
+	}, "test-node", pg.Host)
+
+	resp, err := service.NewSQLiteService(db).LogParserScanner(context.Background(), "lp-host:5432")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !resp.Available || len(resp.Commands) != 1 {
+		t.Fatalf("expected log parser from older run, got avail=%v cmds=%d msg=%q", resp.Available, len(resp.Commands), resp.Message)
+	}
+	if resp.Commands[0].Command != cons.LogParserCMD_UniqueIPs {
+		t.Fatalf("command=%q", resp.Commands[0].Command)
 	}
 }

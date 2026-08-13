@@ -52,6 +52,8 @@ func CommandsFromPostgres(pg *postgresdb.Postgres, scanCommandsRaw string, lp *L
 			out = append(out, Command{Name: cons.RootCMD_SSLCheck, Postgres: targets})
 		case "pii_scanner":
 			out = append(out, Command{Name: cons.RootCMD_PiiScanner, Postgres: targets})
+		case "backup_compliance":
+			out = append(out, Command{Name: cons.RootCMD_BackupCompliance, Postgres: targets})
 		case "inactive_users":
 			c, err := logParserCommand(targets, lp, cons.LogParserCMD_InactiveUser, false)
 			if err != nil {

@@ -91,6 +91,50 @@ func (s *Service) resolveRunForHost(ctx context.Context, serverID string) (*repo
 	return nil, nil
 }
 
+// resolveRunForHostWithLogParser returns the newest run for the host that has
+// structured Log Parser Summary entries. Needed because PII-only pushes insert a
+// newer scan_results row with empty report_json and would otherwise hide log parser.
+func (s *Service) resolveRunForHostWithLogParser(ctx context.Context, serverID string) (*reportstore.RunRow, error) {
+	base, err := s.resolveRunForHost(ctx, serverID)
+	if err != nil {
+		return nil, err
+	}
+	if base != nil && reportHasAnyLogParser(base.Report) {
+		return base, nil
+	}
+	if base != nil && base.TargetID != "" {
+		runs, err := s.Repo.GetRunsForTarget(ctx, base.TargetID, perTargetRunPickLimit)
+		if err != nil {
+			return nil, err
+		}
+		for i := range runs {
+			if reportHasAnyLogParser(runs[i].Report) {
+				return &runs[i], nil
+			}
+		}
+	}
+	targetIDs, err := s.Repo.ListRunTargetIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, targetID := range targetIDs {
+		runs, err := s.Repo.GetRunsForTarget(ctx, targetID, perTargetRunPickLimit)
+		if err != nil {
+			return nil, err
+		}
+		for i := range runs {
+			r := &runs[i]
+			if !hostMatchesServerID(r, serverID) {
+				continue
+			}
+			if reportHasAnyLogParser(r.Report) {
+				return r, nil
+			}
+		}
+	}
+	return base, nil
+}
+
 // HostReport builds structured modules for the host detail page from SQLite report_json.
 func (s *Service) HostReport(ctx context.Context, serverID string) (*HostReportResponse, error) {
 	run, err := s.resolveRunForHost(ctx, serverID)
@@ -118,7 +162,7 @@ func (s *Service) HostReport(ctx context.Context, serverID string) (*HostReportR
 		FailedControls: failN,
 		GucDrift:       drift,
 		Agent:          "Online",
-		LastAudit:      relativeScanTime(run.StartedAt),
+		LastAudit:      relativeScanTimeWithDuration(run.StartedAt, run.FinishedAt),
 		PostgresVer:    decodePostgresVersion(run.Report),
 	}
 

@@ -35,7 +35,7 @@ func fleetUniqueInstances(hosts map[string]bool) int {
 }
 
 func instanceDatabasesLabel(instance string, instanceDBs map[string][]string, fallback []string) string {
-	names := instanceDBs[instance]
+	names := instanceDBNames(instance, instanceDBs, nil)
 	if len(names) == 0 {
 		names = append([]string(nil), fallback...)
 		sort.Strings(names)
@@ -44,6 +44,34 @@ func instanceDatabasesLabel(instance string, instanceDBs map[string][]string, fa
 		return "-"
 	}
 	return fmt.Sprintf("%d (%s)", len(names), strings.Join(names, ", "))
+}
+
+func instanceDBNames(instance string, instanceDBs map[string][]string, rows [][]string) []string {
+	if instanceDBs != nil {
+		if names := instanceDBs[instance]; len(names) > 0 {
+			return names
+		}
+		for inst, names := range instanceDBs {
+			if strings.EqualFold(inst, instance) && len(names) > 0 {
+				return names
+			}
+		}
+	}
+	seen := map[string]bool{}
+	out := make([]string, 0)
+	for _, row := range rows {
+		if len(row) == 0 {
+			continue
+		}
+		db := fleetHostDatabase(row[0])
+		if db == "" || seen[db] {
+			continue
+		}
+		seen[db] = true
+		out = append(out, db)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func parsePctString(pct string) int {
@@ -178,31 +206,11 @@ func groupFleetSingletonRows(rows [][]string, instanceDBs map[string][]string) [
 	out := make([][]string, 0, len(order))
 	for _, inst := range order {
 		rowsForInst := grouped[inst]
-		if len(rowsForInst) == 1 {
-			row := append([]string(nil), rowsForInst[0]...)
-			row[0] = inst
-			if len(row) >= 2 && instanceDBs != nil {
-				names := instanceDBs[inst]
-				if len(names) > 1 {
-					// password / defaults: insert databases summary after host
-					row = append([]string{inst, instanceDatabasesLabel(inst, instanceDBs, nil)}, row[1:]...)
-				}
-			}
-			out = append(out, row)
-			continue
-		}
-		// Multiple rows on same instance — keep first summary with databases label
-		names := make([]string, 0)
-		for _, row := range rowsForInst {
-			if db := fleetHostDatabase(row[0]); db != "" {
-				names = append(names, db)
-			}
-		}
 		base := append([]string(nil), rowsForInst[0]...)
 		base[0] = inst
-		if len(names) > 1 {
-			base = append([]string{inst, instanceDatabasesLabel(inst, instanceDBs, names)}, base[1:]...)
-		}
+		names := instanceDBNames(inst, instanceDBs, rowsForInst)
+		label := instanceDatabasesLabel(inst, instanceDBs, names)
+		base = append([]string{inst, label}, base[1:]...)
 		out = append(out, base)
 	}
 	return out
