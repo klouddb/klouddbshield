@@ -1,45 +1,31 @@
-# golangci-lint configuration used for CI
+# golangci-lint v2 config
+version: "2"
+
 run:
   tests: true
-  timeout: 10m
+
+linters:
+  default: none
+  enable:
+    - misspell
+    - staticcheck
+    - govet
+    - errcheck
+    - unused
+
+  exclusions:
+    generated: lax
+    paths:
+      - .*\.pb\.go
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 issues:
-  exclude-use-default: true
-  exclude-case-sensitive: false
-  exclude-dirs-use-default: true
   max-issues-per-linter: 50
   max-same-issues: 3
   new: false
   fix: false
   whole-files: false
-  exclude-files:
-    - ".*\\.pb\\.go"
-
-linters-settings:
-  revive:
-    ignore-generated-header: false
-    severity: warning
-    confidence: 0.8
-    rules:
-      - name: unreachable-code
-      - name: errorf
-      - name: range
-      - name: superfluous-else
-      - name: var-declaration
-
-linters:
-  disable-all: true
-  enable:
-    - misspell
-    - gofmt
-    - staticcheck
-    # - gosec
-    # - gocritic
-    - govet
-    - errcheck
-    - gosimple
-    - govet
-    - typecheck
-    - gofmt
-    - goimports
-    - unused

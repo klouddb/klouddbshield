@@ -162,7 +162,7 @@ func (s *Service) HostReport(ctx context.Context, serverID string) (*HostReportR
 		FailedControls: failN,
 		GucDrift:       drift,
 		Agent:          "Online",
-		LastAudit:      relativeScanTime(run.StartedAt),
+		LastAudit:      relativeScanTimeWithDuration(run.StartedAt, run.FinishedAt),
 		PostgresVer:    decodePostgresVersion(run.Report),
 	}
 

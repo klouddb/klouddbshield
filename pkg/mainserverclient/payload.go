@@ -111,6 +111,7 @@ type ScanRunMeta struct {
 	ErrorMessage string    `json:"error_message,omitempty"`
 	StartedAt    time.Time `json:"started_at"`
 	FinishedAt   time.Time `json:"finished_at"`
+	DurationMs   int64     `json:"duration_ms"`
 }
 
 // ScanDataRequest is the v2 collector data payload.
@@ -159,6 +160,10 @@ func BuildScanPayload(
 	if runErr != "" {
 		status = "failed"
 	}
+	durationMs := finishedAt.Sub(startedAt).Milliseconds()
+	if durationMs < 0 {
+		durationMs = 0
+	}
 	report := map[string]interface{}{}
 	for k, v := range fileData {
 		report[k] = v
@@ -180,6 +185,7 @@ func BuildScanPayload(
 			ErrorMessage: runErr,
 			StartedAt:    startedAt.UTC(),
 			FinishedAt:   finishedAt.UTC(),
+			DurationMs:   durationMs,
 		},
 	}
 }

@@ -180,6 +180,7 @@ type RunPayload struct {
 	Trigger    string    `json:"trigger"`
 	StartedAt  time.Time `json:"started_at"`
 	FinishedAt time.Time `json:"finished_at,omitempty"`
+	DurationMs int64     `json:"duration_ms,omitempty"`
 	Features   []string  `json:"features,omitempty"`
 	Success    bool      `json:"success"`
 	Error      string    `json:"error,omitempty"`

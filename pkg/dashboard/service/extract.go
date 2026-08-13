@@ -106,6 +106,30 @@ func relativeScanTime(t time.Time) string {
 	}
 }
 
+// relativeScanTimeWithDuration shows when the scan finished and how long it took.
+func relativeScanTimeWithDuration(startedAt, finishedAt time.Time) string {
+	when := finishedAt
+	if when.IsZero() {
+		when = startedAt
+	}
+	base := relativeScanTime(when)
+	if base == "-" || startedAt.IsZero() || finishedAt.IsZero() {
+		return base
+	}
+	dur := finishedAt.Sub(startedAt)
+	if dur < 0 {
+		return base
+	}
+	switch {
+	case dur < time.Second:
+		return fmt.Sprintf("%s (%dms)", base, dur.Milliseconds())
+	case dur < time.Minute:
+		return fmt.Sprintf("%s (%.1fs)", base, dur.Seconds())
+	default:
+		return fmt.Sprintf("%s (%dm)", base, int(dur.Minutes()))
+	}
+}
+
 // wireCISResult decodes persisted report_json where ManualCheckData is a JSON object,
 // not assignable to model.ManualCheckData (interface) via encoding/json alone.
 type wireCISResult struct {

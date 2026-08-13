@@ -12,9 +12,15 @@ func (s *Service) Runs(ctx context.Context, limit int) (*RunsResponse, error) {
 	}
 	resp := &RunsResponse{Runs: make([]RunSummary, 0, len(rows))}
 	for _, r := range rows {
+		durationMs := r.FinishedAt.Sub(r.StartedAt).Milliseconds()
+		if durationMs < 0 || r.FinishedAt.IsZero() {
+			durationMs = 0
+		}
 		resp.Runs = append(resp.Runs, RunSummary{
 			ID:           r.ID,
 			StartedAt:    r.StartedAt,
+			FinishedAt:   r.FinishedAt,
+			DurationMs:   durationMs,
 			Trigger:      r.Trigger,
 			TargetID:     r.TargetID,
 			TargetHost:   r.TargetHost,

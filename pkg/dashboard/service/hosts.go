@@ -54,11 +54,12 @@ func (s *Service) Hosts(ctx context.Context) (*HostsResponse, error) {
 }
 
 type hostInstanceBuilder struct {
-	instance  string
-	ip        string
-	databases []HostDatabaseBrief
-	failing   int
-	lastAudit time.Time
+	instance       string
+	ip             string
+	databases      []HostDatabaseBrief
+	failing        int
+	lastStartedAt  time.Time
+	lastFinishedAt time.Time
 }
 
 func (b *hostInstanceBuilder) add(run *reportstore.RunRow) {
@@ -66,8 +67,17 @@ func (b *hostInstanceBuilder) add(run *reportstore.RunRow) {
 	if b.ip == "" && run.TargetHost != "" {
 		b.ip = run.TargetHost
 	}
-	if run.StartedAt.After(b.lastAudit) {
-		b.lastAudit = run.StartedAt
+	when := run.FinishedAt
+	if when.IsZero() {
+		when = run.StartedAt
+	}
+	best := b.lastFinishedAt
+	if best.IsZero() {
+		best = b.lastStartedAt
+	}
+	if when.After(best) {
+		b.lastStartedAt = run.StartedAt
+		b.lastFinishedAt = run.FinishedAt
 	}
 	b.databases = append(b.databases, brief)
 	if brief.Posture == "Failing" {
@@ -106,7 +116,7 @@ func (b *hostInstanceBuilder) build() HostInstance {
 		DatabasesLabel: dbLabel,
 		FailLabel:      failLabel,
 		Agent:          "Online",
-		LastAudit:      relativeScanTime(b.lastAudit),
+		LastAudit:      relativeScanTimeWithDuration(b.lastStartedAt, b.lastFinishedAt),
 	}
 }
 
@@ -145,7 +155,7 @@ func databaseBriefFromRun(run *reportstore.RunRow) HostDatabaseBrief {
 		HostKey:   hostLabel(run),
 		CisPct:    compliancePct(score, passN, failN),
 		Posture:   hostStatus(score, failN),
-		LastAudit: relativeScanTime(run.StartedAt),
+		LastAudit: relativeScanTimeWithDuration(run.StartedAt, run.FinishedAt),
 	}
 }
 

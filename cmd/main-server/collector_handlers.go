@@ -284,17 +284,26 @@ func (a *App) collectorNodeRunsHandler(w http.ResponseWriter, r *http.Request) {
 		Trigger    string     `json:"trigger"`
 		StartedAt  time.Time  `json:"started_at"`
 		FinishedAt *time.Time `json:"finished_at,omitempty"`
+		DurationMs int64      `json:"duration_ms"`
 		Features   []string   `json:"features,omitempty"`
 		Success    bool       `json:"success"`
 		Error      string     `json:"error,omitempty"`
 	}
 	var out []runRow
 	for _, run := range runs {
+		var durationMs int64
+		if run.FinishedAt != nil && !run.FinishedAt.IsZero() && !run.StartedAt.IsZero() {
+			durationMs = run.FinishedAt.Sub(run.StartedAt).Milliseconds()
+			if durationMs < 0 {
+				durationMs = 0
+			}
+		}
 		out = append(out, runRow{
 			ID:         run.ID,
 			Trigger:    run.Trigger,
 			StartedAt:  run.StartedAt,
 			FinishedAt: run.FinishedAt,
+			DurationMs: durationMs,
 			Features:   run.Features,
 			Success:    run.Success,
 			Error:      run.Error,
