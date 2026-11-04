@@ -87,12 +87,14 @@ func (s *Service) LogParserScanner(ctx context.Context, host string) (*LogParser
 	resp.Host = hostLabel(run)
 	views := logParserCommandsFromReport(run.Report)
 	if len(views) == 0 {
-		resp.Message = "No log parser results in report_json. Add inactive_users, unique_ip, unused_lines, or password_leak_scanner to scan_commands."
+		resp.Message = "No log parser results in report_json. Add inactive_users, unique_ip, unused_lines, password_leak_scanner, or sql_injection_scan to scan_commands."
 		return resp, nil
 	}
 	resp.Available = true
 	resp.Commands = views
 	resp.Pass, resp.Warn, resp.Fail = summarizeLogParserViews(views)
+	resp.ScanMeta = decodeLogParserScanMeta(run.Report)
+	resp.TerminalReport = decodeLogParserTerminalReport(run.Report)
 	return resp, nil
 }
 

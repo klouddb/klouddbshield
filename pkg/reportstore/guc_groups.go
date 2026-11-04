@@ -38,7 +38,7 @@ func UpsertGucServerGroup(ctx context.Context, db *sql.DB, id, name, description
 		return "", fmt.Errorf("marshal baseline: %w", err)
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	_, err = db.ExecContext(ctx, `
+	_, err = execContext(ctx, db, `
 		INSERT INTO guc_server_groups (id, name, description, baseline_json, updated_at)
 		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
@@ -59,10 +59,10 @@ func DeleteGucServerGroup(ctx context.Context, db *sql.DB, id string) error {
 	if id == "" {
 		return fmt.Errorf("id is required")
 	}
-	if _, err := db.ExecContext(ctx, `DELETE FROM guc_server_group_members WHERE group_id = ?`, id); err != nil {
+	if _, err := execContext(ctx, db, `DELETE FROM guc_server_group_members WHERE group_id = ?`, id); err != nil {
 		return err
 	}
-	_, err := db.ExecContext(ctx, `DELETE FROM guc_server_groups WHERE id = ?`, id)
+	_, err := execContext(ctx, db, `DELETE FROM guc_server_groups WHERE id = ?`, id)
 	return err
 }
 
@@ -74,7 +74,7 @@ func GetGucServerGroup(ctx context.Context, db *sql.DB, id string) (*GucServerGr
 	}
 	var g GucServerGroup
 	var blob string
-	err := db.QueryRowContext(ctx, `
+	err := queryRowContext(ctx, db, `
 		SELECT id, name, description, baseline_json, updated_at
 		FROM guc_server_groups WHERE id = ?
 	`, id).Scan(&g.ID, &g.Name, &g.Description, &blob, &g.UpdatedAt)
@@ -98,7 +98,7 @@ func GetGucServerGroup(ctx context.Context, db *sql.DB, id string) (*GucServerGr
 
 // ListGucServerGroups returns all groups (with members).
 func ListGucServerGroups(ctx context.Context, db *sql.DB) ([]GucServerGroup, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := queryContext(ctx, db, `
 		SELECT id, name, description, baseline_json, updated_at
 		FROM guc_server_groups
 		ORDER BY name ASC
@@ -136,7 +136,7 @@ func ListGucServerGroups(ctx context.Context, db *sql.DB) ([]GucServerGroup, err
 
 // ListGucServerGroupMembers returns target_ids in a group.
 func ListGucServerGroupMembers(ctx context.Context, db *sql.DB, groupID string) ([]string, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := queryContext(ctx, db, `
 		SELECT target_id FROM guc_server_group_members
 		WHERE group_id = ?
 		ORDER BY target_id ASC
@@ -162,7 +162,7 @@ func SetGucServerGroupMembers(ctx context.Context, db *sql.DB, groupID string, t
 	if groupID == "" {
 		return fmt.Errorf("group_id is required")
 	}
-	if _, err := db.ExecContext(ctx, `DELETE FROM guc_server_group_members WHERE group_id = ?`, groupID); err != nil {
+	if _, err := execContext(ctx, db, `DELETE FROM guc_server_group_members WHERE group_id = ?`, groupID); err != nil {
 		return err
 	}
 	seen := map[string]bool{}
@@ -172,7 +172,7 @@ func SetGucServerGroupMembers(ctx context.Context, db *sql.DB, groupID string, t
 			continue
 		}
 		seen[tid] = true
-		if _, err := db.ExecContext(ctx, `
+		if _, err := execContext(ctx, db, `
 			INSERT INTO guc_server_group_members (group_id, target_id) VALUES (?, ?)
 		`, groupID, tid); err != nil {
 			return err
@@ -195,7 +195,7 @@ func SetGucServerGroupBaseline(ctx context.Context, db *sql.DB, groupID string, 
 		return err
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	res, err := db.ExecContext(ctx, `
+	res, err := execContext(ctx, db, `
 		UPDATE guc_server_groups SET baseline_json = ?, updated_at = ? WHERE id = ?
 	`, string(blob), now, groupID)
 	if err != nil {

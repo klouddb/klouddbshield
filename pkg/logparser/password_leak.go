@@ -22,5 +22,5 @@ func (i *PasswordLeakHelper) Init(ctx context.Context, logParserCnf *config.LogP
 }
 
 func (i *PasswordLeakHelper) GetResult(ctx context.Context) []parselog.LeakedPasswordResponse {
-	return i.PasswordLeakParser.GetLeakedPasswords()
+	return i.GetLeakedPasswords()
 }

@@ -37,22 +37,22 @@ func UpsertBackupCompliancePolicy(ctx context.Context, db *sql.DB, policy Backup
 		return fmt.Errorf("marshal backup compliance policy: %w", err)
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	_, err = db.ExecContext(ctx, `
+	q := `
 		INSERT INTO backup_compliance_policy (id, policy_json, updated_at)
 		VALUES (?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
 			policy_json = excluded.policy_json,
 			updated_at = excluded.updated_at
-	`, backupCompliancePolicyRowID, string(blob), now)
+	`
+	_, err = execContext(ctx, db, q, backupCompliancePolicyRowID, string(blob), now)
 	return err
 }
 
 // GetBackupCompliancePolicy returns the dashboard-saved window (empty if unset).
 func GetBackupCompliancePolicy(ctx context.Context, db *sql.DB) (policy BackupCompliancePolicyStored, updatedAt string, err error) {
 	var blob string
-	err = db.QueryRowContext(ctx, `
-		SELECT policy_json, updated_at FROM backup_compliance_policy WHERE id = ?
-	`, backupCompliancePolicyRowID).Scan(&blob, &updatedAt)
+	q := `SELECT policy_json, updated_at FROM backup_compliance_policy WHERE id = ?`
+	err = queryRowContext(ctx, db, q, backupCompliancePolicyRowID).Scan(&blob, &updatedAt)
 	if err == sql.ErrNoRows {
 		return BackupCompliancePolicyStored{AllowedDays: []string{}}, "", nil
 	}

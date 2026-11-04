@@ -1,10 +1,8 @@
 package rds
 
 import (
+	"context"
 	"log"
-
-	"golang.org/x/net/context"
-
 	"sync"
 	"time"
 )

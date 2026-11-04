@@ -280,7 +280,7 @@ func buildLogParserModule(report map[string]interface{}) HostModuleView {
 		Available: true,
 		Columns:   []string{"Command", "Parse status", "Result"},
 		Rows:      rows,
-		Callout:   "Open Log parser scan for full command details (inactive_users, unique_ip, unused_lines, password_leak_scanner).",
+		Callout:   "Open Log parser scan for full command details (inactive_users, unique_ip, unused_lines, password_leak_scanner, sql_injection_scan).",
 	}
 }
 

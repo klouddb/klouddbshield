@@ -89,8 +89,8 @@ func (l *LockedCounter) Increment(key string) {
 		return
 	}
 
-	val, _ := l.LockedKeyValue.Get(key)
-	l.LockedKeyValue.Add(key, val+1)
+	val, _ := l.Get(key)
+	l.Add(key, val+1)
 }
 
 func (l *LockedCounter) Get(key string) (int, bool) {
@@ -117,7 +117,7 @@ func (l *LockSet) Add(key string) {
 }
 
 func (l *LockSet) IsAvailable(key string) bool {
-	val, ok := l.LockedKeyValue.Get(key)
+	val, ok := l.Get(key)
 	return val && ok
 }
 
@@ -127,7 +127,7 @@ func (l *LockSet) Remove(key string) {
 
 func (l *LockSet) GetAll() map[string]bool {
 	all := make(map[string]bool)
-	l.LockedKeyValue.ForEach(func(key string, _ bool) {
+	l.ForEach(func(key string, _ bool) {
 		all[key] = true
 	})
 	return all

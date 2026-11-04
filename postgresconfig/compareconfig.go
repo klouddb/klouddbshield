@@ -233,7 +233,14 @@ func parsePostgresMemoryBytes(v string) (int64, bool) {
 	}
 	var mult float64
 	switch unit {
-	case "", "b":
+	case "":
+		// Bare pg_settings memory values are whole integers (bytes).
+		// Reject fractions like 0.01 — those are planner costs, not memory.
+		if n != float64(int64(n)) {
+			return 0, false
+		}
+		mult = 1
+	case "b":
 		mult = 1
 	case "kb", "k":
 		mult = 1024
@@ -279,7 +286,14 @@ func parsePostgresDurationMs(v string) (int64, bool) {
 	}
 	var mult float64
 	switch unit {
-	case "", "ms":
+	case "":
+		// Bare pg_settings time values are whole integers (ms).
+		// Reject fractions like 0.5 — those are planner costs, not durations.
+		if n != float64(int64(n)) {
+			return 0, false
+		}
+		mult = 1
+	case "ms":
 		mult = 1
 	case "us":
 		mult = 0.001

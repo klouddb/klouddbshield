@@ -413,10 +413,11 @@ func cisSummaryFromResults(results []*model.Result) map[int]interface{} {
 		if err != nil {
 			continue
 		}
-		if result.Status == "Pass" {
+		switch result.Status {
+		case "Pass":
 			score[controlNum].Pass++
 			score[0].Pass++
-		} else if result.Status == "Fail" {
+		case "Fail":
 			score[controlNum].Fail++
 			score[0].Fail++
 		}

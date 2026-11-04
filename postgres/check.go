@@ -472,11 +472,12 @@ func PerformAllChecks(store *sql.DB, ctx context.Context, version string, contro
 		// Update result reference and control if needed
 		result.References = referenceMap[version]
 		// Auth updates
-		if result.Control == "4.3" {
+		switch result.Control {
+		case "4.3":
 			if version == "13" || version == "14" {
 				result.Control = "4.5"
 			}
-		} else if result.Control == "4.6" {
+		case "4.6":
 			if version == "13" || version == "14" {
 				result.Control = "4.8"
 			}
@@ -508,10 +509,11 @@ func CalculateScore(listOfResult []*model.Result) map[int]*model.Status {
 			continue
 		}
 
-		if result.Status == "Pass" {
+		switch result.Status {
+		case "Pass":
 			score[controlNum].Pass += 1
 			score[0].Pass += 1
-		} else if result.Status == "Fail" {
+		case "Fail":
 			score[controlNum].Fail += 1
 			score[0].Fail += 1
 		}

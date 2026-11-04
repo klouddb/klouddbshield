@@ -25,7 +25,7 @@ func GetLatestRun(ctx context.Context, db *sql.DB, targetID string) (*RunRow, er
 		CASE WHEN report_json IS NOT NULL AND length(trim(CAST(report_json AS TEXT))) > 2 THEN 0 ELSE 1 END,
 		finished_at DESC LIMIT 1`
 
-	return scanRunRow(db.QueryRowContext(ctx, q, args...))
+	return scanRunRow(queryRowContext(ctx, db, q, args...))
 }
 
 // GetLatestRunWithPII returns the newest scan_results row that has pii_report_json for target_id.
@@ -33,7 +33,7 @@ func GetLatestRunWithPII(ctx context.Context, db *sql.DB, targetID string) (*Run
 	if targetID == "" {
 		return nil, nil
 	}
-	return scanRunRow(db.QueryRowContext(ctx, `
+	return scanRunRow(queryRowContext(ctx, db, `
 		SELECT `+runSelectColumns+`
 		FROM `+RunsTable+`
 		WHERE target_id = ?
@@ -46,7 +46,7 @@ func GetLatestRunWithPII(ctx context.Context, db *sql.DB, targetID string) (*Run
 
 // GetRunByID loads a single run by id.
 func GetRunByID(ctx context.Context, db *sql.DB, id string) (*RunRow, error) {
-	return scanRunRow(db.QueryRowContext(ctx, `
+	return scanRunRow(queryRowContext(ctx, db, `
 		SELECT `+runSelectColumns+`
 		FROM `+RunsTable+` WHERE id = ?
 	`, id))
@@ -57,7 +57,7 @@ func GetRuns(ctx context.Context, db *sql.DB, limit int) ([]RunRow, error) {
 	if limit <= 0 {
 		limit = 50
 	}
-	rows, err := db.QueryContext(ctx, `
+	rows, err := queryContext(ctx, db, `
 		SELECT `+runSelectColumns+`
 		FROM `+RunsTable+` ORDER BY started_at DESC LIMIT ?
 	`, limit)
@@ -79,7 +79,7 @@ func GetRuns(ctx context.Context, db *sql.DB, limit int) ([]RunRow, error) {
 
 // ListRunTargetIDs returns distinct target_id values ordered by most recent activity.
 func ListRunTargetIDs(ctx context.Context, db *sql.DB) ([]string, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := queryContext(ctx, db, `
 		SELECT target_id FROM `+RunsTable+`
 		WHERE target_id IS NOT NULL AND trim(target_id) != ''
 		GROUP BY target_id
@@ -112,7 +112,7 @@ func GetRunsForTarget(ctx context.Context, db *sql.DB, targetID string, limit in
 	if limit <= 0 {
 		limit = 15
 	}
-	rows, err := db.QueryContext(ctx, `
+	rows, err := queryContext(ctx, db, `
 		SELECT `+runSelectColumns+`
 		FROM `+RunsTable+` WHERE target_id = ?
 		ORDER BY started_at DESC LIMIT ?

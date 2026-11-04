@@ -1,0 +1,55 @@
+<section id="page-unique-ip-report" class="page">
+          <h1>Unique IP Report</h1>
+          <p class="subtitle">Fleet-wide unique client IPs · Log Parser Menu 7 · <span id="unique-ip-hint">—</span></p>
+
+          <div class="stats user-report-stats">
+            <div class="stat-card user-report-stat-card user-report-stat-card--users">
+              <div class="stat-label">Unique IPs</div>
+              <div class="stat-value" id="unique-ip-stat-ips">—</div>
+            </div>
+            <div class="stat-card user-report-stat-card user-report-stat-card--hosts">
+              <div class="stat-label">Affected Hosts</div>
+              <div class="stat-value" id="unique-ip-stat-hosts">—</div>
+            </div>
+            <div class="stat-card user-report-stat-card user-report-stat-card--source">
+              <div class="stat-label">Data Source</div>
+              <div class="stat-value user-report-stat-source">Log Parser</div>
+            </div>
+            <div class="stat-card user-report-stat-card user-report-stat-card--range">
+              <div class="stat-label">Aggregated IPs (fleet)</div>
+              <div class="stat-value user-report-stat-source" id="unique-ip-stat-aggregated" style="font-size:14px;line-height:1.35;">—</div>
+            </div>
+          </div>
+
+          <div class="report-block user-report-panel">
+            <div class="report-block-header user-report-panel-header">
+              <div>
+                <h2>Client IP Addresses</h2>
+                <p>IPs accumulate in <code>logparser_client_ips</code> (<code>first_seen</code>) · new IPs add on each scan · old IPs are not removed · scan-only rows show log filter range</p>
+              </div>
+              <label class="user-report-search">
+                <span class="user-report-search-label">Search</span>
+                <input type="search" id="unique-ip-search" placeholder="IP or host…" autocomplete="off" />
+              </label>
+            </div>
+            <div class="report-block-body user-report-body">
+              <div class="user-report-table-wrap">
+                <table class="user-report-table">
+                  <thead>
+                    <tr>
+                      <th class="user-report-col-user">IP Address</th>
+                      <th class="user-report-col-host">Host</th>
+                      <th class="user-report-col-databases">Databases</th>
+                      <th class="user-report-col-range">First seen / log range</th>
+                      <th class="user-report-col-action"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="unique-ip-tbody">
+                    <tr><td colspan="5" class="user-report-empty">Loading unique IPs…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="table-pagination user-report-pagination" id="unique-ip-pagination" hidden></div>
+            </div>
+          </div>
+        </section>

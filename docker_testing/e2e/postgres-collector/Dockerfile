@@ -3,6 +3,7 @@
 FROM golang:1.22-bookworm AS builder
 
 WORKDIR /src
+ENV GOPRIVATE=github.com/klouddb/dpdpa_pii_db_scanner
 COPY go.mod go.sum ./
 RUN go mod download
 

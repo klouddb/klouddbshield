@@ -69,4 +69,8 @@ type Repository interface {
 	ListCollectorRuns(ctx context.Context, nodeID string, limit int) ([]CollectorRunRow, error)
 	ListCollectorActivity(ctx context.Context, nodeID string, limit int) ([]CollectorActivityRow, error)
 	ListCollectorLogs(ctx context.Context, nodeID string, limit int) ([]CollectorLogRow, error)
+
+	ListLogParserInactiveUsers(ctx context.Context) ([]reportstore.LogParserInactiveUserState, error)
+	ListLogParserClientIPs(ctx context.Context) ([]reportstore.LogParserClientIPState, error)
+	ListLogParserUnusedHBALines(ctx context.Context) ([]reportstore.LogParserUnusedHBAState, error)
 }

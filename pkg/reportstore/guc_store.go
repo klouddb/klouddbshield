@@ -43,7 +43,7 @@ func UpsertGucBaseline(ctx context.Context, db *sql.DB, label string, settings m
 		return fmt.Errorf("marshal baseline: %w", err)
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	_, err = db.ExecContext(ctx, `
+	_, err = execContext(ctx, db, `
 		INSERT INTO guc_baseline (id, label, settings_json, updated_at)
 		VALUES (?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
@@ -57,7 +57,7 @@ func UpsertGucBaseline(ctx context.Context, db *sql.DB, label string, settings m
 // GetGucBaseline returns the active global baseline settings.
 func GetGucBaseline(ctx context.Context, db *sql.DB) (label string, settings map[string]string, updatedAt string, err error) {
 	var blob string
-	err = db.QueryRowContext(ctx, `
+	err = queryRowContext(ctx, db, `
 		SELECT label, settings_json, updated_at FROM guc_baseline WHERE id = ?
 	`, gucBaselineRowID).Scan(&label, &blob, &updatedAt)
 	if err == sql.ErrNoRows {
@@ -130,7 +130,7 @@ func UpsertServerGucSnapshot(ctx context.Context, db *sql.DB, targetID, targetHo
 		nodeID = uuid.NewString()
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	_, err = db.ExecContext(ctx, `
+	_, err = execContext(ctx, db, `
 		INSERT INTO server_guc_snapshots (target_id, target_host, node_id, settings_json, collected_at)
 		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT(target_id) DO UPDATE SET
@@ -145,7 +145,7 @@ func UpsertServerGucSnapshot(ctx context.Context, db *sql.DB, targetID, targetHo
 // GetServerGucSnapshot returns settings for one target.
 func GetServerGucSnapshot(ctx context.Context, db *sql.DB, targetID string) (map[string]string, string, string, error) {
 	var blob, host, collectedAt string
-	err := db.QueryRowContext(ctx, `
+	err := queryRowContext(ctx, db, `
 		SELECT target_host, settings_json, collected_at
 		FROM server_guc_snapshots WHERE target_id = ?
 	`, targetID).Scan(&host, &blob, &collectedAt)
@@ -166,7 +166,7 @@ func GetServerGucSnapshot(ctx context.Context, db *sql.DB, targetID string) (map
 
 // ListServerGucSnapshots returns all latest snapshots for debugging.
 func ListServerGucSnapshots(ctx context.Context, db *sql.DB) ([]GucSnapshotSummary, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := queryContext(ctx, db, `
 		SELECT target_id, target_host, node_id, collected_at, settings_json
 		FROM server_guc_snapshots
 		ORDER BY target_host ASC

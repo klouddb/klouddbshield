@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,12 +14,16 @@ import (
 
 func TestLogParserScanner(t *testing.T) {
 	tests := []struct {
-		name       string
-		report     map[string]interface{}
-		wantAvail  bool
-		wantCmds   int
-		wantPass   int
-		wantDetail string
+		name          string
+		report        map[string]interface{}
+		wantAvail     bool
+		wantCmds      int
+		wantPass      int
+		wantDetail    string
+		wantMetaFound int
+		wantMetaScan  int
+		wantTerminal  string
+		wantSQLDetail bool
 	}{
 		{
 			name: "inactive_users with detail",
@@ -72,6 +77,37 @@ func TestLogParserScanner(t *testing.T) {
 			wantPass:  2,
 		},
 		{
+			name: "sql injection with scan meta and terminal report",
+			report: map[string]interface{}{
+				"Log Parser Summary": []interface{}{
+					map[string]interface{}{
+						"Command":      cons.LogParserCMD_SqlInjectionScan,
+						"Parse Status": "All lines parsed successfully",
+						"Result":       "2 SQL Injection related logs found in log file\n",
+						"Value":        []interface{}{"SELECT * FROM users WHERE '1'='1'", "OR 1=1"},
+					},
+				},
+				"Log Parser Scan Meta": map[string]interface{}{
+					"begin":         "2026-08-01T00:00:00Z",
+					"end":           "2026-08-25T00:00:00Z",
+					"files_found":   float64(3),
+					"files_scanned": float64(2),
+					"files": []interface{}{
+						map[string]interface{}{
+							"file_name": "a.log", "scanned": true, "status": "scanned", "duration_ms": float64(10),
+						},
+					},
+				},
+				"Log Parser Terminal Report": "unique_ip ::: Successfully parsed all files\n",
+			},
+			wantAvail:     true,
+			wantCmds:      1,
+			wantMetaFound: 3,
+			wantMetaScan:  2,
+			wantTerminal:  "Successfully parsed",
+			wantSQLDetail: true,
+		},
+		{
 			name:      "missing log parser summary",
 			report:    map[string]interface{}{"Postgres Report": map[string]interface{}{}},
 			wantAvail: false,
@@ -119,6 +155,35 @@ func TestLogParserScanner(t *testing.T) {
 				}
 				if !found {
 					t.Fatalf("detail row %q not found", tt.wantDetail)
+				}
+			}
+			if tt.wantMetaFound > 0 {
+				if resp.ScanMeta == nil {
+					t.Fatal("expected scanMeta")
+				}
+				if resp.ScanMeta.FilesFound != tt.wantMetaFound || resp.ScanMeta.FilesScanned != tt.wantMetaScan {
+					t.Fatalf("scanMeta files found/scanned=%d/%d want %d/%d",
+						resp.ScanMeta.FilesFound, resp.ScanMeta.FilesScanned, tt.wantMetaFound, tt.wantMetaScan)
+				}
+				if resp.ScanMeta.Begin == "" || resp.ScanMeta.End == "" {
+					t.Fatalf("expected begin/end, got %+v", resp.ScanMeta)
+				}
+			}
+			if tt.wantTerminal != "" && !strings.Contains(resp.TerminalReport, tt.wantTerminal) {
+				t.Fatalf("terminalReport=%q", resp.TerminalReport)
+			}
+			if tt.wantSQLDetail {
+				found := false
+				for _, c := range resp.Commands {
+					if c.Command == cons.LogParserCMD_SqlInjectionScan && len(c.DetailRows) == 2 {
+						found = true
+						if c.Status != "warn" {
+							t.Fatalf("sql injection status=%q want warn", c.Status)
+						}
+					}
+				}
+				if !found {
+					t.Fatal("expected sql injection detail rows")
 				}
 			}
 		})

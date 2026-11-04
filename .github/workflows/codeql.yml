@@ -8,6 +8,8 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/klouddb/dpdpa_pii_db_scanner
 
     permissions:
       actions: read

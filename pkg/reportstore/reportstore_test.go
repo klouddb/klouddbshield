@@ -106,3 +106,47 @@ func TestResolveDBPath(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestRebindSQLLeavesSQLitePlaceholders(t *testing.T) {
+	prevFlag := UsePostgresPlaceholders
+	UsePostgresPlaceholders = false
+	t.Cleanup(func() { UsePostgresPlaceholders = prevFlag })
+
+	q := "SELECT id FROM scan_results WHERE target_id = ?"
+	if got := rebindSQL(nil, q); got != q {
+		t.Fatalf("nil db rebind=%q want unchanged", got)
+	}
+
+	db, err := Open(filepath.Join(t.TempDir(), "rebind.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if got := rebindSQL(db, q); got != q {
+		t.Fatalf("sqlite rebind=%q want %q", got, q)
+	}
+}
+
+func TestRebindPostgresPlaceholders(t *testing.T) {
+	got := rebindPostgresPlaceholders("WHERE target_id = ? AND backup_compliance_json IS NOT NULL")
+	want := "WHERE target_id = $1 AND backup_compliance_json IS NOT NULL"
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+	got = rebindPostgresPlaceholders("VALUES (?, ?, ?)")
+	if got != "VALUES ($1, $2, $3)" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestRebindSQLWhenPostgresFlag(t *testing.T) {
+	prev := UsePostgresPlaceholders
+	UsePostgresPlaceholders = true
+	t.Cleanup(func() { UsePostgresPlaceholders = prev })
+
+	got := rebindSQL(nil, "SELECT id FROM scan_results WHERE target_id = ? AND id = ?")
+	want := "SELECT id FROM scan_results WHERE target_id = $1 AND id = $2"
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+}

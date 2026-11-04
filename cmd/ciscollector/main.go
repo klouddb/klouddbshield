@@ -71,6 +71,16 @@ func main() {
 		os.Exit(runMainServerConnectionCheck(cnf))
 	}
 
+	if cnf.LogToFile {
+		terminal := os.Stdout
+		outputFile, err := logger.RedirectOutputToFile()
+		if err != nil {
+			fmt.Println("Unable to create output log file, writing to terminal instead: ", text.FgHiRed.Sprint(err))
+		} else {
+			fmt.Fprintln(terminal, "Terminal output is being written to "+outputFile)
+		}
+	}
+
 	logger.SetupLogger()
 	// Setup log level
 	if !cnf.App.Debug {
@@ -448,7 +458,7 @@ func saveResultInFile(data map[string]interface{}, outputType string) {
 	builder := &strings.Builder{}
 	for k, v := range data {
 		builder.WriteString(k + ":\n")
-		builder.WriteString(fmt.Sprintf("%v\n", v))
+		fmt.Fprintf(builder, "%v\n", v)
 	}
 
 	result := builder.String()

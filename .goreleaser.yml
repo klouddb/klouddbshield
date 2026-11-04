@@ -21,6 +21,7 @@ builds:
       - arm64
     env:
       - CGO_ENABLED=0
+      - GOPRIVATE=github.com/klouddb/dpdpa_pii_db_scanner
 
   - id: kshield
     main: ./cmd/kshield
@@ -35,6 +36,7 @@ builds:
       - arm64
     env:
       - CGO_ENABLED=0
+      - GOPRIVATE=github.com/klouddb/dpdpa_pii_db_scanner
 
   - id: main-server
     main: ./cmd/main-server
@@ -49,6 +51,7 @@ builds:
       - arm64
     env:
       - CGO_ENABLED=0
+      - GOPRIVATE=github.com/klouddb/dpdpa_pii_db_scanner
 
 archives:
   - id: ciscollector-archive

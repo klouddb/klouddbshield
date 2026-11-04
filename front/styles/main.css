@@ -4447,58 +4447,104 @@
     .guc-val-baseline { color: var(--success); font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
 
     /* Common / inactive users fleet reports */
-    #page-common-users-report .user-report-stats,
-    #page-inactive-users-report .user-report-stats {
+    #page-common-users-report .user-report-stats, #page-fleet-reports [data-report-pane="common-users"] .user-report-stats,
+    #page-inactive-users-report .user-report-stats, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stats,
+    #page-unique-ip-report .user-report-stats, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stats,
+    #page-unused-lines-report .user-report-stats, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stats,
+    #page-password-leak-report .user-report-stats , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stats {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       margin-bottom: 20px;
     }
-    #page-common-users-report .user-report-stat-card,
-    #page-inactive-users-report .user-report-stat-card {
+    #page-inactive-users-report .user-report-stats, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stats,
+    #page-unique-ip-report .user-report-stats, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stats,
+    #page-unused-lines-report .user-report-stats, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stats,
+    #page-password-leak-report .user-report-stats , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stats {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    #page-common-users-report .user-report-stat-card, #page-fleet-reports [data-report-pane="common-users"] .user-report-stat-card,
+    #page-inactive-users-report .user-report-stat-card, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stat-card,
+    #page-unique-ip-report .user-report-stat-card, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stat-card,
+    #page-unused-lines-report .user-report-stat-card, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stat-card,
+    #page-password-leak-report .user-report-stat-card , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stat-card {
       border-top: 3px solid var(--border);
       transition: border-color 0.2s ease, transform 0.2s ease;
     }
-    #page-common-users-report .user-report-stat-card:hover,
-    #page-inactive-users-report .user-report-stat-card:hover {
+    #page-common-users-report .user-report-stat-card:hover, #page-fleet-reports [data-report-pane="common-users"] .user-report-stat-card:hover,
+    #page-inactive-users-report .user-report-stat-card:hover, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stat-card:hover,
+    #page-unique-ip-report .user-report-stat-card:hover, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stat-card:hover,
+    #page-unused-lines-report .user-report-stat-card:hover, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stat-card:hover,
+    #page-password-leak-report .user-report-stat-card:hover , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stat-card:hover {
       transform: translateY(-1px);
     }
-    #page-common-users-report .user-report-stat-card--users,
-    #page-inactive-users-report .user-report-stat-card--users { border-top-color: var(--kloud-blue); }
-    #page-common-users-report .user-report-stat-card--hosts,
-    #page-inactive-users-report .user-report-stat-card--hosts { border-top-color: var(--success); }
-    #page-common-users-report .user-report-stat-card--source,
-    #page-inactive-users-report .user-report-stat-card--source { border-top-color: var(--muted); }
-    #page-common-users-report .user-report-stat-source,
-    #page-inactive-users-report .user-report-stat-source {
+    #page-common-users-report .user-report-stat-card--users, #page-fleet-reports [data-report-pane="common-users"] .user-report-stat-card--users,
+    #page-inactive-users-report .user-report-stat-card--users, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stat-card--users,
+    #page-unique-ip-report .user-report-stat-card--users, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stat-card--users,
+    #page-unused-lines-report .user-report-stat-card--users, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stat-card--users,
+    #page-password-leak-report .user-report-stat-card--users , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stat-card--users { border-top-color: var(--kloud-blue); }
+    #page-common-users-report .user-report-stat-card--hosts, #page-fleet-reports [data-report-pane="common-users"] .user-report-stat-card--hosts,
+    #page-inactive-users-report .user-report-stat-card--hosts, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stat-card--hosts,
+    #page-unique-ip-report .user-report-stat-card--hosts, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stat-card--hosts,
+    #page-unused-lines-report .user-report-stat-card--hosts, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stat-card--hosts,
+    #page-password-leak-report .user-report-stat-card--hosts , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stat-card--hosts { border-top-color: var(--success); }
+    #page-common-users-report .user-report-stat-card--source, #page-fleet-reports [data-report-pane="common-users"] .user-report-stat-card--source,
+    #page-inactive-users-report .user-report-stat-card--source, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stat-card--source,
+    #page-unique-ip-report .user-report-stat-card--source, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stat-card--source,
+    #page-unused-lines-report .user-report-stat-card--source, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stat-card--source,
+    #page-password-leak-report .user-report-stat-card--source , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stat-card--source { border-top-color: var(--muted); }
+    #page-inactive-users-report .user-report-stat-card--range, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stat-card--range,
+    #page-unique-ip-report .user-report-stat-card--range, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stat-card--range,
+    #page-unused-lines-report .user-report-stat-card--range, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stat-card--range,
+    #page-password-leak-report .user-report-stat-card--range , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stat-card--range { border-top-color: var(--kloud-blue); }
+    #page-common-users-report .user-report-stat-source, #page-fleet-reports [data-report-pane="common-users"] .user-report-stat-source,
+    #page-inactive-users-report .user-report-stat-source, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stat-source,
+    #page-unique-ip-report .user-report-stat-source, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stat-source,
+    #page-unused-lines-report .user-report-stat-source, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stat-source,
+    #page-password-leak-report .user-report-stat-source , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stat-source {
       font-size: 15px !important;
       letter-spacing: 0.01em;
     }
-    #page-common-users-report .user-report-panel,
-    #page-inactive-users-report .user-report-panel {
+    #page-common-users-report .user-report-panel, #page-fleet-reports [data-report-pane="common-users"] .user-report-panel,
+    #page-inactive-users-report .user-report-panel, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-panel,
+    #page-unique-ip-report .user-report-panel, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-panel,
+    #page-unused-lines-report .user-report-panel, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-panel,
+    #page-password-leak-report .user-report-panel , #page-fleet-reports [data-report-pane="password-leak"] .user-report-panel {
       border-top: 3px solid var(--kloud-blue);
       overflow: hidden;
     }
-    #page-common-users-report .user-report-panel-header,
-    #page-inactive-users-report .user-report-panel-header {
+    #page-common-users-report .user-report-panel-header, #page-fleet-reports [data-report-pane="common-users"] .user-report-panel-header,
+    #page-inactive-users-report .user-report-panel-header, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-panel-header,
+    #page-unique-ip-report .user-report-panel-header, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-panel-header,
+    #page-unused-lines-report .user-report-panel-header, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-panel-header,
+    #page-password-leak-report .user-report-panel-header , #page-fleet-reports [data-report-pane="password-leak"] .user-report-panel-header {
       display: flex;
       flex-wrap: wrap;
       align-items: flex-end;
       justify-content: space-between;
       gap: 16px;
     }
-    #page-common-users-report .user-report-panel-header h2,
-    #page-inactive-users-report .user-report-panel-header h2 {
+    #page-common-users-report .user-report-panel-header h2, #page-fleet-reports [data-report-pane="common-users"] .user-report-panel-header h2,
+    #page-inactive-users-report .user-report-panel-header h2, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-panel-header h2,
+    #page-unique-ip-report .user-report-panel-header h2, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-panel-header h2,
+    #page-unused-lines-report .user-report-panel-header h2, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-panel-header h2,
+    #page-password-leak-report .user-report-panel-header h2 , #page-fleet-reports [data-report-pane="password-leak"] .user-report-panel-header h2 {
       margin: 0 0 4px;
       font-size: 15px;
       letter-spacing: 0.04em;
     }
-    #page-common-users-report .user-report-panel-header p,
-    #page-inactive-users-report .user-report-panel-header p {
+    #page-common-users-report .user-report-panel-header p, #page-fleet-reports [data-report-pane="common-users"] .user-report-panel-header p,
+    #page-inactive-users-report .user-report-panel-header p, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-panel-header p,
+    #page-unique-ip-report .user-report-panel-header p, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-panel-header p,
+    #page-unused-lines-report .user-report-panel-header p, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-panel-header p,
+    #page-password-leak-report .user-report-panel-header p , #page-fleet-reports [data-report-pane="password-leak"] .user-report-panel-header p {
       margin: 0;
       font-size: 12px;
       color: var(--muted);
     }
-    #page-common-users-report .user-report-search,
-    #page-inactive-users-report .user-report-search {
+    #page-common-users-report .user-report-search, #page-fleet-reports [data-report-pane="common-users"] .user-report-search,
+    #page-inactive-users-report .user-report-search, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-search,
+    #page-unique-ip-report .user-report-search, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-search,
+    #page-unused-lines-report .user-report-search, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-search,
+    #page-password-leak-report .user-report-search , #page-fleet-reports [data-report-pane="password-leak"] .user-report-search {
       display: flex;
       flex-direction: column;
       gap: 4px;
@@ -4506,15 +4552,21 @@
       max-width: 280px;
       min-width: 0;
     }
-    #page-common-users-report .user-report-search-label,
-    #page-inactive-users-report .user-report-search-label {
+    #page-common-users-report .user-report-search-label, #page-fleet-reports [data-report-pane="common-users"] .user-report-search-label,
+    #page-inactive-users-report .user-report-search-label, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-search-label,
+    #page-unique-ip-report .user-report-search-label, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-search-label,
+    #page-unused-lines-report .user-report-search-label, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-search-label,
+    #page-password-leak-report .user-report-search-label , #page-fleet-reports [data-report-pane="password-leak"] .user-report-search-label {
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.04em;
       color: var(--muted);
     }
-    #page-common-users-report .user-report-search input[type="search"],
-    #page-inactive-users-report .user-report-search input[type="search"] {
+    #page-common-users-report .user-report-search input[type="search"], #page-fleet-reports [data-report-pane="common-users"] .user-report-search input[type="search"],
+    #page-inactive-users-report .user-report-search input[type="search"], #page-fleet-reports [data-report-pane="inactive-users"] .user-report-search input[type="search"],
+    #page-unique-ip-report .user-report-search input[type="search"], #page-fleet-reports [data-report-pane="unique-ip"] .user-report-search input[type="search"],
+    #page-unused-lines-report .user-report-search input[type="search"], #page-fleet-reports [data-report-pane="unused-lines"] .user-report-search input[type="search"],
+    #page-password-leak-report .user-report-search input[type="search"] , #page-fleet-reports [data-report-pane="password-leak"] .user-report-search input[type="search"] {
       width: 100%;
       padding: 9px 12px;
       border-radius: 8px;
@@ -4524,28 +4576,165 @@
       font-size: 13px;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
-    #page-common-users-report .user-report-search input[type="search"]:focus,
-    #page-inactive-users-report .user-report-search input[type="search"]:focus {
+    #page-common-users-report .user-report-search input[type="search"]:focus, #page-fleet-reports [data-report-pane="common-users"] .user-report-search input[type="search"]:focus,
+    #page-inactive-users-report .user-report-search input[type="search"]:focus, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-search input[type="search"]:focus,
+    #page-unique-ip-report .user-report-search input[type="search"]:focus, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-search input[type="search"]:focus,
+    #page-unused-lines-report .user-report-search input[type="search"]:focus, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-search input[type="search"]:focus,
+    #page-password-leak-report .user-report-search input[type="search"]:focus , #page-fleet-reports [data-report-pane="password-leak"] .user-report-search input[type="search"]:focus {
       outline: none;
       border-color: var(--kloud-blue);
       box-shadow: 0 0 0 3px var(--kloud-blue-soft, rgba(59, 130, 246, 0.15));
     }
-    #page-common-users-report .user-report-body,
-    #page-inactive-users-report .user-report-body {
+    #page-inactive-users-report .user-report-panel-header, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-panel-header,
+    #page-unused-lines-report .user-report-panel-header , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-panel-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    #page-inactive-users-report .user-report-panel-intro, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-panel-intro,
+    #page-unused-lines-report .user-report-panel-intro , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-panel-intro {
+      flex: 1 1 100%;
+    }
+    #page-inactive-users-report .user-report-toolbar, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-toolbar,
+    #page-unused-lines-report .user-report-toolbar , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px 14px;
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+    #page-inactive-users-report .user-report-bucket-filters, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-bucket-filters,
+    #page-unused-lines-report .user-report-bucket-filters , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-bucket-filters {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      flex: 1 1 280px;
+      min-width: 0;
+    }
+    #page-inactive-users-report .user-report-bucket-pill, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-bucket-pill,
+    #page-unused-lines-report .user-report-bucket-pill , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-bucket-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 11px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+    }
+    #page-inactive-users-report .user-report-bucket-pill:hover, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-bucket-pill:hover,
+    #page-unused-lines-report .user-report-bucket-pill:hover , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-bucket-pill:hover {
+      color: var(--text);
+      border-color: color-mix(in srgb, var(--kloud-blue) 45%, var(--border));
+    }
+    #page-inactive-users-report .user-report-bucket-pill:focus-visible, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-bucket-pill:focus-visible,
+    #page-unused-lines-report .user-report-bucket-pill:focus-visible , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-bucket-pill:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--kloud-blue-soft, rgba(59, 130, 246, 0.2));
+    }
+    #page-inactive-users-report .user-report-bucket-pill.is-active, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-bucket-pill.is-active,
+    #page-unused-lines-report .user-report-bucket-pill.is-active , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-bucket-pill.is-active {
+      border-color: var(--kloud-blue);
+      color: var(--text-bright);
+      background: var(--kloud-blue-soft);
+    }
+    #page-inactive-users-report .user-report-bucket-pill--review.is-active, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-bucket-pill--review.is-active,
+    #page-unused-lines-report .user-report-bucket-pill--review.is-active , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-bucket-pill--review.is-active {
+      border-color: var(--warning);
+      color: var(--warning);
+      background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+    }
+    #page-inactive-users-report .user-report-bucket-pill__count, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-bucket-pill__count,
+    #page-unused-lines-report .user-report-bucket-pill__count , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-bucket-pill__count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.35rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--text) 8%, transparent);
+      color: inherit;
+    }
+    #page-inactive-users-report .user-report-bucket-pill.is-active .user-report-bucket-pill__count, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-bucket-pill.is-active .user-report-bucket-pill__count,
+    #page-unused-lines-report .user-report-bucket-pill.is-active .user-report-bucket-pill__count , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-bucket-pill.is-active .user-report-bucket-pill__count {
+      background: color-mix(in srgb, var(--kloud-blue) 22%, transparent);
+    }
+    #page-inactive-users-report .user-report-bucket-pill--review.is-active .user-report-bucket-pill__count, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-bucket-pill--review.is-active .user-report-bucket-pill__count,
+    #page-unused-lines-report .user-report-bucket-pill--review.is-active .user-report-bucket-pill__count , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-bucket-pill--review.is-active .user-report-bucket-pill__count {
+      background: color-mix(in srgb, var(--warning) 25%, transparent);
+    }
+    #page-inactive-users-report .user-report-search--toolbar, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-search--toolbar,
+    #page-unused-lines-report .user-report-search--toolbar , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-search--toolbar {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 10px;
+      flex: 0 1 auto;
+      min-width: min(100%, 280px);
+      max-width: 320px;
+      margin: 0;
+    }
+    #page-inactive-users-report .user-report-search--toolbar .user-report-search-label, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-search--toolbar .user-report-search-label,
+    #page-unused-lines-report .user-report-search--toolbar .user-report-search-label , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-search--toolbar .user-report-search-label {
+      flex-shrink: 0;
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: normal;
+      text-transform: none;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    #page-inactive-users-report .user-report-search--toolbar input[type="search"], #page-fleet-reports [data-report-pane="inactive-users"] .user-report-search--toolbar input[type="search"],
+    #page-unused-lines-report .user-report-search--toolbar input[type="search"] , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-search--toolbar input[type="search"] {
+      flex: 1 1 auto;
+      min-width: 0;
+      width: auto;
+      padding: 8px 10px;
+      border-radius: 6px;
+    }
+    #page-common-users-report .user-report-body, #page-fleet-reports [data-report-pane="common-users"] .user-report-body,
+    #page-inactive-users-report .user-report-body, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-body,
+    #page-unique-ip-report .user-report-body, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-body,
+    #page-unused-lines-report .user-report-body, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-body,
+    #page-password-leak-report .user-report-body , #page-fleet-reports [data-report-pane="password-leak"] .user-report-body {
       padding: 0;
     }
-    #page-common-users-report .user-report-table-wrap,
-    #page-inactive-users-report .user-report-table-wrap {
+    #page-common-users-report .user-report-table-wrap, #page-fleet-reports [data-report-pane="common-users"] .user-report-table-wrap,
+    #page-inactive-users-report .user-report-table-wrap, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table-wrap,
+    #page-unique-ip-report .user-report-table-wrap, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table-wrap,
+    #page-unused-lines-report .user-report-table-wrap, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table-wrap,
+    #page-password-leak-report .user-report-table-wrap , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table-wrap {
       overflow-x: auto;
     }
-    #page-common-users-report .user-report-table,
-    #page-inactive-users-report .user-report-table {
+    #page-common-users-report .user-report-table, #page-fleet-reports [data-report-pane="common-users"] .user-report-table,
+    #page-inactive-users-report .user-report-table, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table,
+    #page-unique-ip-report .user-report-table, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table,
+    #page-unused-lines-report .user-report-table, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table,
+    #page-password-leak-report .user-report-table , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
     }
-    #page-common-users-report .user-report-table thead th,
-    #page-inactive-users-report .user-report-table thead th {
+    #page-common-users-report .user-report-table thead th, #page-fleet-reports [data-report-pane="common-users"] .user-report-table thead th,
+    #page-inactive-users-report .user-report-table thead th, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table thead th,
+    #page-unique-ip-report .user-report-table thead th, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table thead th,
+    #page-unused-lines-report .user-report-table thead th, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table thead th,
+    #page-password-leak-report .user-report-table thead th , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table thead th {
       padding: 12px 16px;
       text-align: left;
       font-size: 14px;
@@ -4556,90 +4745,153 @@
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
     }
-    #page-common-users-report .user-report-table th.user-report-col-host,
-    #page-inactive-users-report .user-report-table th.user-report-col-host,
-    #page-common-users-report .user-report-table th.user-report-col-databases,
-    #page-inactive-users-report .user-report-table th.user-report-col-databases,
-    #page-inactive-users-report .user-report-table th.user-report-col-status,
-    #page-common-users-report .user-report-table td.user-report-col-host,
-    #page-inactive-users-report .user-report-table td.user-report-col-host,
-    #page-common-users-report .user-report-table td.user-report-col-databases,
-    #page-inactive-users-report .user-report-table td.user-report-col-databases,
-    #page-inactive-users-report .user-report-table td.user-report-col-status {
+    #page-common-users-report .user-report-table th.user-report-col-host, #page-fleet-reports [data-report-pane="common-users"] .user-report-table th.user-report-col-host,
+    #page-inactive-users-report .user-report-table th.user-report-col-host, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table th.user-report-col-host,
+    #page-unique-ip-report .user-report-table th.user-report-col-host, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table th.user-report-col-host,
+    #page-unused-lines-report .user-report-table th.user-report-col-host, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table th.user-report-col-host,
+    #page-password-leak-report .user-report-table th.user-report-col-host, #page-fleet-reports [data-report-pane="password-leak"] .user-report-table th.user-report-col-host,
+    #page-common-users-report .user-report-table th.user-report-col-databases, #page-fleet-reports [data-report-pane="common-users"] .user-report-table th.user-report-col-databases,
+    #page-inactive-users-report .user-report-table th.user-report-col-databases, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table th.user-report-col-databases,
+    #page-unique-ip-report .user-report-table th.user-report-col-databases, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table th.user-report-col-databases,
+    #page-unused-lines-report .user-report-table th.user-report-col-databases, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table th.user-report-col-databases,
+    #page-password-leak-report .user-report-table th.user-report-col-databases, #page-fleet-reports [data-report-pane="password-leak"] .user-report-table th.user-report-col-databases,
+    #page-inactive-users-report .user-report-table th.user-report-col-status, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table th.user-report-col-status,
+    #page-common-users-report .user-report-table td.user-report-col-host, #page-fleet-reports [data-report-pane="common-users"] .user-report-table td.user-report-col-host,
+    #page-inactive-users-report .user-report-table td.user-report-col-host, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table td.user-report-col-host,
+    #page-unique-ip-report .user-report-table td.user-report-col-host, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table td.user-report-col-host,
+    #page-unused-lines-report .user-report-table td.user-report-col-host, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table td.user-report-col-host,
+    #page-password-leak-report .user-report-table td.user-report-col-host, #page-fleet-reports [data-report-pane="password-leak"] .user-report-table td.user-report-col-host,
+    #page-common-users-report .user-report-table td.user-report-col-databases, #page-fleet-reports [data-report-pane="common-users"] .user-report-table td.user-report-col-databases,
+    #page-inactive-users-report .user-report-table td.user-report-col-databases, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table td.user-report-col-databases,
+    #page-unique-ip-report .user-report-table td.user-report-col-databases, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table td.user-report-col-databases,
+    #page-unused-lines-report .user-report-table td.user-report-col-databases, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table td.user-report-col-databases,
+    #page-password-leak-report .user-report-table td.user-report-col-databases, #page-fleet-reports [data-report-pane="password-leak"] .user-report-table td.user-report-col-databases,
+    #page-inactive-users-report .user-report-table td.user-report-col-status , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table td.user-report-col-status {
       text-align: left;
     }
-    #page-common-users-report .user-report-instance,
-    #page-inactive-users-report .user-report-instance {
+    #page-common-users-report .user-report-instance, #page-fleet-reports [data-report-pane="common-users"] .user-report-instance,
+    #page-inactive-users-report .user-report-instance, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-instance,
+    #page-unique-ip-report .user-report-instance, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-instance,
+    #page-unused-lines-report .user-report-instance, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-instance,
+    #page-password-leak-report .user-report-instance , #page-fleet-reports [data-report-pane="password-leak"] .user-report-instance {
       color: var(--text-bright);
       font-family: ui-monospace, Consolas, monospace;
       font-size: 13px;
     }
-    #page-common-users-report .user-report-databases,
-    #page-inactive-users-report .user-report-databases {
+    #page-common-users-report .user-report-databases, #page-fleet-reports [data-report-pane="common-users"] .user-report-databases,
+    #page-inactive-users-report .user-report-databases, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-databases,
+    #page-unique-ip-report .user-report-databases, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-databases,
+    #page-unused-lines-report .user-report-databases, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-databases,
+    #page-password-leak-report .user-report-databases , #page-fleet-reports [data-report-pane="password-leak"] .user-report-databases {
       font-size: 13px;
       color: var(--muted);
     }
-    #page-common-users-report .user-report-table th.user-report-col-user,
-    #page-inactive-users-report .user-report-table th.user-report-col-user,
-    #page-common-users-report .user-report-table td.user-report-col-user,
-    #page-inactive-users-report .user-report-table td.user-report-col-user {
+    #page-common-users-report .user-report-table th.user-report-col-user, #page-fleet-reports [data-report-pane="common-users"] .user-report-table th.user-report-col-user,
+    #page-inactive-users-report .user-report-table th.user-report-col-user, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table th.user-report-col-user,
+    #page-unique-ip-report .user-report-table th.user-report-col-user, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table th.user-report-col-user,
+    #page-unused-lines-report .user-report-table th.user-report-col-user, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table th.user-report-col-user,
+    #page-password-leak-report .user-report-table th.user-report-col-user, #page-fleet-reports [data-report-pane="password-leak"] .user-report-table th.user-report-col-user,
+    #page-common-users-report .user-report-table td.user-report-col-user, #page-fleet-reports [data-report-pane="common-users"] .user-report-table td.user-report-col-user,
+    #page-inactive-users-report .user-report-table td.user-report-col-user, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table td.user-report-col-user,
+    #page-unique-ip-report .user-report-table td.user-report-col-user, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table td.user-report-col-user,
+    #page-unused-lines-report .user-report-table td.user-report-col-user, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table td.user-report-col-user,
+    #page-password-leak-report .user-report-table td.user-report-col-user , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table td.user-report-col-user {
       text-align: left;
       padding-left: 12px;
       padding-right: 8px;
     }
-    #page-common-users-report .user-report-table th.user-report-col-user,
-    #page-inactive-users-report .user-report-table th.user-report-col-user {
+    #page-common-users-report .user-report-table th.user-report-col-user, #page-fleet-reports [data-report-pane="common-users"] .user-report-table th.user-report-col-user,
+    #page-inactive-users-report .user-report-table th.user-report-col-user, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table th.user-report-col-user,
+    #page-unique-ip-report .user-report-table th.user-report-col-user, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table th.user-report-col-user,
+    #page-unused-lines-report .user-report-table th.user-report-col-user, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table th.user-report-col-user,
+    #page-password-leak-report .user-report-table th.user-report-col-user , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table th.user-report-col-user {
       width: 22%;
     }
-    #page-common-users-report .user-report-table th.user-report-col-host,
-    #page-inactive-users-report .user-report-table th.user-report-col-host {
+    #page-common-users-report .user-report-table th.user-report-col-host, #page-fleet-reports [data-report-pane="common-users"] .user-report-table th.user-report-col-host,
+    #page-inactive-users-report .user-report-table th.user-report-col-host, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table th.user-report-col-host,
+    #page-unique-ip-report .user-report-table th.user-report-col-host, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table th.user-report-col-host,
+    #page-unused-lines-report .user-report-table th.user-report-col-host, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table th.user-report-col-host,
+    #page-password-leak-report .user-report-table th.user-report-col-host , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table th.user-report-col-host {
       width: 18%;
     }
-    #page-common-users-report .user-report-table th.user-report-col-databases,
-    #page-inactive-users-report .user-report-table th.user-report-col-databases {
+    #page-common-users-report .user-report-table th.user-report-col-databases, #page-fleet-reports [data-report-pane="common-users"] .user-report-table th.user-report-col-databases,
+    #page-inactive-users-report .user-report-table th.user-report-col-databases, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table th.user-report-col-databases,
+    #page-unique-ip-report .user-report-table th.user-report-col-databases, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table th.user-report-col-databases,
+    #page-unused-lines-report .user-report-table th.user-report-col-databases, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table th.user-report-col-databases,
+    #page-password-leak-report .user-report-table th.user-report-col-databases , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table th.user-report-col-databases {
       width: 28%;
     }
-    #page-inactive-users-report .user-report-table th.user-report-col-status {
-      width: 22%;
+    #page-inactive-users-report .user-report-table th.user-report-col-databases , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table th.user-report-col-databases {
+      width: 16%;
     }
-    #page-common-users-report .user-report-table tbody td,
-    #page-inactive-users-report .user-report-table tbody td {
+    #page-inactive-users-report .user-report-table th.user-report-col-status , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table th.user-report-col-status {
+      width: 14%;
+    }
+    #page-inactive-users-report .user-report-table-wrap , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table-wrap {
+      overflow-x: auto;
+    }
+    #page-common-users-report .user-report-table tbody td, #page-fleet-reports [data-report-pane="common-users"] .user-report-table tbody td,
+    #page-inactive-users-report .user-report-table tbody td, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table tbody td,
+    #page-unique-ip-report .user-report-table tbody td, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table tbody td,
+    #page-unused-lines-report .user-report-table tbody td, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table tbody td,
+    #page-password-leak-report .user-report-table tbody td , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table tbody td {
       padding: 12px 16px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       vertical-align: middle;
     }
-    #page-common-users-report .user-report-table tbody tr:last-child td,
-    #page-inactive-users-report .user-report-table tbody tr:last-child td {
+    #page-common-users-report .user-report-table tbody tr:last-child td, #page-fleet-reports [data-report-pane="common-users"] .user-report-table tbody tr:last-child td,
+    #page-inactive-users-report .user-report-table tbody tr:last-child td, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table tbody tr:last-child td,
+    #page-unique-ip-report .user-report-table tbody tr:last-child td, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table tbody tr:last-child td,
+    #page-unused-lines-report .user-report-table tbody tr:last-child td, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table tbody tr:last-child td,
+    #page-password-leak-report .user-report-table tbody tr:last-child td , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table tbody tr:last-child td {
       border-bottom: none;
     }
-    #page-common-users-report .user-report-row,
-    #page-inactive-users-report .user-report-row {
+    #page-common-users-report .user-report-row, #page-fleet-reports [data-report-pane="common-users"] .user-report-row,
+    #page-inactive-users-report .user-report-row, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-row,
+    #page-unique-ip-report .user-report-row, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-row,
+    #page-unused-lines-report .user-report-row, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-row,
+    #page-password-leak-report .user-report-row , #page-fleet-reports [data-report-pane="password-leak"] .user-report-row {
       transition: background 0.15s ease;
     }
-    #page-common-users-report .user-report-row:hover td,
-    #page-inactive-users-report .user-report-row:hover td {
+    #page-common-users-report .user-report-row:hover td, #page-fleet-reports [data-report-pane="common-users"] .user-report-row:hover td,
+    #page-inactive-users-report .user-report-row:hover td, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-row:hover td,
+    #page-unique-ip-report .user-report-row:hover td, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-row:hover td,
+    #page-unused-lines-report .user-report-row:hover td, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-row:hover td,
+    #page-password-leak-report .user-report-row:hover td , #page-fleet-reports [data-report-pane="password-leak"] .user-report-row:hover td {
       background: rgba(255, 255, 255, 0.03);
     }
-    #page-common-users-report .user-report-col-action,
-    #page-inactive-users-report .user-report-col-action,
-    #page-common-users-report .user-report-table th.user-report-col-action,
-    #page-inactive-users-report .user-report-table th.user-report-col-action {
+    #page-common-users-report .user-report-col-action, #page-fleet-reports [data-report-pane="common-users"] .user-report-col-action,
+    #page-inactive-users-report .user-report-col-action, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-col-action,
+    #page-unique-ip-report .user-report-col-action, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-col-action,
+    #page-unused-lines-report .user-report-col-action, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-col-action,
+    #page-password-leak-report .user-report-col-action, #page-fleet-reports [data-report-pane="password-leak"] .user-report-col-action,
+    #page-common-users-report .user-report-table th.user-report-col-action, #page-fleet-reports [data-report-pane="common-users"] .user-report-table th.user-report-col-action,
+    #page-inactive-users-report .user-report-table th.user-report-col-action, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table th.user-report-col-action,
+    #page-unique-ip-report .user-report-table th.user-report-col-action, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table th.user-report-col-action,
+    #page-unused-lines-report .user-report-table th.user-report-col-action, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table th.user-report-col-action,
+    #page-password-leak-report .user-report-table th.user-report-col-action , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table th.user-report-col-action {
       text-align: center;
       width: 1%;
       white-space: nowrap;
       padding-right: 28px;
       padding-left: 8px;
     }
-    #page-common-users-report .user-report-user-cell,
-    #page-inactive-users-report .user-report-user-cell {
+    #page-common-users-report .user-report-user-cell, #page-fleet-reports [data-report-pane="common-users"] .user-report-user-cell,
+    #page-inactive-users-report .user-report-user-cell, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-user-cell,
+    #page-unique-ip-report .user-report-user-cell, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-user-cell,
+    #page-unused-lines-report .user-report-user-cell, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-user-cell,
+    #page-password-leak-report .user-report-user-cell , #page-fleet-reports [data-report-pane="password-leak"] .user-report-user-cell {
       display: flex;
       align-items: center;
       justify-content: flex-start;
       gap: 10px;
       min-width: 0;
     }
-    #page-common-users-report .user-report-avatar,
-    #page-inactive-users-report .user-report-avatar {
+    #page-common-users-report .user-report-avatar, #page-fleet-reports [data-report-pane="common-users"] .user-report-avatar,
+    #page-inactive-users-report .user-report-avatar, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-avatar,
+    #page-unique-ip-report .user-report-avatar, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-avatar,
+    #page-unused-lines-report .user-report-avatar, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-avatar,
+    #page-password-leak-report .user-report-avatar , #page-fleet-reports [data-report-pane="password-leak"] .user-report-avatar {
       flex: 0 0 32px;
       width: 32px;
       height: 32px;
@@ -4653,8 +4905,11 @@
       background: hsl(var(--avatar-hue, 210) 45% 28%);
       border: 1px solid hsl(var(--avatar-hue, 210) 50% 40%);
     }
-    #page-common-users-report .user-report-username,
-    #page-inactive-users-report .user-report-username {
+    #page-common-users-report .user-report-username, #page-fleet-reports [data-report-pane="common-users"] .user-report-username,
+    #page-inactive-users-report .user-report-username, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-username,
+    #page-unique-ip-report .user-report-username, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-username,
+    #page-unused-lines-report .user-report-username, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-username,
+    #page-password-leak-report .user-report-username , #page-fleet-reports [data-report-pane="password-leak"] .user-report-username {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 13px;
       font-weight: 500;
@@ -4663,8 +4918,11 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    #page-common-users-report .user-report-host-chip,
-    #page-inactive-users-report .user-report-host-chip {
+    #page-common-users-report .user-report-host-chip, #page-fleet-reports [data-report-pane="common-users"] .user-report-host-chip,
+    #page-inactive-users-report .user-report-host-chip, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-host-chip,
+    #page-unique-ip-report .user-report-host-chip, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-host-chip,
+    #page-unused-lines-report .user-report-host-chip, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-host-chip,
+    #page-password-leak-report .user-report-host-chip , #page-fleet-reports [data-report-pane="password-leak"] .user-report-host-chip {
       display: inline-block;
       max-width: 100%;
       padding: 5px 10px;
@@ -4678,7 +4936,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    #page-inactive-users-report .user-report-status {
+    #page-inactive-users-report .user-report-status , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-status {
       display: inline-flex;
       align-items: center;
       padding: 4px 10px;
@@ -4688,184 +4946,407 @@
       letter-spacing: 0.02em;
       white-space: nowrap;
     }
-    #page-inactive-users-report .user-report-status--warn {
+    #page-inactive-users-report .user-report-status--warn , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-status--warn {
       color: #fbbf24;
       background: rgba(251, 191, 36, 0.12);
       border: 1px solid rgba(251, 191, 36, 0.28);
     }
-    #page-inactive-users-report .user-report-status--ok {
+    #page-inactive-users-report .user-report-status--ok , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-status--ok {
       color: var(--success);
       background: rgba(34, 197, 94, 0.1);
       border: 1px solid rgba(34, 197, 94, 0.25);
     }
-    #page-inactive-users-report .user-report-status--neutral {
+    #page-inactive-users-report .user-report-status--neutral , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-status--neutral {
       color: var(--muted);
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
-    #page-common-users-report .user-report-action,
-    #page-inactive-users-report .user-report-action {
+    #page-common-users-report .user-report-action, #page-fleet-reports [data-report-pane="common-users"] .user-report-action,
+    #page-inactive-users-report .user-report-action, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-action,
+    #page-unique-ip-report .user-report-action, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-action,
+    #page-unused-lines-report .user-report-action, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-action,
+    #page-password-leak-report .user-report-action , #page-fleet-reports [data-report-pane="password-leak"] .user-report-action {
       font-size: 12px;
       padding: 6px 12px;
       border-radius: 8px;
       gap: 4px;
     }
-    #page-common-users-report .user-report-action span,
-    #page-inactive-users-report .user-report-action span {
+    #page-common-users-report .user-report-action span, #page-fleet-reports [data-report-pane="common-users"] .user-report-action span,
+    #page-inactive-users-report .user-report-action span, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-action span,
+    #page-unique-ip-report .user-report-action span, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-action span,
+    #page-unused-lines-report .user-report-action span, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-action span,
+    #page-password-leak-report .user-report-action span , #page-fleet-reports [data-report-pane="password-leak"] .user-report-action span {
       opacity: 0.85;
       transition: transform 0.15s ease;
     }
-    #page-common-users-report .user-report-action:hover span,
-    #page-inactive-users-report .user-report-action:hover span {
+    #page-common-users-report .user-report-action:hover span, #page-fleet-reports [data-report-pane="common-users"] .user-report-action:hover span,
+    #page-inactive-users-report .user-report-action:hover span, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-action:hover span,
+    #page-unique-ip-report .user-report-action:hover span, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-action:hover span,
+    #page-unused-lines-report .user-report-action:hover span, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-action:hover span,
+    #page-password-leak-report .user-report-action:hover span , #page-fleet-reports [data-report-pane="password-leak"] .user-report-action:hover span {
       transform: translateX(2px);
     }
-    #page-common-users-report .user-report-empty,
-    #page-inactive-users-report .user-report-empty {
+    #page-common-users-report .user-report-empty, #page-fleet-reports [data-report-pane="common-users"] .user-report-empty,
+    #page-inactive-users-report .user-report-empty, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-empty,
+    #page-unique-ip-report .user-report-empty, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-empty,
+    #page-unused-lines-report .user-report-empty, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-empty,
+    #page-password-leak-report .user-report-empty , #page-fleet-reports [data-report-pane="password-leak"] .user-report-empty {
       color: var(--muted);
       text-align: center;
       padding: 40px 24px !important;
       font-size: 13px;
       line-height: 1.5;
     }
-    #page-common-users-report .user-report-empty--error,
-    #page-inactive-users-report .user-report-empty--error {
+    #page-common-users-report .user-report-empty--error, #page-fleet-reports [data-report-pane="common-users"] .user-report-empty--error,
+    #page-inactive-users-report .user-report-empty--error, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-empty--error,
+    #page-unique-ip-report .user-report-empty--error, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-empty--error,
+    #page-unused-lines-report .user-report-empty--error, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-empty--error,
+    #page-password-leak-report .user-report-empty--error , #page-fleet-reports [data-report-pane="password-leak"] .user-report-empty--error {
       color: var(--danger);
     }
-    #page-common-users-report .user-report-pagination,
-    #page-inactive-users-report .user-report-pagination {
+    #page-common-users-report .user-report-pagination, #page-fleet-reports [data-report-pane="common-users"] .user-report-pagination,
+    #page-inactive-users-report .user-report-pagination, #page-fleet-reports [data-report-pane="inactive-users"] .user-report-pagination,
+    #page-unique-ip-report .user-report-pagination, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-pagination,
+    #page-unused-lines-report .user-report-pagination, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-pagination,
+    #page-password-leak-report .user-report-pagination , #page-fleet-reports [data-report-pane="password-leak"] .user-report-pagination {
       padding: 12px 16px;
       border-top: 1px solid var(--border);
       background: rgba(0, 0, 0, 0.12);
     }
     /* Inactive Users Report — typography (page-only) */
-    #page-inactive-users-report h1 {
+    #page-inactive-users-report h1 , #page-fleet-reports [data-report-pane="inactive-users"] h1 {
       font-weight: 600;
       letter-spacing: 0.01em;
       color: var(--text-bright);
       margin-bottom: 6px;
     }
-    #page-inactive-users-report .user-report-stat-card .stat-label {
+    #page-inactive-users-report .user-report-stat-card .stat-label , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stat-card .stat-label {
       font-size: 14px;
       font-weight: 600;
       color: var(--text);
       letter-spacing: 0.01em;
     }
-    #page-inactive-users-report .user-report-stat-card .stat-value {
+    #page-inactive-users-report .user-report-stat-card .stat-value , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stat-card .stat-value {
       font-size: 28px;
       font-weight: 700;
       color: var(--text-bright);
       line-height: 1.1;
     }
-    #page-inactive-users-report .user-report-stat-source {
+    #page-inactive-users-report .user-report-stat-source , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stat-source {
       font-size: 15px !important;
       font-weight: 600;
       color: var(--text-bright);
       letter-spacing: 0.01em;
     }
-    #page-inactive-users-report .user-report-panel-header h2 {
+    #page-inactive-users-report .user-report-panel-header h2 , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-panel-header h2 {
       font-size: 14px;
       font-weight: 600;
       letter-spacing: 0.01em;
       color: var(--text-bright);
     }
-    #page-inactive-users-report .user-report-search-label {
+    #page-inactive-users-report .user-report-search-label , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-search-label {
       font-size: 13px;
       font-weight: 600;
       letter-spacing: 0.01em;
       color: var(--muted);
     }
-    #page-inactive-users-report .user-report-table thead th {
+    #page-inactive-users-report .user-report-table thead th , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table thead th {
       font-size: 13px;
       font-weight: 600;
       letter-spacing: 0.01em;
       color: var(--text);
     }
-    #page-inactive-users-report .user-report-username {
+    #page-inactive-users-report .user-report-username , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-username {
       font-family: inherit;
       font-size: 13px;
       font-weight: 500;
       color: var(--text-bright);
     }
-    #page-inactive-users-report .user-report-instance {
+    #page-inactive-users-report .user-report-instance , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-instance {
       font-family: inherit;
       font-size: 13px;
       font-weight: 600;
       color: var(--text-bright);
     }
-    #page-inactive-users-report .user-report-databases {
+    #page-inactive-users-report .user-report-databases , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-databases {
       font-size: 13px;
       color: var(--muted);
     }
-    #page-inactive-users-report .user-report-status {
+    #page-inactive-users-report .user-report-status , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-status {
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.02em;
     }
-    #page-inactive-users-report .user-report-action {
+    #page-unused-lines-report td.user-report-col-status .badge.user-report-status , #page-fleet-reports [data-report-pane="unused-lines"] td.user-report-col-status .badge.user-report-status {
+      background: transparent !important;
+      border: none !important;
+      padding: 0;
+      border-radius: 0;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: normal;
+      color: var(--muted);
+      line-height: 1.35;
+      white-space: normal;
+    }
+    #page-unused-lines-report td.user-report-col-status .badge-posture-fail , #page-fleet-reports [data-report-pane="unused-lines"] td.user-report-col-status .badge-posture-fail {
+      color: #fbbf24;
+    }
+    #page-unused-lines-report .user-report-meta , #page-fleet-reports [data-report-pane="unused-lines"] .user-report-meta {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 400;
+    }
+    #page-inactive-users-report .user-report-action , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-action {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+   
+    #page-unused-lines-report .user-report-col-lineno, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-col-lineno,
+    #page-password-leak-report .user-report-col-lineno , #page-fleet-reports [data-report-pane="password-leak"] .user-report-col-lineno {
+      width: 8%;
+      white-space: nowrap;
+    }
+    #page-unused-lines-report .user-report-col-line, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-col-line,
+    #page-password-leak-report .user-report-col-line , #page-fleet-reports [data-report-pane="password-leak"] .user-report-col-line {
+      max-width: 420px;
+    }
+    #page-unused-lines-report .user-report-hba-line, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-hba-line,
+    #page-password-leak-report .user-report-hba-line , #page-fleet-reports [data-report-pane="password-leak"] .user-report-hba-line {
+      display: inline-block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: var(--text-bright);
+    }
+    #page-unique-ip-report .user-report-table th.user-report-col-databases, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table th.user-report-col-databases,
+    #page-unused-lines-report .user-report-table th.user-report-col-databases, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table th.user-report-col-databases,
+    #page-password-leak-report .user-report-table th.user-report-col-databases , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table th.user-report-col-databases {
+      width: 14%;
+    }
+    #page-unique-ip-report .user-report-col-range, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-col-range,
+    #page-unused-lines-report .user-report-col-range, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-col-range,
+    #page-password-leak-report .user-report-col-range, #page-fleet-reports [data-report-pane="password-leak"] .user-report-col-range,
+    #page-inactive-users-report .user-report-col-range , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-col-range {
+      min-width: 0;
+      max-width: none;
+      width: 1%;
+      white-space: nowrap;
+      vertical-align: middle;
+      text-align: left;
+      padding-left: 8px;
+      padding-right: 12px;
+    }
+    #page-unique-ip-report .user-report-table th.user-report-col-range, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table th.user-report-col-range,
+    #page-unused-lines-report .user-report-table th.user-report-col-range, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table th.user-report-col-range,
+    #page-password-leak-report .user-report-table th.user-report-col-range, #page-fleet-reports [data-report-pane="password-leak"] .user-report-table th.user-report-col-range,
+    #page-inactive-users-report .user-report-table th.user-report-col-range , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-table th.user-report-col-range {
+      text-align: left;
+      padding-left: 8px;
+      padding-right: 12px;
+    }
+    #page-unique-ip-report .user-report-range, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-range,
+    #page-unused-lines-report .user-report-range, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-range,
+    #page-password-leak-report .user-report-range, #page-fleet-reports [data-report-pane="password-leak"] .user-report-range,
+    #page-inactive-users-report .user-report-range , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-range {
+      display: inline-block;
+      max-width: 100%;
+      line-height: 1.35;
+    }
+    #page-unique-ip-report .user-report-range-line, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-range-line,
+    #page-unused-lines-report .user-report-range-line, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-range-line,
+    #page-password-leak-report .user-report-range-line, #page-fleet-reports [data-report-pane="password-leak"] .user-report-range-line,
+    #page-inactive-users-report .user-report-range-line , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-range-line {
+      display: inline-block;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-bright);
+      font-variant-numeric: tabular-nums;
+    }
+    #page-unique-ip-report .user-report-range--empty, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-range--empty,
+    #page-unused-lines-report .user-report-range--empty, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-range--empty,
+    #page-password-leak-report .user-report-range--empty, #page-fleet-reports [data-report-pane="password-leak"] .user-report-range--empty,
+    #page-inactive-users-report .user-report-range--empty , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-range--empty {
+      color: var(--muted);
+    }
+    #page-unique-ip-report .user-report-stat-card--range, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stat-card--range,
+    #page-unused-lines-report .user-report-stat-card--range, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stat-card--range,
+    #page-password-leak-report .user-report-stat-card--range , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stat-card--range {
+      min-width: 0;
+      overflow: hidden;
+    }
+    #page-unique-ip-report #unique-ip-stat-range, #page-fleet-reports [data-report-pane="unique-ip"] #unique-ip-stat-range,
+    #page-unused-lines-report #unused-lines-stat-buckets, #page-fleet-reports [data-report-pane="unused-lines"] #unused-lines-stat-buckets,
+    #page-unused-lines-report #unused-lines-stat-range, #page-fleet-reports [data-report-pane="unused-lines"] #unused-lines-stat-range,
+    #page-password-leak-report #unused-lines-stat-range , #page-fleet-reports [data-report-pane="password-leak"] #unused-lines-stat-range {
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      line-height: 1.35 !important;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    #page-unique-ip-report h1, #page-fleet-reports [data-report-pane="unique-ip"] h1,
+    #page-unused-lines-report h1, #page-fleet-reports [data-report-pane="unused-lines"] h1,
+    #page-password-leak-report h1 , #page-fleet-reports [data-report-pane="password-leak"] h1 {
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--text-bright);
+      margin-bottom: 6px;
+    }
+    #page-unique-ip-report .user-report-stat-card .stat-label, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stat-card .stat-label,
+    #page-unused-lines-report .user-report-stat-card .stat-label, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stat-card .stat-label,
+    #page-password-leak-report .user-report-stat-card .stat-label , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stat-card .stat-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.01em;
+    }
+    #page-unique-ip-report .user-report-stat-card .stat-value, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stat-card .stat-value,
+    #page-unused-lines-report .user-report-stat-card .stat-value, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stat-card .stat-value,
+    #page-password-leak-report .user-report-stat-card .stat-value , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stat-card .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-bright);
+      line-height: 1.1;
+    }
+    #page-unique-ip-report #unique-ip-stat-range.stat-value, #page-fleet-reports [data-report-pane="unique-ip"] #unique-ip-stat-range.stat-value,
+    #page-unused-lines-report #unused-lines-stat-buckets.stat-value, #page-fleet-reports [data-report-pane="unused-lines"] #unused-lines-stat-buckets.stat-value,
+    #page-unused-lines-report #unused-lines-stat-range.stat-value, #page-fleet-reports [data-report-pane="unused-lines"] #unused-lines-stat-range.stat-value,
+    #page-password-leak-report #unused-lines-stat-range.stat-value , #page-fleet-reports [data-report-pane="password-leak"] #unused-lines-stat-range.stat-value {
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      line-height: 1.35 !important;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    #page-unique-ip-report .user-report-stat-source, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-stat-source,
+    #page-unused-lines-report .user-report-stat-source, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-stat-source,
+    #page-password-leak-report .user-report-stat-source , #page-fleet-reports [data-report-pane="password-leak"] .user-report-stat-source {
+      font-size: 15px !important;
+      font-weight: 600;
+      color: var(--text-bright);
+      letter-spacing: 0.01em;
+    }
+    #page-unique-ip-report .user-report-panel-header h2, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-panel-header h2,
+    #page-unused-lines-report .user-report-panel-header h2, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-panel-header h2,
+    #page-password-leak-report .user-report-panel-header h2 , #page-fleet-reports [data-report-pane="password-leak"] .user-report-panel-header h2 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--text-bright);
+    }
+    #page-unique-ip-report .user-report-search-label, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-search-label,
+    #page-unused-lines-report .user-report-search-label, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-search-label,
+    #page-password-leak-report .user-report-search-label , #page-fleet-reports [data-report-pane="password-leak"] .user-report-search-label {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--muted);
+    }
+    #page-unique-ip-report .user-report-table thead th, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-table thead th,
+    #page-unused-lines-report .user-report-table thead th, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-table thead th,
+    #page-password-leak-report .user-report-table thead th , #page-fleet-reports [data-report-pane="password-leak"] .user-report-table thead th {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--text);
+    }
+    #page-unique-ip-report .user-report-username, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-username,
+    #page-unique-ip-report .user-report-instance, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-instance,
+    #page-unused-lines-report .user-report-instance, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-instance,
+    #page-password-leak-report .user-report-instance , #page-fleet-reports [data-report-pane="password-leak"] .user-report-instance {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+    #page-unique-ip-report .user-report-username , #page-fleet-reports [data-report-pane="unique-ip"] .user-report-username {
+      font-weight: 500;
+    }
+    #page-unique-ip-report .user-report-databases, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-databases,
+    #page-unused-lines-report .user-report-databases, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-databases,
+    #page-password-leak-report .user-report-databases , #page-fleet-reports [data-report-pane="password-leak"] .user-report-databases {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    #page-unique-ip-report .user-report-action, #page-fleet-reports [data-report-pane="unique-ip"] .user-report-action,
+    #page-unused-lines-report .user-report-action, #page-fleet-reports [data-report-pane="unused-lines"] .user-report-action,
+    #page-password-leak-report .user-report-action , #page-fleet-reports [data-report-pane="password-leak"] .user-report-action {
       font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.01em;
     }
     /* Common Users Report — typography (page-only) */
-    #page-common-users-report h1 {
+    #page-common-users-report h1 , #page-fleet-reports [data-report-pane="common-users"] h1 {
       font-weight: 600;
       letter-spacing: 0.01em;
       color: var(--text-bright);
       margin-bottom: 6px;
     }
-    #page-common-users-report .user-report-stat-card .stat-label {
+    #page-common-users-report .user-report-stat-card .stat-label , #page-fleet-reports [data-report-pane="common-users"] .user-report-stat-card .stat-label {
       font-size: 14px;
       font-weight: 600;
       color: var(--text);
       letter-spacing: 0.01em;
     }
-    #page-common-users-report .user-report-stat-card .stat-value {
+    #page-common-users-report .user-report-stat-card .stat-value , #page-fleet-reports [data-report-pane="common-users"] .user-report-stat-card .stat-value {
       font-size: 28px;
       font-weight: 700;
       color: var(--text-bright);
       line-height: 1.1;
     }
-    #page-common-users-report .user-report-stat-source {
+    #page-common-users-report .user-report-stat-source , #page-fleet-reports [data-report-pane="common-users"] .user-report-stat-source {
       font-size: 15px !important;
       font-weight: 600;
       color: var(--text-bright);
       letter-spacing: 0.01em;
     }
-    #page-common-users-report .user-report-panel-header h2 {
+    #page-common-users-report .user-report-panel-header h2 , #page-fleet-reports [data-report-pane="common-users"] .user-report-panel-header h2 {
       font-size: 14px;
       font-weight: 600;
       letter-spacing: 0.01em;
       color: var(--text-bright);
     }
-    #page-common-users-report .user-report-search-label {
+    #page-common-users-report .user-report-search-label , #page-fleet-reports [data-report-pane="common-users"] .user-report-search-label {
       font-size: 13px;
       font-weight: 600;
       letter-spacing: 0.01em;
       color: var(--muted);
     }
-    #page-common-users-report .user-report-table thead th {
+    #page-common-users-report .user-report-table thead th , #page-fleet-reports [data-report-pane="common-users"] .user-report-table thead th {
       font-size: 13px;
       font-weight: 600;
       letter-spacing: 0.01em;
       color: var(--text);
     }
-    #page-common-users-report .user-report-username {
+    #page-common-users-report .user-report-username , #page-fleet-reports [data-report-pane="common-users"] .user-report-username {
       font-family: inherit;
       font-size: 13px;
       font-weight: 500;
       color: var(--text-bright);
     }
-    #page-common-users-report .user-report-instance {
+    #page-common-users-report .user-report-instance , #page-fleet-reports [data-report-pane="common-users"] .user-report-instance {
       font-family: inherit;
       font-size: 13px;
       font-weight: 600;
       color: var(--text-bright);
     }
-    #page-common-users-report .user-report-databases {
+    #page-common-users-report .user-report-databases , #page-fleet-reports [data-report-pane="common-users"] .user-report-databases {
       font-size: 13px;
       color: var(--muted);
     }
-    #page-common-users-report .user-report-action {
+    #page-common-users-report .user-report-action , #page-fleet-reports [data-report-pane="common-users"] .user-report-action {
       font-size: 12px;
       font-weight: 600;
       letter-spacing: 0.01em;
@@ -5256,17 +5737,17 @@
       letter-spacing: 0.01em;
     }
     @media (max-width: 720px) {
-      #page-common-users-report .user-report-stats,
-      #page-inactive-users-report .user-report-stats {
+      #page-common-users-report .user-report-stats, #page-fleet-reports [data-report-pane="common-users"] .user-report-stats,
+      #page-inactive-users-report .user-report-stats , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-stats {
         grid-template-columns: 1fr;
       }
-      #page-common-users-report .user-report-panel-header,
-      #page-inactive-users-report .user-report-panel-header {
+      #page-common-users-report .user-report-panel-header, #page-fleet-reports [data-report-pane="common-users"] .user-report-panel-header,
+      #page-inactive-users-report .user-report-panel-header , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-panel-header {
         flex-direction: column;
         align-items: stretch;
       }
-      #page-common-users-report .user-report-search,
-      #page-inactive-users-report .user-report-search {
+      #page-common-users-report .user-report-search, #page-fleet-reports [data-report-pane="common-users"] .user-report-search,
+      #page-inactive-users-report .user-report-search , #page-fleet-reports [data-report-pane="inactive-users"] .user-report-search {
         max-width: none;
       }
     }
@@ -5786,5 +6267,108 @@
       #page-backup-compliance .bc-auth-window__chips {
         flex-wrap: wrap;
         height: auto;
+      }
+    }
+
+    /* Fleet Reports — unified dashboard + tab bar */
+    #page-fleet-reports .fleet-reports-hero {
+      margin-bottom: 20px;
+    }
+    #page-fleet-reports .fleet-reports-hero h1 {
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--text-bright);
+      margin-bottom: 6px;
+    }
+    #page-fleet-reports .fleet-reports-hero__meta {
+      margin-top: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    #page-fleet-reports .fleet-reports-hero__meta span {
+      color: var(--kloud-blue);
+    }
+    #page-fleet-reports .fleet-reports-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 6px;
+      margin-bottom: 24px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid var(--border);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+    #page-fleet-reports .fleet-reports-tab {
+      flex: 1 1 140px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      padding: 12px 14px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+    }
+    #page-fleet-reports .fleet-reports-tab:hover {
+      color: var(--text-bright);
+      background: rgba(85, 163, 215, 0.08);
+      border-color: rgba(85, 163, 215, 0.2);
+    }
+    #page-fleet-reports .fleet-reports-tab:focus-visible {
+      outline: 2px solid var(--kloud-blue);
+      outline-offset: 2px;
+    }
+    #page-fleet-reports .fleet-reports-tab.is-active {
+      color: var(--text-bright);
+      background: linear-gradient(145deg, rgba(85, 163, 215, 0.18), rgba(85, 163, 215, 0.06));
+      border-color: rgba(85, 163, 215, 0.45);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+    #page-fleet-reports .fleet-reports-tab--critical.is-active {
+      background: linear-gradient(145deg, rgba(239, 68, 68, 0.16), rgba(239, 68, 68, 0.05));
+      border-color: rgba(239, 68, 68, 0.45);
+    }
+    #page-fleet-reports .fleet-reports-tab__label {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.3;
+    }
+    #page-fleet-reports .fleet-reports-tab__meta {
+      display: none !important;
+    }
+    #page-fleet-reports .fleet-report-pane {
+      display: none;
+      animation: fleetReportPaneIn 0.22s ease;
+    }
+    #page-fleet-reports .fleet-report-pane.is-active {
+      display: block;
+    }
+    @keyframes fleetReportPaneIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #page-fleet-reports .fleet-report-pane-subtitle {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    @media (max-width: 960px) {
+      #page-fleet-reports .fleet-reports-tabs {
+        flex-direction: column;
+      }
+      #page-fleet-reports .fleet-reports-tab {
+        flex: 1 1 auto;
+        width: 100%;
       }
     }

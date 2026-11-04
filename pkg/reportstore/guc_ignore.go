@@ -55,7 +55,7 @@ func UpsertGucIgnore(ctx context.Context, db *sql.DB, scope, targetID, gucName s
 	}
 	id := gucIgnoreID(scope, instanceKey, gucName)
 	now := time.Now().UTC().Format(time.RFC3339)
-	_, err := db.ExecContext(ctx, `
+	_, err := execContext(ctx, db, `
 		INSERT INTO guc_drift_ignores (id, scope, target_id, instance_key, guc_name, ignored_at)
 		VALUES (?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
@@ -78,13 +78,13 @@ func DeleteGucIgnore(ctx context.Context, db *sql.DB, scope, targetID, gucName s
 		instanceKey = targetID
 	}
 	id := gucIgnoreID(scope, instanceKey, gucName)
-	_, err := db.ExecContext(ctx, `DELETE FROM guc_drift_ignores WHERE id = ?`, id)
+	_, err := execContext(ctx, db, `DELETE FROM guc_drift_ignores WHERE id = ?`, id)
 	return err
 }
 
 // ListGucIgnores returns all active ignores.
 func ListGucIgnores(ctx context.Context, db *sql.DB) ([]GucIgnoreEntry, error) {
-	rows, err := db.QueryContext(ctx, `
+	rows, err := queryContext(ctx, db, `
 		SELECT id, scope, target_id, instance_key, guc_name, ignored_at
 		FROM guc_drift_ignores
 		ORDER BY ignored_at DESC

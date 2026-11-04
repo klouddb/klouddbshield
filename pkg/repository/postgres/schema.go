@@ -27,8 +27,11 @@ func schemaStatements() []string {
 			backup_compliance_scanned_at TEXT,
 			error_message TEXT
 		)`,
+		`ALTER TABLE scan_results ADD COLUMN IF NOT EXISTS pii_report_json JSONB`,
+		`ALTER TABLE scan_results ADD COLUMN IF NOT EXISTS pii_scanned_at TEXT`,
 		`ALTER TABLE scan_results ADD COLUMN IF NOT EXISTS backup_compliance_json JSONB`,
 		`ALTER TABLE scan_results ADD COLUMN IF NOT EXISTS backup_compliance_scanned_at TEXT`,
+		`ALTER TABLE scan_results ADD COLUMN IF NOT EXISTS error_message TEXT`,
 		`CREATE INDEX IF NOT EXISTS idx_scan_results_target ON scan_results(target_id, started_at DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_scan_results_node ON scan_results(node_id, started_at DESC)`,
 		`CREATE TABLE IF NOT EXISTS guc_baseline (
@@ -113,5 +116,34 @@ func schemaStatements() []string {
 			FOREIGN KEY(node_id) REFERENCES collector_status(node_id) ON DELETE CASCADE
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_collector_logs_node_created ON collector_logs(node_id, created_at DESC)`,
+		`CREATE TABLE IF NOT EXISTS logparser_inactive_users (
+			target_id TEXT NOT NULL,
+			target_host TEXT NOT NULL DEFAULT '',
+			entity_key TEXT NOT NULL,
+			inactive_since TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			PRIMARY KEY (target_id, entity_key)
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_logparser_inactive_users_target ON logparser_inactive_users(target_id)`,
+		`CREATE TABLE IF NOT EXISTS logparser_unused_hba (
+			target_id TEXT NOT NULL,
+			target_host TEXT NOT NULL DEFAULT '',
+			entity_key TEXT NOT NULL,
+			line_no TEXT NOT NULL DEFAULT '',
+			line_text TEXT NOT NULL DEFAULT '',
+			unused_since TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			PRIMARY KEY (target_id, entity_key)
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_logparser_unused_hba_target ON logparser_unused_hba(target_id)`,
+		`CREATE TABLE IF NOT EXISTS logparser_client_ips (
+			target_id TEXT NOT NULL,
+			target_host TEXT NOT NULL DEFAULT '',
+			entity_key TEXT NOT NULL,
+			first_seen TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			PRIMARY KEY (target_id, entity_key)
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_logparser_client_ips_target ON logparser_client_ips(target_id)`,
 	}
 }

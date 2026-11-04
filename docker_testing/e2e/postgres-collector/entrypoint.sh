@@ -111,4 +111,4 @@ echo "Running initial scans (CIS, HBA, PII, SSL, log parser all) and pushing to 
 echo "Starting ciscollector cron (--setup-cron, same as systemd ciscollector.service)..."
 trap 'kill -TERM "${PG_PID}" 2>/dev/null || true' EXIT INT TERM
 
-exec /app/ciscollector --setup-cron --config /etc/klouddbshield --json
+exec /app/ciscollector --setup-cron --log-to-file=false --config /etc/klouddbshield --json

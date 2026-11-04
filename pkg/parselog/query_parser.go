@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/klouddb/klouddbshield/pkg/config"
@@ -35,13 +36,21 @@ type QueryParser struct {
 
 // NewQueryParser is a constructor that creates a new QueryParser object.
 func NewQueryParser(cnf *config.Config) *QueryParser {
+	region := ""
+	if cnf != nil {
+		region = strings.TrimSpace(cnf.PiiScanner.Region)
+	}
+	spacy := piiscanner.NewSpacyDetector().WithWorkDirs(piiscanner.SpacyWorkDirs)
+	if piiscanner.IsIndiaRegion(region) {
+		spacy = spacy.WithColumnContextGate(true)
+	}
 	return &QueryParser{
 		cnf: cnf,
 
 		piiRunner: piiscanner.NewPiiScanner().
-			AddValueDetector(piiscanner.NewRegexValueDetector()).
-			AddValueDetector(piiscanner.NewSpacyDetector().WithWorkDirs([]string{"python", "/etc/klouddbshield/python", "../../python"})).
-			AddColumnDetector(piiscanner.NewRegexColumnDetector()),
+			AddValueDetector(piiscanner.NewRegexValueDetectorForRegion(region)).
+			AddValueDetector(spacy).
+			AddColumnDetector(piiscanner.NewRegexColumnDetectorForRegion(region)),
 
 		piiResp: make(map[piiscanner.PIILabel][]PIIResp),
 	}

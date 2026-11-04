@@ -293,16 +293,189 @@ func BuildLogParserSummary(ctx context.Context, runners []runner.Parser, logPars
 
 // PersistLogParserSummary stores structured Log Parser Summary into fileData
 // without changing terminal output. Used when CLI prints detailed results only.
+// Also persists scan meta and a text terminal report for the dashboard debugger.
 func PersistLogParserSummary(ctx context.Context, runners []runner.Parser, logParserCnf *config.LogParser,
 	fastRunnerResp *runner.FastRunnerResponse, fileData map[string]interface{}) {
 	if fileData == nil {
 		return
 	}
 	_, allValues := BuildLogParserSummary(ctx, runners, logParserCnf, fastRunnerResp)
-	if len(allValues) == 0 {
+	if len(allValues) > 0 {
+		fileData["Log Parser Summary"] = allValues
+	}
+	PersistLogParserScanMeta(fileData, logParserCnf, fastRunnerResp)
+	fileData["Log Parser Terminal Report"] = BuildLogParserTerminalReport(ctx, runners, logParserCnf, fastRunnerResp, "detail")
+}
+
+// PersistLogParserScanMeta stores begin/end filter window and per-file scan inventory.
+func PersistLogParserScanMeta(fileData map[string]interface{}, logParserCnf *config.LogParser,
+	fastRunnerResp *runner.FastRunnerResponse) {
+	if fileData == nil || logParserCnf == nil || fastRunnerResp == nil {
 		return
 	}
-	fileData["Log Parser Summary"] = allValues
+	fileData["Log Parser Scan Meta"] = BuildLogParserScanMeta(logParserCnf, fastRunnerResp)
+}
+
+// BuildLogParserScanMeta builds the structured scan-debug payload for main-server / UI.
+func BuildLogParserScanMeta(logParserCnf *config.LogParser, fastRunnerResp *runner.FastRunnerResponse) map[string]interface{} {
+	files := fastRunnerResp.FileResults
+	if files == nil {
+		files = []runner.FileScanResult{}
+	}
+	filesScanned := 0
+	for _, f := range files {
+		if f.Scanned {
+			filesScanned++
+		}
+	}
+	filesFound := len(logParserCnf.LogFiles)
+	if filesFound == 0 {
+		filesFound = len(files)
+	}
+	begin := ""
+	end := ""
+	if !logParserCnf.Begin.IsZero() {
+		begin = logParserCnf.Begin.UTC().Format(time.RFC3339)
+	}
+	if !logParserCnf.End.IsZero() {
+		end = logParserCnf.End.UTC().Format(time.RFC3339)
+	}
+	duration := ""
+	if !fastRunnerResp.StartTime.IsZero() {
+		duration = time.Since(fastRunnerResp.StartTime).String()
+	}
+	cmds := append([]string{}, logParserCnf.Commands...)
+	return map[string]interface{}{
+		"begin":         begin,
+		"end":           end,
+		"files_found":   filesFound,
+		"files_scanned": filesScanned,
+		"total_lines":   fastRunnerResp.TotalLines,
+		"duration":      duration,
+		"files":         files,
+		"commands":      cmds,
+	}
+}
+
+// BuildLogParserTerminalReport renders the same narrative printed to the terminal
+// so the dashboard can show log-parser behavior for debugging.
+func BuildLogParserTerminalReport(ctx context.Context, runners []runner.Parser, logParserCnf *config.LogParser,
+	fastRunnerResp *runner.FastRunnerResponse, mode string) string {
+	if logParserCnf == nil || fastRunnerResp == nil {
+		return ""
+	}
+	var b strings.Builder
+	if len(fastRunnerResp.FileErrors) > 0 {
+		b.WriteString("File parsing errors:\n")
+		for name, errMsg := range fastRunnerResp.FileErrors {
+			fmt.Fprintf(&b, "  %s: %s\n", name, errMsg)
+		}
+		b.WriteString("\n")
+	}
+	if fastRunnerResp.TotalLines == 0 {
+		fmt.Fprintf(&b, "No log lines found in the log file(s).. Please see error log %s for additional information\n", logger.GetLogFileName())
+	} else {
+		for i, successLines := range fastRunnerResp.SuccessLines {
+			if i >= len(logParserCnf.Commands) {
+				break
+			}
+			command := logParserCnf.Commands[i]
+			perc := float64(successLines) * 100 / float64(fastRunnerResp.TotalLines)
+			switch perc {
+			case 100:
+				b.WriteString(command + " ::: Successfully parsed all files\n")
+			case 0:
+				fmt.Fprintf(&b, "%s ::: Was not able to parse logfile(s).. Please see error log %s for additional information\n", command, logger.GetLogFileName())
+			default:
+				fmt.Fprintf(&b, "%s ::: Was able to partially (%d/%d=%.2f%%) parse the logfile(s).. Please see error log %s for additional information\n",
+					command, successLines, fastRunnerResp.TotalLines, perc, logger.GetLogFileName())
+			}
+		}
+		fmt.Fprintf(&b, "Parsed %d files which took: %s\n", len(logParserCnf.LogFiles), time.Since(fastRunnerResp.StartTime))
+	}
+
+	if mode == "summary" {
+		data, _ := BuildLogParserSummary(ctx, runners, logParserCnf, fastRunnerResp)
+		b.WriteString("\nLog Parser Summary:\n")
+		for _, row := range data {
+			if len(row) >= 3 && row[0] != "" {
+				fmt.Fprintf(&b, "  %s | %s | %s\n", row[0], row[1], strings.TrimSpace(row[2]))
+			} else if len(row) > 0 && row[0] != "" {
+				b.WriteString("  " + row[0] + "\n")
+			}
+		}
+		return b.String()
+	}
+
+	b.WriteString("\n")
+	b.WriteString(formatTerminalResultsText(ctx, runners, "table"))
+	return b.String()
+}
+
+func formatTerminalResultsText(ctx context.Context, runners []runner.Parser, outputType string) string {
+	var b strings.Builder
+	for _, r := range runners {
+		switch r := r.(type) {
+		case *ErrorHelper:
+			fmt.Fprintf(&b, "> %s: Error in %s: %s\n", r.Status, r.Command, r.Message)
+		case *UnusedHBALineHelper:
+			unusedLine := r.GetResult(ctx)
+			if len(unusedLine) == 0 {
+				b.WriteString("No unused lines found from given log file\n")
+				continue
+			}
+			b.WriteString("Unused lines found from given log file:\n")
+			for _, line := range unusedLine {
+				fmt.Fprintf(&b, "\tLine No. %d \t:\t%s\n", line.LineNo, line.Line)
+			}
+		case *UniqueIPHelper:
+			ips := r.GetResult(ctx)
+			if len(ips) == 0 {
+				b.WriteString("No unique IPs found from given log file\n")
+				continue
+			}
+			b.WriteString("Unique IPs found from given log file:\n")
+			for _, ip := range ips {
+				b.WriteString("\t" + ip + "\n")
+			}
+		case *InactiveUsersHelper:
+			userdata := r.GetResult(ctx)
+			if len(userdata) == 0 || len(userdata[1]) == 0 {
+				b.WriteString("No users found in log file.\n")
+				continue
+			}
+			if len(userdata[0]) > 0 {
+				b.WriteString("Users from DB: " + strings.Join(userdata[0], ", ") + "\n")
+			}
+			b.WriteString("Users from log: " + strings.Join(userdata[1], ", ") + "\n")
+			if len(userdata[2]) > 0 {
+				b.WriteString("Inactive users in db: " + strings.Join(userdata[2], ", ") + "\n")
+			}
+		case *PasswordLeakHelper:
+			leakedPasswords := r.GetResult(ctx)
+			if len(leakedPasswords) == 0 {
+				b.WriteString("No leaked passwords found in log file.\n")
+				continue
+			}
+			b.WriteString("Leaked passwords:\n")
+			for _, password := range leakedPasswords {
+				fmt.Fprintf(&b, "\t%s\t%s\n", password.Password, password.Query)
+			}
+		case *SQLInjectionHelper:
+			queries := r.GetResult(ctx)
+			if len(queries) == 0 {
+				b.WriteString("No SQL Injection related logs found in log file\n")
+				continue
+			}
+			b.WriteString("SQL Injection related logs found in log file\n")
+			for _, queryData := range queries {
+				b.WriteString("> " + queryData + "\n")
+			}
+		default:
+			_ = outputType
+		}
+	}
+	return b.String()
 }
 
 func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *config.LogParser,
@@ -313,8 +486,12 @@ func PrintSummary(ctx context.Context, runners []runner.Parser, logParserCnf *co
 	data, allValues := BuildLogParserSummary(ctx, runners, logParserCnf, fastRunnerResp)
 	// Always persist structured summary so main-server / frontend can read
 	// Command + Value (e.g. inactive_users). Terminal rendering is unchanged.
-	if fileData != nil && len(allValues) > 0 {
-		fileData["Log Parser Summary"] = allValues
+	if fileData != nil {
+		if len(allValues) > 0 {
+			fileData["Log Parser Summary"] = allValues
+		}
+		PersistLogParserScanMeta(fileData, logParserCnf, fastRunnerResp)
+		fileData["Log Parser Terminal Report"] = BuildLogParserTerminalReport(ctx, runners, logParserCnf, fastRunnerResp, "summary")
 	}
 
 	if outputType == "json" {

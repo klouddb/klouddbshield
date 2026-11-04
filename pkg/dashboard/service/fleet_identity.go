@@ -33,6 +33,99 @@ func (agg *fleetAccumulator) collectInactiveUsers(host string, report map[string
 	}
 }
 
+type unusedHBALine struct {
+	LineNo string
+	Line   string
+}
+
+func uniqueIPsFromReport(report map[string]interface{}) []string {
+	seen := map[string]bool{}
+	var ips []string
+	for _, e := range decodeLogParserEntries(report) {
+		if logParserEntryCommand(e) != cons.LogParserCMD_UniqueIPs {
+			continue
+		}
+		for _, ip := range interfaceStringList(e["Value"]) {
+			ip = strings.TrimSpace(ip)
+			if ip == "" || seen[ip] {
+				continue
+			}
+			seen[ip] = true
+			ips = append(ips, ip)
+		}
+	}
+	return ips
+}
+
+func unusedLinesFromReport(report map[string]interface{}) []unusedHBALine {
+	seen := map[string]bool{}
+	var lines []unusedHBALine
+	for _, e := range decodeLogParserEntries(report) {
+		if logParserEntryCommand(e) != cons.LogParserCMD_HBAUnusedLines {
+			continue
+		}
+		raw, ok := e["Value"].([]interface{})
+		if !ok {
+			continue
+		}
+		for _, item := range raw {
+			m, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			lineNo := stringField(m, "LineNo", "lineNo", "line_no", "LineNumber")
+			line := stringField(m, "Line", "line")
+			if lineNo == "" && line == "" {
+				continue
+			}
+			key := lineNo + "\x00" + line
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			lines = append(lines, unusedHBALine{LineNo: lineNo, Line: line})
+		}
+	}
+	return lines
+}
+
+type passwordLeakHit struct {
+	Password string
+	Query    string
+}
+
+func passwordLeaksFromReport(report map[string]interface{}) []passwordLeakHit {
+	seen := map[string]bool{}
+	var hits []passwordLeakHit
+	for _, e := range decodeLogParserEntries(report) {
+		if logParserEntryCommand(e) != cons.LogParserCMD_PasswordLeakScanner {
+			continue
+		}
+		raw, ok := e["Value"].([]interface{})
+		if !ok {
+			continue
+		}
+		for _, item := range raw {
+			m, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			password := stringField(m, "Password", "password")
+			query := stringField(m, "Query", "query")
+			if password == "" && query == "" {
+				continue
+			}
+			key := password + "\x00" + query
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			hits = append(hits, passwordLeakHit{Password: password, Query: query})
+		}
+	}
+	return hits
+}
+
 func inactiveUserRowsFromReport(host string, report map[string]interface{}) [][]string {
 	var rows [][]string
 	for _, e := range decodeLogParserEntries(report) {

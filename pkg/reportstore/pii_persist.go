@@ -30,7 +30,7 @@ func PersistPIIReport(ctx context.Context, db *sql.DB, pg *postgresdb.Postgres, 
 	table := RunsTable
 
 	var existingID, existingFeatures sql.NullString
-	err = db.QueryRowContext(ctx, `
+	err = queryRowContext(ctx, db, `
 		SELECT id, features_run FROM `+table+`
 		WHERE target_id = ?
 		ORDER BY started_at DESC LIMIT 1
@@ -42,7 +42,7 @@ func PersistPIIReport(ctx context.Context, db *sql.DB, pg *postgresdb.Postgres, 
 	if existingID.Valid && existingID.String != "" {
 		features := mergeFeaturesRun(existingFeatures.String, cons.RootCMD_PiiScanner)
 		return execWithRetry(ctx, 30, func() error {
-			_, err := db.ExecContext(ctx, `
+			_, err := execContext(ctx, db, `
 				UPDATE `+table+` SET pii_report_json = ?, pii_scanned_at = ?, features_run = ?
 				WHERE id = ?
 			`, string(blob), now, features, existingID.String)

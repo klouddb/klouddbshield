@@ -74,6 +74,9 @@ func PersistScanResult(ctx context.Context, db *sql.DB, fileData map[string]inte
 	if err != nil {
 		return "", fmt.Errorf("insert scan_result: %w", err)
 	}
+	if err := UpdateLogParserStateFromReport(ctx, db, tid, host, fileData, finished); err != nil {
+		return id, fmt.Errorf("logparser aggregation: %w", err)
+	}
 	return id, nil
 }
 
@@ -166,6 +169,7 @@ func EnsureScanResultsSchema(ctx context.Context, db *sql.DB) error {
 			updated_at TEXT NOT NULL
 		)`,
 	}
+	stmts = append(stmts, splitSQLStatements(logParserStateSchema)...)
 	for _, s := range stmts {
 		if _, err := db.ExecContext(ctx, s); err != nil {
 			if isIgnorableMigrationErr(err) {

@@ -61,7 +61,7 @@ func CheckRequireSecureTransport(store *sql.DB, ctx context.Context) (*model.Res
 			haveSSL = fmt.Sprint(obj["Value"])
 		}
 	}
-	if !(haveOpenSSL == "YES" || haveSSL == "YES") {
+	if haveOpenSSL != "YES" && haveSSL != "YES" {
 		result.Status = "Fail"
 		result.FailReason = "Value of have_openssl is " + haveOpenSSL + " and Value of have_ssl is " + haveSSL
 	}

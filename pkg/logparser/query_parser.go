@@ -23,7 +23,7 @@ func (i *QueryParseHelper) Init(ctx context.Context, cnf *config.Config) error {
 }
 
 func (i *QueryParseHelper) GetResult(ctx context.Context) map[piiscanner.PIILabel][]parselog.PIIResp {
-	return i.QueryParser.GetPII()
+	return i.GetPII()
 }
 
 type SQLInjectionHelper struct {
@@ -40,5 +40,5 @@ func (i *SQLInjectionHelper) Init(ctx context.Context, cnf *config.LogParser) er
 }
 
 func (i *SQLInjectionHelper) GetResult(ctx context.Context) []string {
-	return i.SqlInjectionScanner.GetQueries()
+	return i.GetQueries()
 }

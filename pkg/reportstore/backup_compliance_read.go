@@ -27,26 +27,28 @@ func GetLatestRunWithBackupCompliance(ctx context.Context, db *sql.DB, targetID 
 	if targetID == "" {
 		return nil, nil
 	}
-	return scanBackupComplianceRow(db.QueryRowContext(ctx, `
-		SELECT `+backupComplianceSelect+`
-		FROM `+RunsTable+`
+	q := `
+		SELECT ` + backupComplianceSelect + `
+		FROM ` + RunsTable + `
 		WHERE target_id = ?
 		  AND backup_compliance_json IS NOT NULL
 		  AND length(trim(CAST(backup_compliance_json AS TEXT))) > 2
-		ORDER BY COALESCE(NULLIF(backup_compliance_scanned_at, ''), started_at) DESC, id DESC
+		ORDER BY COALESCE(NULLIF(backup_compliance_scanned_at, ''), started_at) DESC, started_at DESC, id DESC
 		LIMIT 1
-	`, targetID))
+	`
+	return scanBackupComplianceRow(queryRowContext(ctx, db, q, targetID))
 }
 
 // ListBackupComplianceTargetIDs returns distinct target_ids that have backup compliance data.
 func ListBackupComplianceTargetIDs(ctx context.Context, db *sql.DB) ([]string, error) {
-	rows, err := db.QueryContext(ctx, `
-		SELECT target_id FROM `+RunsTable+`
+	q := `
+		SELECT target_id FROM ` + RunsTable + `
 		WHERE backup_compliance_json IS NOT NULL
 		  AND length(trim(CAST(backup_compliance_json AS TEXT))) > 2
 		GROUP BY target_id
 		ORDER BY max(COALESCE(NULLIF(backup_compliance_scanned_at, ''), started_at)) DESC
-	`)
+	`
+	rows, err := queryContext(ctx, db, q)
 	if err != nil {
 		return nil, err
 	}

@@ -22,8 +22,27 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// File scan status values persisted for dashboard debug views.
+const (
+	FileScanStatusScanned            = "scanned"
+	FileScanStatusSkippedEmpty       = "skipped_empty"
+	FileScanStatusSkippedBeforeBegin = "skipped_before_begin"
+	FileScanStatusError              = "error"
+)
+
+// FileScanResult records one log file's scan outcome for UI/debug persistence.
+type FileScanResult struct {
+	FileName   string `json:"file_name"`
+	Scanned    bool   `json:"scanned"`
+	Status     string `json:"status"`
+	DurationMs int64  `json:"duration_ms"`
+	Error      string `json:"error,omitempty"`
+	SizeBytes  int64  `json:"size_bytes,omitempty"`
+}
+
 type FastRunnerResponse struct {
 	FileErrors   map[string]string
+	FileResults  []FileScanResult
 	TotalLines   int64
 	SuccessLines []int64
 	StartTime    time.Time
@@ -55,6 +74,8 @@ func RunFastParser(ctx context.Context, runCmd bool, baseParser parselog.BasePar
 	}
 
 	fileErrors := utils.NewLockedKeyValue[string]()
+	var fileResultsMu sync.Mutex
+	fileResults := make([]FileScanResult, 0, len(logParserCnf.LogFiles))
 	g, groupCTX := errgroup.WithContext(ctx)
 	g.SetLimit(10)
 
@@ -79,10 +100,12 @@ func RunFastParser(ctx context.Context, runCmd bool, baseParser parselog.BasePar
 			g.Go(func() error {
 				defer bar.Add(1) //nolint:errcheck
 
-				err := h.Process(groupCTX, file)
-				if err != nil {
-					fileErrors.Add(file, err.Error())
-					return nil
+				result := h.Process(groupCTX, file)
+				fileResultsMu.Lock()
+				fileResults = append(fileResults, result)
+				fileResultsMu.Unlock()
+				if result.Status == FileScanStatusError && result.Error != "" {
+					fileErrors.Add(file, result.Error)
 				}
 
 				// if context context expired, stop processing
@@ -102,6 +125,7 @@ func RunFastParser(ctx context.Context, runCmd bool, baseParser parselog.BasePar
 		SuccessLines: h.SuccessLines,
 		StartTime:    start,
 		FileErrors:   fileErrors.Map(),
+		FileResults:  fileResults,
 	}, nil
 
 }
@@ -116,37 +140,50 @@ type ProcessHelper struct {
 	fns []ParserFunc
 }
 
-// Process processes the log file in chunks.
-func (p *ProcessHelper) Process(ctx context.Context, filename string) error {
+// Process processes the log file in chunks and returns a per-file scan result.
+func (p *ProcessHelper) Process(ctx context.Context, filename string) (result FileScanResult) {
+	started := time.Now()
+	result = FileScanResult{FileName: filename, Status: FileScanStatusError}
 	defer func() {
+		result.DurationMs = time.Since(started).Milliseconds()
 		if r := recover(); r != nil {
 			log.Error().Interface("panic", r).Str("file", filename).Caller().Msg("Process recovered from panic")
+			result.Status = FileScanStatusError
+			result.Scanned = false
+			result.Error = fmt.Sprintf("panic: %v", r)
 		}
 	}()
 
 	f, err := os.Open(filename)
 	if err != nil {
-		return err
+		result.Error = err.Error()
+		return result
 	}
 	defer f.Close()
 
 	// check if file size is greater than 50GB we will not process that
 	fileInfo, err := f.Stat()
 	if err != nil {
-		return err
+		result.Error = err.Error()
+		return result
 	}
+	result.SizeBytes = fileInfo.Size()
 	if fileInfo.Size() > 50*1024*1024*1024 {
-		return fmt.Errorf("size of this file is %dGB, currently we are not supporting file size greater than 50GB", fileInfo.Size()/(1024*1024*1024))
+		result.Error = fmt.Sprintf("size of this file is %dGB, currently we are not supporting file size greater than 50GB", fileInfo.Size()/(1024*1024*1024))
+		return result
 	}
 
 	if fileInfo.Size() == 0 {
-		// ignore empty files
-		return nil
+		result.Status = FileScanStatusSkippedEmpty
+		result.Scanned = false
+		return result
 	}
 
 	// if file is modified before begin time, then ignore it
 	if !p.logParserCnf.Begin.IsZero() && fileInfo.ModTime().Before(p.logParserCnf.Begin) {
-		return nil
+		result.Status = FileScanStatusSkippedBeforeBegin
+		result.Scanned = false
+		return result
 	}
 
 	linesPool := sync.Pool{New: func() interface{} {
@@ -161,7 +198,8 @@ func (p *ProcessHelper) Process(ctx context.Context, filename string) error {
 
 	err = p.validateFile(ctx, f)
 	if err != nil {
-		return err
+		result.Error = err.Error()
+		return result
 	}
 
 	r := bufio.NewReader(f)
@@ -174,7 +212,9 @@ func (p *ProcessHelper) Process(ctx context.Context, filename string) error {
 	for {
 		// if context context expired, stop processing
 		if ctx.Err() != nil {
-			return nil
+			result.Status = FileScanStatusScanned
+			result.Scanned = true
+			return result
 		}
 
 		buf := *(linesPool.Get().(*[]byte))
@@ -188,7 +228,8 @@ func (p *ProcessHelper) Process(ctx context.Context, filename string) error {
 			break
 		}
 		if err != nil {
-			return err
+			result.Error = err.Error()
+			return result
 		}
 
 		nextUntillNewline, err := r.ReadBytes('\n')
@@ -222,7 +263,10 @@ func (p *ProcessHelper) Process(ctx context.Context, filename string) error {
 		atomic.AddInt64(&p.SuccessLines[i], v)
 	}
 
-	return nil
+	result.Status = FileScanStatusScanned
+	result.Scanned = true
+	result.Error = ""
+	return result
 }
 
 func (p *ProcessHelper) validateFile(ctx context.Context, f *os.File) error {
