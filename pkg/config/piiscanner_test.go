@@ -75,6 +75,30 @@ func TestBuildPiiScannerConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "region india from TOML",
+			cfg: &Config{
+				PiiScanner: PiiScannerInput{
+					RunOption: "datascan",
+					Region:    "india",
+				},
+			},
+			pg: pg,
+			check: func(t *testing.T, got *piiscanner.Config) {
+				t.Helper()
+				if got.Region != piiscanner.RegionIndia {
+					t.Fatalf("region: got %q want %q", got.Region, piiscanner.RegionIndia)
+				}
+			},
+		},
+		{
+			name: "invalid region",
+			cfg: &Config{
+				PiiScanner: PiiScannerInput{Region: "us"},
+			},
+			pg:      pg,
+			wantErr: "invalid pii region",
+		},
+		{
 			name:    "invalid run option",
 			cfg:     &Config{PiiScanner: PiiScannerInput{RunOption: "not_a_mode"}},
 			pg:      pg,
@@ -126,6 +150,7 @@ func TestPiiScannerInput_merged(t *testing.T) {
 		wantSchema string
 		wantExcl   string
 		wantIncl   string
+		wantRegion string
 	}{
 		{
 			name:       "empty defaults to datascan and public",
@@ -141,34 +166,39 @@ func TestPiiScannerInput_merged(t *testing.T) {
 				Schema:        "app",
 				ExcludeTables: "t1,t2",
 				IncludeTables: "users",
+				Region:        "india",
 			},
 			wantRun:    "metascan",
 			wantDB:     "hej",
 			wantSchema: "app",
 			wantExcl:   "t1,t2",
 			wantIncl:   "users",
+			wantRegion: "india",
 		},
 		{
 			name: "CLI overrides non-empty fields",
 			in: PiiScannerInput{
 				RunOption: "datascan",
 				Schema:    "public",
+				Region:    "",
 			},
 			over: PiiScannerOverrides{
 				RunOption:     "deepscan",
 				Database:      "other",
 				ExcludeTables: "skip",
+				Region:        "india",
 			},
 			wantRun:    "deepscan",
 			wantDB:     "other",
 			wantSchema: "public",
 			wantExcl:   "skip",
+			wantRegion: "india",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			run, db, schema, excl, incl := tt.in.merged(tt.over)
+			run, db, schema, excl, incl, region := tt.in.merged(tt.over)
 			if run != tt.wantRun {
 				t.Errorf("run_option: got %q want %q", run, tt.wantRun)
 			}
@@ -183,6 +213,9 @@ func TestPiiScannerInput_merged(t *testing.T) {
 			}
 			if incl != tt.wantIncl {
 				t.Errorf("include: got %q want %q", incl, tt.wantIncl)
+			}
+			if region != tt.wantRegion {
+				t.Errorf("region: got %q want %q", region, tt.wantRegion)
 			}
 		})
 	}

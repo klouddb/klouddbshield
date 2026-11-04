@@ -586,6 +586,48 @@ func (a *App) commonUsersReportHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+func (a *App) uniqueIPReportHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		writeJSON(w, http.StatusOK, dashboardsvc.UniqueIPReportResponse{Rows: []dashboardsvc.UniqueIPReportRow{}})
+		return
+	}
+	resp, err := svc.UniqueIPReport(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (a *App) unusedLinesReportHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		writeJSON(w, http.StatusOK, dashboardsvc.UnusedLinesReportResponse{Rows: []dashboardsvc.UnusedLineReportRow{}})
+		return
+	}
+	resp, err := svc.UnusedLinesReport(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (a *App) passwordLeakReportHandler(w http.ResponseWriter, r *http.Request) {
+	svc := a.dashboardSvc()
+	if svc == nil {
+		writeJSON(w, http.StatusOK, dashboardsvc.PasswordLeakReportResponse{Rows: []dashboardsvc.PasswordLeakReportRow{}})
+		return
+	}
+	resp, err := svc.PasswordLeakReport(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
 func (a *App) overviewHandler(w http.ResponseWriter, r *http.Request) {
 	svc := a.dashboardSvc()
 	if svc == nil {

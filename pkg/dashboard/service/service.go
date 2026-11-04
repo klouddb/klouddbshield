@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	cons "github.com/klouddb/klouddbshield/pkg/const"
@@ -42,6 +44,12 @@ func (s *Service) latestRunsByTarget(ctx context.Context) ([]*reportstore.RunRow
 }
 
 const perTargetRunPickLimit = 15
+
+// perTargetLogParserPickLimit is larger because cron with scan_commands=all
+// pushes many runs per tick (CIS, HBA, SSL, PII, …). Fleet log-parser reports
+// must look further back so empty windowed ticks can be skipped without losing
+// an earlier scan that still has findings.
+const perTargetLogParserPickLimit = 100
 
 // latestRunsByTargetSince returns newest run per target_id with started_at >= since (if since non-zero).
 func (s *Service) latestRunsByTargetSince(ctx context.Context, since time.Time) ([]*reportstore.RunRow, error) {
@@ -114,7 +122,55 @@ func reportHasAnyLogParser(report map[string]interface{}) bool {
 	return len(decodeLogParserEntries(report)) > 0
 }
 
-// latestRunsByTargetWithLogParser returns the newest run per target that includes
+// logParserCommandHasFindings is true when the command's Value list is non-empty.
+func logParserCommandHasFindings(report map[string]interface{}, command string) bool {
+	if report == nil || command == "" {
+		return false
+	}
+	for _, e := range decodeLogParserEntries(report) {
+		if logParserEntryCommand(e) != command {
+			continue
+		}
+		raw, ok := e["Value"]
+		if !ok || raw == nil {
+			return false
+		}
+		switch v := raw.(type) {
+		case []interface{}:
+			return len(v) > 0
+		case []string:
+			return len(v) > 0
+		default:
+			s := strings.TrimSpace(fmt.Sprint(v))
+			return s != "" && s != "[]" && s != "<nil>"
+		}
+	}
+	return false
+}
+
+// isWindowedLogParserScan is true when the scan used a begin/end filter (cron window).
+func isWindowedLogParserScan(report map[string]interface{}) bool {
+	meta := decodeLogParserScanMeta(report)
+	if meta == nil {
+		return false
+	}
+	return meta.Begin != "" || meta.End != ""
+}
+
+// reportUsableForLogParserFleet picks runs for fleet log-parser reports.
+// Empty cron-window scans are skipped so a later */2 tick with 0 hits does not wipe earlier findings.
+// A full/manual scan (no begin/end) with 0 hits is kept as an intentional clear.
+func reportUsableForLogParserFleet(report map[string]interface{}, command string) bool {
+	if !reportHasLogParserCommand(report, command) {
+		return false
+	}
+	if logParserCommandHasFindings(report, command) {
+		return true
+	}
+	return !isWindowedLogParserScan(report)
+}
+
+// latestRunsByTargetWithLogParser returns the newest usable run per target that includes
 // the given log-parser command. Needed when log-parser scans run on a separate
 // cron schedule than CIS/PII and would otherwise be hidden by a newer push.
 func (s *Service) latestRunsByTargetWithLogParser(ctx context.Context, command string) ([]*reportstore.RunRow, error) {
@@ -124,13 +180,13 @@ func (s *Service) latestRunsByTargetWithLogParser(ctx context.Context, command s
 	}
 	out := make([]*reportstore.RunRow, 0, len(targetIDs))
 	for _, targetID := range targetIDs {
-		runs, err := s.Repo.GetRunsForTarget(ctx, targetID, perTargetRunPickLimit)
+		runs, err := s.Repo.GetRunsForTarget(ctx, targetID, perTargetLogParserPickLimit)
 		if err != nil {
 			return nil, err
 		}
 		for i := range runs {
 			r := &runs[i]
-			if reportHasLogParserCommand(r.Report, command) {
+			if reportUsableForLogParserFleet(r.Report, command) {
 				out = append(out, r)
 				break
 			}

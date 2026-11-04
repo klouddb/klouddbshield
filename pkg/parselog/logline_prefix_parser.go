@@ -30,7 +30,7 @@ will create one base parser
 after setting different values in base parser we will create multiple parser based on logline prefix
 */
 
-// //////////////////////////////// parsed data /////////////////////////////////
+// ParsedData is one parsed PostgreSQL log line.
 type ParsedData interface {
 	GetUser() (string, error)
 	GetHost() (string, error)

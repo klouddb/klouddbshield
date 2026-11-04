@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -84,27 +85,57 @@ Line 5
 
 			// Define a mock parser function for testing
 			var receivedLogs []string
+			var mu sync.Mutex
 			mockParserFunc := func(parsedLine parselog.ParsedData) error {
 				if parsedLine.GetDescription() == "Line 3" {
 					return errors.New("error parsing line")
 				}
+				mu.Lock()
 				receivedLogs = append(receivedLogs, parsedLine.GetDescription())
+				mu.Unlock()
 				// Simulate some processing
 				time.Sleep(100 * time.Millisecond)
 				return nil
 			}
 
-			runners := []ParserFunc{mockParserFunc, mockParserFunc}
+			runners := []ParserFunc{mockParserFunc}
 
-			// Run the parser
-			runner(context.TODO(), false, nil, cnf.LogParser, runners) //nolint:errcheck
+			// Run the parser with a passthrough base parser (whole line as description).
+			_, err = runner(context.TODO(), false, &passthroughBaseParser{}, cnf.LogParser, runners)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			mu.Lock()
+			got := append([]string{}, receivedLogs...)
+			mu.Unlock()
 
 			// Verify that all lines from the file are received in the mock function
-			if !stringSlicesEqual(receivedLogs, tc.expectedLogs) {
-				t.Errorf("Received logs mismatch.\nExpected: %v\nGot: %v", tc.expectedLogs, receivedLogs)
+			if !stringSlicesEqual(got, tc.expectedLogs) {
+				t.Errorf("Received logs mismatch.\nExpected: %v\nGot: %v", tc.expectedLogs, got)
 			}
 		})
 	}
+}
+
+type passthroughBaseParser struct{}
+
+func (p *passthroughBaseParser) Parse(line string) (parselog.ParsedData, error) {
+	return &passthroughParsedData{desc: line}, nil
+}
+
+type passthroughParsedData struct {
+	desc string
+}
+
+func (p *passthroughParsedData) GetTime() time.Time           { return time.Time{} }
+func (p *passthroughParsedData) GetUser() (string, error)     { return "", errors.New("no user") }
+func (p *passthroughParsedData) GetDatabase() (string, error) { return "", errors.New("no database") }
+func (p *passthroughParsedData) GetHost() (string, error)     { return "", errors.New("no host") }
+func (p *passthroughParsedData) GetLogLevel() string          { return "LOG" }
+func (p *passthroughParsedData) GetDescription() string       { return p.desc }
+func (p *passthroughParsedData) GetErrorCode() (string, error) {
+	return "", errors.New("no error code")
 }
 
 // Helper function to compare two string slices

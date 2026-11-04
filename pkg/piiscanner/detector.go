@@ -1,90 +1,75 @@
 package piiscanner
 
-import "context"
-
-type PIILabel string
-
-const (
-	PIILabel_Name        PIILabel = "Name"
-	PIILabel_Email       PIILabel = "Email"
-	PIILabel_Phone       PIILabel = "Phone"
-	PIILabel_Address     PIILabel = "Address"
-	PIILabel_BirthDate   PIILabel = "BirthDate"
-	PIILabel_CreditCard  PIILabel = "CreditCard"
-	PIILabel_SSN         PIILabel = "SSN"
-	PIILabel_PoBox       PIILabel = "PoBox"
-	PIILabel_Password    PIILabel = "Password"
-	PIILabel_ZipCode     PIILabel = "ZipCode"
-	PIILabel_IPAddress   PIILabel = "IPAddress"
-	PIILabel_MacAddress  PIILabel = "MacAddress"
-	PIILabel_OAuthToken  PIILabel = "OAuthToken"
-	PIILabel_Location    PIILabel = "Location"
-	PIILabel_Nationality PIILabel = "Nationality"
-	PIILabel_Gender      PIILabel = "Gender"
-	PIILabel_Username    PIILabel = "Username"
-
-	// PIILabel_BankAccountNumber is pii label for bank account number.
-	// currently we are only supporting for india and USA.
-	// for this we only have column regex.
-	PIILabel_BankAccountNumber PIILabel = "BankAccountNumber"
-
-	// PIILabel_PANNumber is pii label for PAN number.
-	// currently we are only supporting for india. for this we have column and value regex.
-	PIILabel_PANNumber PIILabel = "PANNumber"
-
-	// PIILabel_AdharcardNumber is pii label for Adharcard number.
-	// currently we are only supporting for india. for this we have column regex only.
-	// value regexs are clash with phone number.
-	PIILabel_AdharcardNumber PIILabel = "AdharcardNumber"
-
-	// PIILabel_ITIN is pii label for ITIN number for USA.
-	// itin column names are clashing with PIILabel_PANNumber so for now only adding value checks.
-	PIILabel_ITIN PIILabel = "ITIN"
-
-	// PIILabel_DrivingLicenceNumber is pii label for Driving Licence number.
-	// currently we are only supporting for india. for this we have column and value regex both for india
-	PIILabel_DrivingLicenceNumber PIILabel = "DrivingLicenceNumber"
-
-	PIILabel_NHSNumber PIILabel = "NHSNumber"
-
-	// PIILabel_GSTIN is pii label for GSTIN number.
-	PIILabel_GSTIN PIILabel = "GSTIN"
-
-	// PIILabel_VehicleNumber is pii label for Vehicle number.
-	// currently we have only value regex for india.
-	PIILabel_VehicleNumber PIILabel = "VehicleNumber"
-
-	// PIILabel_VoterID is pii label for Voter ID.
-	// currently we have only value regex for india.
-	PIILabel_VoterID PIILabel = "VoterID"
+import (
+	dpdpa "github.com/klouddb/dpdpa_pii_db_scanner/piiscanner"
 )
 
-// Detector is an interface that defines the methods that a PII detector should implement.
-// - The Init method is used to initialize the detector.
-// - The Detect method is used to detect the PII data in the given word.
-//
-// Detector can be of two types:
-// - ValueDetector: Detects the PII data in the value.
-// - ColumnDetector: Detects the PII data in the column.
-// The ValueDetector and ColumnDetector are used to detect the PII data in the value and column respectively.
-type Detector interface {
-	Name() string
+// Re-export DPDPA label/detector types so shared APIs stay owned by one package.
+// New India entities added in DPDPA appear here after a module bump.
+type (
+	PIILabel           = dpdpa.PIILabel
+	ColumnContext      = dpdpa.ColumnContext
+	PiiLabelWithWeight = dpdpa.PiiLabelWithWeight
+	Detector           = dpdpa.Detector
+)
 
-	// Init is a function that triggers initialization of the detector.
-	Init() error
+const (
+	RegionIndia = dpdpa.RegionIndia
 
-	// Detect is a function that takes a word as input and detects the PII data in the word.
-	// if it is ValueDetector, then the word in input will be considered as value from query.
-	// if it is ColumnDetector, then the word in input will be considered as column from query.
-	//
-	// e.g
-	// 		Query: SELECT name, email FROM users WHERE name = 'John Doe' AND email = 'somethig@gmail.com';
-	// 		Word: 'name' is column and 'John Doe' is value.
-	// 		Word: 'email' is column and 'something@gmail.com' is value.
-	Detect(ctx context.Context, word string) ([]PiiLabelWithWeight, error)
-}
+	PIILabel_Name        = dpdpa.PIILabel_Name
+	PIILabel_Email       = dpdpa.PIILabel_Email
+	PIILabel_Phone       = dpdpa.PIILabel_Phone
+	PIILabel_Address     = dpdpa.PIILabel_Address
+	PIILabel_BirthDate   = dpdpa.PIILabel_BirthDate
+	PIILabel_CreditCard  = dpdpa.PIILabel_CreditCard
+	PIILabel_Password    = dpdpa.PIILabel_Password
+	PIILabel_IPAddress   = dpdpa.PIILabel_IPAddress
+	PIILabel_MacAddress  = dpdpa.PIILabel_MacAddress
+	PIILabel_OAuthToken  = dpdpa.PIILabel_OAuthToken
+	PIILabel_Location    = dpdpa.PIILabel_Location
+	PIILabel_Nationality = dpdpa.PIILabel_Nationality
+	PIILabel_Gender      = dpdpa.PIILabel_Gender
+	PIILabel_Username    = dpdpa.PIILabel_Username
 
-type PiiLabelWithWeight struct {
-	PIILabel PIILabel
-	Weight   float64
+	PIILabel_UPIID                 = dpdpa.PIILabel_UPIID
+	PIILabel_CVV                   = dpdpa.PIILabel_CVV
+	PIILabel_TAN                   = dpdpa.PIILabel_TAN
+	PIILabel_CIN                   = dpdpa.PIILabel_CIN
+	PIILabel_MICRCode              = dpdpa.PIILabel_MICRCode
+	PIILabel_ABHANumber            = dpdpa.PIILabel_ABHANumber
+	PIILabel_UAN                   = dpdpa.PIILabel_UAN
+	PIILabel_EPFMemberID           = dpdpa.PIILabel_EPFMemberID
+	PIILabel_BankAccountNumber     = dpdpa.PIILabel_BankAccountNumber
+	PIILabel_DematAccountNumber    = dpdpa.PIILabel_DematAccountNumber
+	PIILabel_PANNumber             = dpdpa.PIILabel_PANNumber
+	PIILabel_AdharcardNumber       = dpdpa.PIILabel_AdharcardNumber
+	PIILabel_DrivingLicenceNumber  = dpdpa.PIILabel_DrivingLicenceNumber
+	PIILabel_GSTIN                 = dpdpa.PIILabel_GSTIN
+	PIILabel_ChequeNumber          = dpdpa.PIILabel_ChequeNumber
+	PIILabel_CIFNumber             = dpdpa.PIILabel_CIFNumber
+	PIILabel_LoanAccountNumber     = dpdpa.PIILabel_LoanAccountNumber
+	PIILabel_InsurancePolicyNumber = dpdpa.PIILabel_InsurancePolicyNumber
+	PIILabel_FASTagID              = dpdpa.PIILabel_FASTagID
+	PIILabel_VehicleNumber         = dpdpa.PIILabel_VehicleNumber
+	PIILabel_VoterID               = dpdpa.PIILabel_VoterID
+	PIILabel_PassportNumber        = dpdpa.PIILabel_PassportNumber
+	PIILabel_IFSC                  = dpdpa.PIILabel_IFSC
+	PIILabel_ESIC                  = dpdpa.PIILabel_ESIC
+	PIILabel_RationCard            = dpdpa.PIILabel_RationCard
+	PIILabel_SEBIRegistration      = dpdpa.PIILabel_SEBIRegistration
+)
+
+// Legacy-only labels used by the empty-region (non-India) detector pack.
+// These are not defined in DPDPA.
+const (
+	PIILabel_SSN       PIILabel = "SSN"
+	PIILabel_PoBox     PIILabel = "PoBox"
+	PIILabel_ZipCode   PIILabel = "ZipCode"
+	PIILabel_ITIN      PIILabel = "ITIN"
+	PIILabel_NHSNumber PIILabel = "NHSNumber"
+)
+
+// IsIndiaRegion reports whether region selects the India/DPDPA detector path.
+func IsIndiaRegion(region string) bool {
+	return dpdpa.IsIndiaRegion(region)
 }

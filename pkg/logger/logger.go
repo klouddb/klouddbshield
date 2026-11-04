@@ -2,8 +2,10 @@ package logger
 
 import (
 	"fmt"
+	stdlog "log"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -39,6 +41,34 @@ func SetupLogger() {
 	log.Logger = zerolog.New(consoleWriter).With().Timestamp().Caller().Logger()
 	log.Logger.Level(zerolog.TraceLevel)
 
+}
+
+// OutputLogDir is where terminal output goes with --log-to-file.
+const OutputLogDir = "/var/log/klouddbshield"
+
+// RedirectOutputToFile sends everything this process writes to stdout/stderr
+// into OutputLogDir/ciscollector_output_<timestamp>.log and returns that path.
+// Loggers must be (re)created after this call, since they hold the writer
+// they were built with.
+func RedirectOutputToFile() (string, error) {
+	dir, err := filepath.Abs(OutputLogDir)
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+
+	name := filepath.Join(dir, "ciscollector_output_"+time.Now().Format("20060102_150405")+".log")
+	f, err := os.OpenFile(name, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	if err != nil {
+		return "", err
+	}
+
+	os.Stdout = f
+	os.Stderr = f
+	stdlog.SetOutput(f)
+	return name, nil
 }
 
 func createLogFile() (*os.File, error) {

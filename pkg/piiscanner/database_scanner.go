@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"runtime"
-	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/text"
+	dpdpa "github.com/klouddb/dpdpa_pii_db_scanner/piiscanner"
 	cons "github.com/klouddb/klouddbshield/pkg/const"
 	"github.com/klouddb/klouddbshield/pkg/postgresdb"
 	"github.com/klouddb/klouddbshield/pkg/utils"
@@ -27,6 +27,7 @@ type Config struct {
 
 	Database string
 	Schema   string
+	Region   string
 
 	printAllResults  bool
 	spacyOnly        bool
@@ -34,6 +35,15 @@ type Config struct {
 }
 
 func NewConfig(pgConfig *postgresdb.Postgres, runOption, excludeTable, includeTable, database, schema string,
+	printAllResults, spacyOnly, printSummaryOnly bool) (*Config, error) {
+	return NewConfigWithRegion(pgConfig, runOption, excludeTable, includeTable, database, schema, "",
+		printAllResults, spacyOnly, printSummaryOnly)
+}
+
+// NewConfigWithRegion is like NewConfig but also accepts a PII region.
+// When region is "india", the scanner uses exact dpdpa_pii_db_scanner detection logic.
+// When region is empty/unset, legacy entity set is used (with updated credit-card handling only).
+func NewConfigWithRegion(pgConfig *postgresdb.Postgres, runOption, excludeTable, includeTable, database, schema, region string,
 	printAllResults, spacyOnly, printSummaryOnly bool) (*Config, error) {
 	if printAllResults && printSummaryOnly {
 		return nil, fmt.Errorf("--print-all and --print-summary are not allowed together")
@@ -77,11 +87,22 @@ func NewConfig(pgConfig *postgresdb.Postgres, runOption, excludeTable, includeTa
 		database = pgConfig.DBName
 	}
 
+	region = strings.TrimSpace(region)
+	if region != "" && !IsIndiaRegion(region) {
+		return nil, fmt.Errorf("invalid pii region %q, supported values are %q or empty", region, RegionIndia)
+	}
+	if IsIndiaRegion(region) {
+		region = RegionIndia
+	} else {
+		region = ""
+	}
+
 	out := &Config{
 		runOption:        r,
 		useSpacy:         useSpacy,
 		Database:         database,
 		Schema:           schema,
+		Region:           region,
 		printAllResults:  printAllResults,
 		spacyOnly:        spacyOnly,
 		PrintSummaryOnly: printSummaryOnly,
@@ -159,11 +180,15 @@ func (d *databasePiiScanner) DetectorFactory() []Detector {
 	detectors := []Detector{}
 
 	if !d.cnf.spacyOnly {
-		detectors = append(detectors, NewRegexValueDetector())
+		detectors = append(detectors, NewRegexValueDetectorForRegion(d.cnf.Region))
 	}
 
 	if d.cnf.useSpacy {
-		detectors = append(detectors, NewSpacyDetector().WithWorkDirs([]string{"python", "/etc/klouddbshield/python", "../../python"}))
+		spacy := NewSpacyDetector().WithWorkDirs(SpacyWorkDirs)
+		if IsIndiaRegion(d.cnf.Region) {
+			spacy = spacy.WithColumnContextGate(true)
+		}
+		detectors = append(detectors, spacy)
 	}
 
 	return detectors
@@ -203,7 +228,7 @@ func (d *databasePiiScanner) Scan(ctx context.Context) error {
 
 	fmt.Println("> Found", len(tables), "tables.")
 
-	d.tableScanManager = NewTableScanManager().WithColumnDetector(NewRegexColumnDetector())
+	d.tableScanManager = NewTableScanManager().WithColumnDetector(NewRegexColumnDetectorForRegion(d.cnf.Region))
 	if d.cnf.runOption != RunOption_MetaScan {
 		d.tableScanManager.WithDetectorFactory(d.DetectorFactory)
 	}
@@ -238,41 +263,6 @@ func (d *databasePiiScanner) Scan(ctx context.Context) error {
 	return nil
 }
 
-type DatabasePIIScanOutput struct {
-	ScanType        string
-	SupportedLevels []string
-	Data            map[string]TableDetailOutput
-}
-type TableDetailOutput map[string][]PIIDataWithWeightString
-
-type PIIDataWithWeightString struct {
-	Label            PIILabel
-	Confidence       string
-	ConfidenceIcon   string
-	Weight           float64
-	DetectorType     DetectorType
-	DetectorName     string
-	ScanedValueCount int
-	MatchedCount     int
-}
-
-func NewPIIDataWithWeightString(label PIILabel, Weight float64, detectorType DetectorType, detectorName string) *PIIDataWithWeightString {
-	confidence, icon := getConfidenceLabel(Weight)
-	return &PIIDataWithWeightString{
-		Label:          label,
-		Confidence:     confidence,
-		ConfidenceIcon: icon,
-		Weight:         Weight,
-		DetectorType:   detectorType,
-		DetectorName:   detectorName,
-	}
-}
-
-func (p *PIIDataWithWeightString) SetScanedValueAndMatchCount(matchCount, scanedValueCount int) {
-	p.ScanedValueCount = scanedValueCount
-	p.MatchedCount = matchCount
-}
-
 func (d *databasePiiScanner) GetResults() (*DatabasePIIScanOutput, error) {
 	if d.tableScanManager == nil {
 		// this handles the case when no table is scanned
@@ -300,6 +290,14 @@ func (d *databasePiiScanner) GetResults() (*DatabasePIIScanOutput, error) {
 		for columnName, piiMap := range table.PiiDataMap {
 			output.Data[table.TableName][columnName] = []PIIDataWithWeightString{}
 
+			hasColumnMatch := false
+			for _, piiData := range piiMap.ColumnMap {
+				if len(piiData) > 0 {
+					hasColumnMatch = true
+					break
+				}
+			}
+
 			for detector, piiData := range piiMap.ColumnMap {
 				for label, pii := range piiData {
 					piiDataWithWeight := NewPIIDataWithWeightString(label, pii.Weight, DetectorType_ColumnDetector, detector)
@@ -307,19 +305,22 @@ func (d *databasePiiScanner) GetResults() (*DatabasePIIScanOutput, error) {
 				}
 			}
 
-			count := d.tableScanManager.valueCount[table.TableName][columnName]
+			count := d.tableScanManager.ValueCount(table.TableName, columnName)
+			weightMergeEntities := WeightMergeEntities(d.cnf.Region)
+			indiaMode := IsIndiaRegion(d.cnf.Region)
 			for detector, piiData := range piiMap.ValueMap {
 				for label, pii := range piiData {
-					// fmt.Println("label", label, "pii", pii, "column", columnName, "count", count)
 					var finalWeight float64
 					if count != 0 {
-						finalWeight = pii.Weight / float64(count) // 3 / 10 = 0.3
+						finalWeight = pii.Weight / float64(count)
 					}
 
-					if PiiEntitiesForWeightMergeLogic.Contains(label) {
-						// get column weight for the same label
-						if finalWeight > piiMap.ColumnMap["regex"][label].Weight {
-							finalWeight = (piiMap.ColumnMap["regex"][label].Weight + finalWeight) / 2 // (0.5 + 0.3) / 2 = 0.4
+					if weightMergeEntities.Contains(label) {
+						columnWeight := piiMap.ColumnMap["regex"][label].Weight
+						if indiaMode {
+							finalWeight = dpdpa.MergeIndiaValueWeight(string(label), columnWeight, finalWeight)
+						} else {
+							finalWeight = MergeLegacyValueWeight(columnWeight, finalWeight)
 						}
 					}
 
@@ -329,16 +330,29 @@ func (d *databasePiiScanner) GetResults() (*DatabasePIIScanOutput, error) {
 				}
 			}
 
-			sort.Slice(output.Data[table.TableName][columnName], func(i, j int) bool {
+			SortColumnFindings(output.Data[table.TableName][columnName])
 
-				return OrderMap[string(output.Data[table.TableName][columnName][i].DetectorType)] >
-					OrderMap[string(output.Data[table.TableName][columnName][j].DetectorType)] ||
-
-					OrderMap[output.Data[table.TableName][columnName][i].DetectorName] >
-						OrderMap[output.Data[table.TableName][columnName][j].DetectorName] ||
-
-					output.Data[table.TableName][columnName][i].Weight > output.Data[table.TableName][columnName][j].Weight
-			})
+			// India Phase-2/3 unrecognized-column fallbacks — logic lives in DPDPA.
+			if indiaMode {
+				existingLabels := make([]string, 0, len(output.Data[table.TableName][columnName]))
+				for _, item := range output.Data[table.TableName][columnName] {
+					existingLabels = append(existingLabels, string(item.Label))
+				}
+				sampleVals := d.tableScanManager.UnrecognizedValues[table.TableName][columnName]
+				fallbacks, err := dpdpa.RunIndiaUnrecognizedColumnFallbacks(
+					context.TODO(),
+					sampleVals,
+					hasColumnMatch,
+					existingLabels,
+				)
+				if err == nil {
+					for _, f := range fallbacks {
+						piiDataWithWeight := NewPIIDataWithWeightString(PIILabel(f.Label), f.Weight, DetectorType_ValueDetector, "regex")
+						piiDataWithWeight.SetScanedValueAndMatchCount(f.MatchedCount, f.ScannedCount)
+						output.Data[table.TableName][columnName] = append(output.Data[table.TableName][columnName], *piiDataWithWeight)
+					}
+				}
+			}
 
 		}
 	}
@@ -356,16 +370,6 @@ func (d *databasePiiScanner) GetResults() (*DatabasePIIScanOutput, error) {
 	// }
 
 	return output, nil
-}
-
-func getConfidenceLabel(weight float64) (string, string) {
-	if weight < 0.4 {
-		return "Low", "🔵"
-	} else if weight < 0.7 {
-		return "Medium", "🟡"
-	} else {
-		return "High", "🔴"
-	}
 }
 
 type piiTableScanner struct {

@@ -73,12 +73,12 @@ func Test_CsvTesting_RegexpDetector(t *testing.T) {
 				continue
 			}
 
-			labels, err := d.Detect(context.Background(), data[1])
+			labels, err := d.Detect(context.Background(), data[1], nil)
 			if err != nil {
 				t.Errorf("Expected no error, got %v, file %s:%d", err, file.Name(), line)
 				continue
 			}
-			outputLabel := NewPiiLabelMapFromPiiLableWithWeight("regex", labels).GetMax()
+			outputLabel := maxWeightLabel(labels)
 			if outputLabel != PIILabel(data[2]) {
 				falsePositiveCountMap[data[0]+" - "+string(outputLabel)]++
 				t.Errorf("Expected label %v, got %v (%v), file %s:%d data %s", data[2], outputLabel, labels, file.Name(), line, data[1])
@@ -96,4 +96,16 @@ func Test_CsvTesting_RegexpDetector(t *testing.T) {
 		fmt.Println(k, v, successCountMap[k], float64(successCountMap[k])/float64(v), falsePositiveCountMap[k])
 	}
 
+}
+
+func maxWeightLabel(labels []PiiLabelWithWeight) PIILabel {
+	var best PIILabel
+	var weight float64
+	for _, label := range labels {
+		if label.Weight > weight {
+			weight = label.Weight
+			best = label.PIILabel
+		}
+	}
+	return best
 }

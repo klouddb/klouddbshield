@@ -13,7 +13,7 @@ func PurgeRetention(ctx context.Context, db *sql.DB, retentionDays int) (int64, 
 		return 0, nil
 	}
 	cutoff := time.Now().UTC().AddDate(0, 0, -retentionDays).Format(time.RFC3339)
-	res, err := db.ExecContext(ctx, `DELETE FROM runs WHERE started_at < ?`, cutoff)
+	res, err := execContext(ctx, db, `DELETE FROM `+RunsTable+` WHERE started_at < ?`, cutoff)
 	if err != nil {
 		return 0, fmt.Errorf("purge runs: %w", err)
 	}

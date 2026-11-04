@@ -8,3 +8,15 @@ export async function getInactiveUsersReport() {
 export async function getCommonUsersReport() {
   return apiFetch(API_CONFIG.endpoints.commonUsersReport);
 }
+
+export async function getUniqueIPReport() {
+  return apiFetch(API_CONFIG.endpoints.uniqueIpReport);
+}
+
+export async function getUnusedLinesReport() {
+  return apiFetch(API_CONFIG.endpoints.unusedLinesReport);
+}
+
+export async function getPasswordLeakReport() {
+  return apiFetch(API_CONFIG.endpoints.passwordLeakReport);
+}

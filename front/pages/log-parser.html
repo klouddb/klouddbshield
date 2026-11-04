@@ -13,16 +13,61 @@
             <span class="link" id="log-parser-host-audit-link" data-goto="host-detail">Open full host audit →</span>
           </div>
 
-          <div class="stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
+          <div class="stats" style="grid-template-columns:repeat(6,1fr);margin-bottom:20px;">
             <div class="stat-card"><div class="stat-label">Commands</div><div class="stat-value" id="log-parser-stat-total">—</div></div>
             <div class="stat-card"><div class="stat-label">Clean</div><div class="stat-value success" id="log-parser-stat-pass">—</div></div>
             <div class="stat-card"><div class="stat-label">Findings</div><div class="stat-value" style="color:var(--warning,#e6a700)" id="log-parser-stat-warn">—</div></div>
             <div class="stat-card"><div class="stat-label">Failed Parse</div><div class="stat-value danger" id="log-parser-stat-fail">—</div></div>
+            <div class="stat-card"><div class="stat-label">Files Found</div><div class="stat-value" id="log-parser-stat-files-found">—</div></div>
+            <div class="stat-card"><div class="stat-label">Files Scanned</div><div class="stat-value" id="log-parser-stat-files-scanned">—</div></div>
           </div>
 
           <div class="callout" style="margin-bottom:16px;" id="log-parser-callout">
-            Supported commands: <code>unique_ip</code>, <code>unused_lines</code>, <code>password_leak_scanner</code>.
-            Inactive users are on the <span class="link" data-goto="inactive-users-report">Inactive users report</span> page.
+            Supported commands: <code>unique_ip</code>, <code>unused_lines</code>, <code>password_leak_scanner</code>, <code>sql_injection_scan</code>.
+            Log insights:
+            <span class="link" data-goto="fleet-reports" data-fleet-report="inactive-users">Inactive users</span>,
+            <span class="link" data-goto="fleet-reports" data-fleet-report="unique-ip">Unique IP</span>,
+            <span class="link" data-goto="fleet-reports" data-fleet-report="unused-lines">Unused lines</span>,
+            <span class="link" data-goto="fleet-reports" data-fleet-report="password-leak">Password leak</span>.
+          </div>
+
+          <div class="report-block" id="log-parser-files-panel" style="margin-bottom:16px;" hidden>
+            <div class="report-block-header">
+              <div>
+                <h2 style="margin:0;font-size:18px;">File scan</h2>
+                <p style="margin:4px 0 0;color:var(--muted);">Per-file inventory from the latest log parser run</p>
+              </div>
+            </div>
+            <div class="report-block-body">
+              <div class="host-module-table data-log-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>File name</th>
+                      <th>Scan time</th>
+                      <th>Scanned</th>
+                      <th>Status / Error</th>
+                    </tr>
+                  </thead>
+                  <tbody id="log-parser-files-tbody">
+                    <tr><td colspan="4" style="color:var(--muted);">No file scan data.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="table-pagination" id="log-parser-files-pagination" hidden></div>
+            </div>
+          </div>
+
+          <div class="report-block" id="log-parser-terminal-panel" style="margin-bottom:16px;" hidden>
+            <div class="report-block-header">
+              <div>
+                <h2 style="margin:0;font-size:18px;">Terminal report</h2>
+                <p style="margin:4px 0 0;color:var(--muted);">Same narrative ciscollector prints while scanning</p>
+              </div>
+            </div>
+            <div class="report-block-body">
+              <pre class="data-log-code" id="log-parser-terminal-report" style="white-space:pre-wrap;max-height:360px;overflow:auto;margin:0;"></pre>
+            </div>
           </div>
 
           <div id="log-parser-command-list">

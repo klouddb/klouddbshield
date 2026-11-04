@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/klouddb/klouddbshield/pkg/postgresdb"
 )
@@ -67,6 +68,7 @@ func TestPersistBackupComplianceReport(t *testing.T) {
 	if err := PersistBackupComplianceReport(context.Background(), db, meta, payload); err != nil {
 		t.Fatal(err)
 	}
+	time.Sleep(10 * time.Millisecond)
 
 	var count int
 	if err := db.QueryRow(`

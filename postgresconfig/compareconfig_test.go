@@ -40,6 +40,11 @@ func TestGucValuesEqual_MemoryAndTimeUnits(t *testing.T) {
 		{name: "1s equals 1000ms", a: "1s", b: "1000ms", want: true},
 		{name: "bool still works", a: "ON", b: "true", want: true},
 		{name: "plain strings unequal", a: "md5", b: "scram-sha-256", want: false},
+		// Fractional planner costs must not be treated as memory/duration bytes.
+		{name: "cpu cost fractions unequal", a: "0.005", b: "0.01", want: false},
+		{name: "cursor_tuple_fraction unequal", a: "0.1", b: "0.5", want: false},
+		{name: "cpu_operator_cost unequal", a: "0.0025", b: "0.005", want: false},
+		{name: "cpu_tuple_cost unequal", a: "0.01", b: "0.02", want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -88,6 +93,38 @@ func TestGucValuesEqualWithUnits_MixedHuman(t *testing.T) {
 				t.Fatalf("got %v want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestCompareAgainstBaseline_FractionalPlannerCosts(t *testing.T) {
+	baseline := map[string]string{
+		"cpu_index_tuple_cost":  "0.005",
+		"cpu_operator_cost":     "0.0025",
+		"cpu_tuple_cost":        "0.01",
+		"cursor_tuple_fraction": "0.1",
+		"work_mem":              "4MB",
+		"random_page_cost":      "4",
+	}
+	live := map[string]string{
+		"cpu_index_tuple_cost":  "0.01",
+		"cpu_operator_cost":     "0.005",
+		"cpu_tuple_cost":        "0.02",
+		"cursor_tuple_fraction": "0.5",
+		"work_mem":              "16MB",
+		"random_page_cost":      "2",
+	}
+	rows := CompareAgainstBaseline(baseline, live)
+	got := map[string]DriftStatus{}
+	for _, r := range rows {
+		got[r.GUC] = r.Status
+	}
+	for _, name := range []string{
+		"cpu_index_tuple_cost", "cpu_operator_cost", "cpu_tuple_cost",
+		"cursor_tuple_fraction", "work_mem", "random_page_cost",
+	} {
+		if got[name] != DriftDiff {
+			t.Fatalf("%s status=%q want %q", name, got[name], DriftDiff)
+		}
 	}
 }
 

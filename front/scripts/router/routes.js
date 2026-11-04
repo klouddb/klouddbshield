@@ -15,9 +15,19 @@ export function parseInitialPageId() {
   if (/^host\//.test(raw)) return 'host-detail';
   if (/^fleet\//.test(raw)) return 'fleet-category';
   if (/^guc-drift(?:\/|$)/.test(raw)) return 'guc-drift';
+  if (/^fleet-reports(?:\/|$)/.test(raw)) return 'fleet-reports';
+  if (LEGACY_FLEET_REPORT_PAGES[raw]) return 'fleet-reports';
   if (PAGE_IDS.includes(raw)) return raw;
   return DEFAULT_PAGE;
 }
+
+export const LEGACY_FLEET_REPORT_PAGES = {
+  'inactive-users-report': 'inactive-users',
+  'common-users-report': 'common-users',
+  'unique-ip-report': 'unique-ip',
+  'unused-lines-report': 'unused-lines',
+  'password-leak-report': 'password-leak',
+};
 
 export const PAGE_IDS = [
   "strategic-dashboard",
@@ -33,8 +43,12 @@ export const PAGE_IDS = [
   "host-detail",
   "html-report",
   "guc-drift",
+  "fleet-reports",
   "inactive-users-report",
   "common-users-report",
+  "unique-ip-report",
+  "unused-lines-report",
+  "password-leak-report",
   "policies",
   "collector-nodes",
 ];
@@ -46,8 +60,12 @@ export const PAGE_META = {
     'host-detail': { title: 'Host Audit', crumb: 'Vertical Report · CIS, Config, Access, Ops' },
     'html-report': { title: 'Full HTML report', crumb: 'KloudDBShield multi-tab export' },
     'guc-drift': { title: 'GUC Drift', crumb: 'Vs Golden Baseline' },
+    'fleet-reports': { title: 'Log Insights', crumb: 'Log parser · Users report · Fleet-wide' },
     'inactive-users-report': { title: 'Inactive Users Report', crumb: 'Fleet-Wide · Log Parser Menu 6' },
     'common-users-report': { title: 'Common Users Report', crumb: 'Fleet-Wide · Users Report Menu 9' },
+    'unique-ip-report': { title: 'Unique IP Report', crumb: 'Fleet-Wide · Log Parser Menu 7' },
+    'unused-lines-report': { title: 'Unused Lines Report', crumb: 'Fleet-Wide · Log Parser Menu 8' },
+    'password-leak-report': { title: 'Password Leak Report', crumb: 'Fleet-Wide · Log Parser Menu 10' },
     'strategic-dashboard': { title: 'Fleet Overview', crumb: 'Executive Fleet Dashboard' },
     'critical-violations': { title: 'Critical Violations', crumb: 'Group By Violation' },
     'hba-scanner': { title: 'HBA Scanner', crumb: 'pg_hba.conf Checks · Menu 3' },

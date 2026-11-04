@@ -1,0 +1,81 @@
+<section id="page-unused-lines-report" class="page">
+          <h1>Unused Lines Report</h1>
+          <p class="subtitle">Fleet-wide unused HBA lines · Log Parser Menu 8 · <span id="unused-lines-hint">—</span></p>
+
+          <div class="stats user-report-stats">
+            <div class="stat-card user-report-stat-card user-report-stat-card--users">
+              <div class="stat-label">Unused Lines</div>
+              <div class="stat-value" id="unused-lines-stat-lines">—</div>
+            </div>
+            <div class="stat-card user-report-stat-card user-report-stat-card--hosts">
+              <div class="stat-label">Affected Hosts</div>
+              <div class="stat-value" id="unused-lines-stat-hosts">—</div>
+            </div>
+            <div class="stat-card user-report-stat-card user-report-stat-card--source">
+              <div class="stat-label">Data Source</div>
+              <div class="stat-value user-report-stat-source">Log Parser</div>
+            </div>
+            <div class="stat-card user-report-stat-card user-report-stat-card--range">
+              <div class="stat-label">Unused &gt; 30 / 90 / 180 days</div>
+              <div class="stat-value user-report-stat-source" id="unused-lines-stat-buckets" style="font-size:14px;line-height:1.35;">—</div>
+            </div>
+          </div>
+
+          <div class="report-block user-report-panel">
+            <div class="report-block-header user-report-panel-header">
+              <div class="user-report-panel-intro">
+                <h2>Unused HBA Rules</h2>
+                <p>Aggregated <code>unused_since</code> across daily scans · scan-only rows still show log filter range · ≥30 days eligible for removal review</p>
+              </div>
+              <div class="user-report-toolbar" id="unused-lines-toolbar">
+                <div class="user-report-bucket-filters" id="unused-lines-bucket-filters" role="group" aria-label="Filter by unused duration">
+                  <button type="button" class="user-report-bucket-pill is-active" data-bucket="all" aria-pressed="true">
+                    <span class="user-report-bucket-pill__label">All</span>
+                    <span class="user-report-bucket-pill__count" data-bucket-count="all">—</span>
+                  </button>
+                  <button type="button" class="user-report-bucket-pill" data-bucket="gt30" aria-pressed="false">
+                    <span class="user-report-bucket-pill__label">&gt; 30 days</span>
+                    <span class="user-report-bucket-pill__count" data-bucket-count="gt30">—</span>
+                  </button>
+                  <button type="button" class="user-report-bucket-pill" data-bucket="gt90" aria-pressed="false">
+                    <span class="user-report-bucket-pill__label">&gt; 90 days</span>
+                    <span class="user-report-bucket-pill__count" data-bucket-count="gt90">—</span>
+                  </button>
+                  <button type="button" class="user-report-bucket-pill" data-bucket="gt180" aria-pressed="false">
+                    <span class="user-report-bucket-pill__label">&gt; 180 days</span>
+                    <span class="user-report-bucket-pill__count" data-bucket-count="gt180">—</span>
+                  </button>
+                  <button type="button" class="user-report-bucket-pill user-report-bucket-pill--review" data-bucket="eligible" aria-pressed="false">
+                    <span class="user-report-bucket-pill__label">Eligible for review</span>
+                    <span class="user-report-bucket-pill__count" data-bucket-count="eligible">—</span>
+                  </button>
+                </div>
+                <label class="user-report-search user-report-search--toolbar">
+                  <span class="user-report-search-label">Search</span>
+                  <input type="search" id="unused-lines-search" placeholder="Line text or host…" autocomplete="off" />
+                </label>
+              </div>
+            </div>
+            <div class="report-block-body user-report-body">
+              <div class="user-report-table-wrap">
+                <table class="user-report-table">
+                  <thead>
+                    <tr>
+                      <th class="user-report-col-lineno">Line #</th>
+                      <th class="user-report-col-line">HBA Line</th>
+                      <th class="user-report-col-host">Host</th>
+                      <th class="user-report-col-databases">Databases</th>
+                      <th class="user-report-col-range">Unused since / log range</th>
+                      <th class="user-report-col-status">Status</th>
+                      <th class="user-report-col-action"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="unused-lines-tbody">
+                    <tr><td colspan="7" class="user-report-empty">Loading unused HBA lines…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="table-pagination user-report-pagination" id="unused-lines-pagination" hidden></div>
+            </div>
+          </div>
+        </section>

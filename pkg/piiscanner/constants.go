@@ -4,9 +4,12 @@ import (
 	"regexp"
 	"unicode/utf8"
 
+	dpdpa "github.com/klouddb/dpdpa_pii_db_scanner/piiscanner"
 	"github.com/klouddb/klouddbshield/pkg/utils"
 )
 
+// Legacy ignore rules. DPDPA's IgnoreColumn is stricter (ToLower + narrower _date
+// patterns) and would change empty-region Postgres scans.
 var (
 	ignoreRegexes = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)^(created|updated|deleted|committed)_(at|by|on)$`),
@@ -25,58 +28,7 @@ var (
 	}
 )
 
-type RunOption int
-
-func (r RunOption) String() string {
-	for k, v := range RunOptionMap {
-		if v == r {
-			return k
-		}
-	}
-	return ""
-}
-
-type DetectorType string
-
-const (
-	RunOption_MetaScan RunOption = iota
-	RunOption_DataScan
-	RunOption_DeepScan
-	RunOption_SpacyScan
-
-	RunOption_MetaScan_String  = "metascan"
-	RunOption_DataScan_String  = "datascan"
-	RunOption_DeepScan_String  = "deepscan"
-	RunOption_SpacyScan_String = "spacyscan"
-
-	RunOption_MetaScan_Title  = "Meta Scan"
-	RunOption_DataScan_Title  = "Data Scan"
-	RunOption_DeepScan_Title  = "Deep Scan"
-	RunOption_SpacyScan_Title = "Spacy Scan"
-
-	DEEPSCAN_WARNINING_LIMIT     = 100000
-	DEEPSCAN_SPACY_WARNING_LIMIT = 10000
-
-	DetectorType_ColumnDetector DetectorType = "column detector"
-	DetectorType_ValueDetector  DetectorType = "value detector"
-)
-
-var OrderMap = map[string]int{
-	// for detector type
-	string(DetectorType_ValueDetector):  2,
-	string(DetectorType_ColumnDetector): 1,
-
-	"regex": 2,
-	"spacy": 1,
-}
-
-var RunOptionTitleMap = map[RunOption]string{
-	RunOption_MetaScan:  RunOption_MetaScan_Title,
-	RunOption_DataScan:  RunOption_DataScan_Title,
-	RunOption_DeepScan:  RunOption_DeepScan_Title,
-	RunOption_SpacyScan: RunOption_SpacyScan_Title,
-}
-
+// PiiEntitiesForWeightMergeLogic is used for the legacy (non-India) weight-merge path.
 var PiiEntitiesForWeightMergeLogic = utils.NewSetFromSlice([]PIILabel{
 	PIILabel_DrivingLicenceNumber,
 	PIILabel_CreditCard,
@@ -85,19 +37,13 @@ var PiiEntitiesForWeightMergeLogic = utils.NewSetFromSlice([]PIILabel{
 	PIILabel_NHSNumber,
 })
 
-var RunOptionMap = map[string]RunOption{
-	RunOption_MetaScan_String:  RunOption_MetaScan,
-	RunOption_DataScan_String:  RunOption_DataScan,
-	RunOption_DeepScan_String:  RunOption_DeepScan,
-	RunOption_SpacyScan_String: RunOption_SpacyScan,
-}
-
-func RunOptionSlice() []string {
-	out := make([]string, 0, len(RunOptionMap))
-	for k := range RunOptionMap {
-		out = append(out, k)
+// WeightMergeEntities returns the weight-merge entity set for the given region.
+// India uses DPDPA's exported set so new entities appear after a module bump.
+func WeightMergeEntities(region string) utils.Set[PIILabel] {
+	if IsIndiaRegion(region) {
+		return utils.NewSetFromSlice(dpdpa.WeightMergeLabels())
 	}
-	return out
+	return PiiEntitiesForWeightMergeLogic
 }
 
 func FilterColumns(columns []string) []string {

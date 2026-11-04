@@ -55,7 +55,7 @@ func TestSpacyDetector(t *testing.T) {
 		"test", "123", "tera", "tew", "1234", "563445", "3652", "2563", "test", "123", "tera", "tew", "1234", "563445", "3652", "2563", "6536",
 		"test", "123", "tera", "tew", "1234", "563445", "3652", "2563", "test", "123", "tera", "tew", "1234", "563445", "3652", "2563", "6536"}
 	for _, input := range inputs {
-		piiLabel, err := spacyDetector.Detect(context.TODO(), input)
+		piiLabel, err := spacyDetector.Detect(context.TODO(), input, nil)
 		if err != nil {
 			t.Errorf("Error while processing input %v", err)
 			return
@@ -79,13 +79,13 @@ func SpacyLabelTestHelper(t *testing.T, inputs *[]string, label PIILabel) {
 	}
 
 	for _, input := range *inputs {
-		piiLabel, err := spacyDetector.Detect(context.TODO(), input)
+		piiLabel, err := spacyDetector.Detect(context.TODO(), input, nil)
 		if err != nil {
 			t.Errorf("Error while processing input %v", err)
 			return
 		}
 
-		if NewPiiLabelMapFromPiiLableWithWeight("regex", piiLabel).GetMax() != label {
+		if maxWeightLabel(piiLabel) != label {
 			t.Errorf("for input %s, expected %v, got %v", input, label, piiLabel)
 			return
 		}
@@ -106,13 +106,13 @@ func SpacyLabelTestPercentageHelper(t *testing.T, inputs *[]string, label PIILab
 
 	num_correct := 0
 	for _, input := range *inputs {
-		piiLabel, err := spacyDetector.Detect(context.TODO(), input)
+		piiLabel, err := spacyDetector.Detect(context.TODO(), input, nil)
 		if err != nil {
 			t.Errorf("Error while processing input %v", err)
 			return
 		}
 
-		if NewPiiLabelMapFromPiiLableWithWeight("regex", piiLabel).GetMax() == label {
+		if maxWeightLabel(piiLabel) == label {
 			num_correct++
 		} else {
 			t.Logf("for input %s, expected %v, got %v", input, label, piiLabel)
@@ -182,12 +182,12 @@ func SpacyLabelTestPercentageFromCSVHelper(t *testing.T, col_name string, label 
 
 		// Check label detection
 		input := record[i]
-		piiLabel, err := spacyDetector.Detect(context.TODO(), input)
+		piiLabel, err := spacyDetector.Detect(context.TODO(), input, nil)
 		if err != nil {
 			t.Fatalf("Error while processing input %v", err)
 		}
 
-		if NewPiiLabelMapFromPiiLableWithWeight("regex", piiLabel).GetMax() == label {
+		if maxWeightLabel(piiLabel) == label {
 			num_correct++
 		} else {
 			t.Logf("for input %s, expected %v, got %v", input, label, piiLabel)
@@ -267,12 +267,12 @@ func SpacyFullNameTestPercentageFromCSVHelper(t *testing.T) {
 
 		// Check label detection
 		input := record[i1] + " " + record[i2]
-		piiLabel, err := spacyDetector.Detect(context.TODO(), input)
+		piiLabel, err := spacyDetector.Detect(context.TODO(), input, nil)
 		if err != nil {
 			t.Fatalf("Error while processing input %v", err)
 		}
 
-		if NewPiiLabelMapFromPiiLableWithWeight("regex", piiLabel).GetMax() == label {
+		if maxWeightLabel(piiLabel) == label {
 			num_correct++
 		} else {
 			t.Logf("for input %s, expected %v, got %v", input, label, piiLabel)

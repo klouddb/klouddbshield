@@ -30,13 +30,13 @@ func (i *UnusedHBALineHelper) Init(ctx context.Context, logParserCnf *config.Log
 	// 3. log_line_prefix contains %u and %d
 
 	if logParserCnf.PgSettings.LogConnections {
-		if !(strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%h") || strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%r")) &&
-			!(strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%u") && strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%d")) {
+		if !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%h") && !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%r") &&
+			(!strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%u") || !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%d")) {
 			return fmt.Errorf("with log_connections enabled, please set log_line_prefix to '%%h' or '%%r' or '%%u' and '%%d'")
 		}
 	} else {
-		if !(strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%h") || strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%r")) ||
-			!(strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%u") && strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%d")) {
+		if (!strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%h") && !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%r")) ||
+			(!strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%u") || !strings.Contains(logParserCnf.PgSettings.LogLinePrefix, "%d")) {
 			return fmt.Errorf("please set log_line_prefix to '%%h' or '%%r' or '%%u' and '%%d'")
 		}
 	}

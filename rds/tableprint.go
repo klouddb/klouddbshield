@@ -40,7 +40,7 @@ func (t *rdsPrinter) Print() string {
 		}
 	}
 	t.AppendSeparator()
-	tableOutput := "\n\n" + t.Writer.Render() + "\n"
+	tableOutput := "\n\n" + t.Render() + "\n"
 	for _, fl := range t.failuresLines {
 		tableOutput += fl + "\n"
 	}
@@ -55,7 +55,7 @@ func (t *rdsPrinter) SectionPrint() string {
 		t.AppendSeparator()
 	}
 	t.AppendSeparator()
-	tableOutput := "\n\n" + t.Writer.Render() + "\n"
+	tableOutput := "\n\n" + t.Render() + "\n"
 	return tableOutput
 }
 
@@ -89,7 +89,7 @@ func (t *rdsInstancePrinter) Print() string {
 	}
 	// t.AppendFooter(table.Row{"", "", ""})
 	t.AppendSeparator()
-	return "\n\n" + t.Writer.Render() + "\n"
+	return "\n\n" + t.Render() + "\n"
 	// return t.Sb.String()
 }
 

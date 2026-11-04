@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	cons "github.com/klouddb/klouddbshield/pkg/const"
@@ -27,13 +28,37 @@ type LogParserDetailRow struct {
 
 // LogParserScannerResponse is fleet log parser output for one host.
 type LogParserScannerResponse struct {
-	Host      string                 `json:"host"`
-	Available bool                   `json:"available"`
-	Message   string                 `json:"message,omitempty"`
-	Commands  []LogParserCommandView `json:"commands"`
-	Pass      int                    `json:"pass"`
-	Warn      int                    `json:"warn"`
-	Fail      int                    `json:"fail"`
+	Host           string                 `json:"host"`
+	Available      bool                   `json:"available"`
+	Message        string                 `json:"message,omitempty"`
+	Commands       []LogParserCommandView `json:"commands"`
+	Pass           int                    `json:"pass"`
+	Warn           int                    `json:"warn"`
+	Fail           int                    `json:"fail"`
+	ScanMeta       *LogParserScanMetaView `json:"scanMeta,omitempty"`
+	TerminalReport string                 `json:"terminalReport,omitempty"`
+}
+
+// LogParserScanMetaView is begin/end filter window + file inventory from collector.
+type LogParserScanMetaView struct {
+	Begin        string                  `json:"begin,omitempty"`
+	End          string                  `json:"end,omitempty"`
+	FilesFound   int                     `json:"filesFound"`
+	FilesScanned int                     `json:"filesScanned"`
+	TotalLines   int64                   `json:"totalLines,omitempty"`
+	Duration     string                  `json:"duration,omitempty"`
+	Commands     []string                `json:"commands,omitempty"`
+	Files        []LogParserFileScanView `json:"files,omitempty"`
+}
+
+// LogParserFileScanView is one log file's scan outcome for debugger UI.
+type LogParserFileScanView struct {
+	FileName   string `json:"fileName"`
+	Scanned    bool   `json:"scanned"`
+	Status     string `json:"status"`
+	DurationMs int64  `json:"durationMs"`
+	Error      string `json:"error,omitempty"`
+	SizeBytes  int64  `json:"sizeBytes,omitempty"`
 }
 
 func logParserCommandsFromReport(report map[string]interface{}) []LogParserCommandView {
@@ -130,6 +155,13 @@ func logParserResultStatus(parseStatus, result, command string) string {
 		if strings.Contains(rs, "unique ips found") || strings.Contains(rs, "ips found") {
 			return "info"
 		}
+	case cons.LogParserCMD_SqlInjectionScan:
+		if strings.Contains(rs, "no sql injection") {
+			return "pass"
+		}
+		if strings.Contains(rs, "sql injection") {
+			return "warn"
+		}
 	}
 	if strings.HasPrefix(rs, "no ") {
 		return "pass"
@@ -150,6 +182,8 @@ func logParserDetailFromValue(command string, raw interface{}) (detailType strin
 		return logParserUnusedHBADetail(raw)
 	case cons.LogParserCMD_PasswordLeakScanner:
 		return logParserPasswordLeakDetail(raw)
+	case cons.LogParserCMD_SqlInjectionScan:
+		return logParserStringListDetail(cons.LogParserCMD_SqlInjectionScan, "SQL injection finding", raw)
 	default:
 		text = trimForTable(fmt.Sprint(raw), 500)
 		return command, nil, text
@@ -294,4 +328,95 @@ func summarizeLogParserViews(views []LogParserCommandView) (pass, warn, fail int
 		}
 	}
 	return pass, warn, fail
+}
+
+func decodeLogParserScanMeta(report map[string]interface{}) *LogParserScanMetaView {
+	if report == nil {
+		return nil
+	}
+	raw, ok := report["Log Parser Scan Meta"]
+	if !ok || raw == nil {
+		return nil
+	}
+	m, ok := raw.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	meta := &LogParserScanMetaView{
+		Begin:        stringField(m, "begin", "Begin"),
+		End:          stringField(m, "end", "End"),
+		Duration:     stringField(m, "duration", "Duration"),
+		FilesFound:   intField(m, "files_found", "filesFound"),
+		FilesScanned: intField(m, "files_scanned", "filesScanned"),
+		TotalLines:   int64Field(m, "total_lines", "totalLines"),
+		Commands:     interfaceStringList(m["commands"]),
+	}
+	if filesRaw, ok := m["files"]; ok {
+		meta.Files = decodeLogParserFileScanViews(filesRaw)
+	}
+	return meta
+}
+
+func decodeLogParserTerminalReport(report map[string]interface{}) string {
+	if report == nil {
+		return ""
+	}
+	raw, ok := report["Log Parser Terminal Report"]
+	if !ok || raw == nil {
+		return ""
+	}
+	switch v := raw.(type) {
+	case string:
+		return v
+	default:
+		return strings.TrimSpace(fmt.Sprint(v))
+	}
+}
+
+func decodeLogParserFileScanViews(raw interface{}) []LogParserFileScanView {
+	list, ok := raw.([]interface{})
+	if !ok {
+		return nil
+	}
+	out := make([]LogParserFileScanView, 0, len(list))
+	for _, item := range list {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		out = append(out, LogParserFileScanView{
+			FileName:   stringField(m, "file_name", "fileName", "FileName"),
+			Scanned:    boolField(m, "scanned", "Scanned"),
+			Status:     stringField(m, "status", "Status"),
+			DurationMs: int64Field(m, "duration_ms", "durationMs", "DurationMs"),
+			Error:      stringField(m, "error", "Error"),
+			SizeBytes:  int64Field(m, "size_bytes", "sizeBytes", "SizeBytes"),
+		})
+	}
+	return out
+}
+
+func intField(m map[string]interface{}, keys ...string) int {
+	return int(int64Field(m, keys...))
+}
+
+func int64Field(m map[string]interface{}, keys ...string) int64 {
+	for _, k := range keys {
+		if v, ok := m[k]; ok {
+			switch n := v.(type) {
+			case int:
+				return int64(n)
+			case int64:
+				return n
+			case float64:
+				return int64(n)
+			case string:
+				parsed, err := strconv.ParseInt(strings.TrimSpace(n), 10, 64)
+				if err == nil {
+					return parsed
+				}
+			}
+		}
+	}
+	return 0
 }

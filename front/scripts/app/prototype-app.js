@@ -1,6 +1,6 @@
 import { gid, gval, gon, gq, gcls } from '../utils/dom.js';
 import { paginateSlice, mountTablePagination } from '../utils/pagination.js';
-import { PAGE_META as pages } from '../router/routes.js';
+import { PAGE_META as pages, LEGACY_FLEET_REPORT_PAGES } from '../router/routes.js';
 import { ensurePageHtml } from '../utils/page-loader.js';
 import { ensureHtmlReportCss } from '../utils/styles.js';
 import { getHostsSearchFilter } from '../pages/search.js';
@@ -70,7 +70,7 @@ let policiesChromeInited = false;
       return { instance: raw, database: '' };
     }
 
-    function buildRouteHash(page, hostName, sectionId, fleetCatId, hostsMode, checkPreset, database) {
+    function buildRouteHash(page, hostName, sectionId, fleetCatId, hostsMode, checkPreset, database, fleetReportTab) {
       if (page === 'host-detail') {
         const target = parseHostTargetKey(hostName);
         const inst = target.instance || hostName || defaultHostName();
@@ -92,6 +92,14 @@ let policiesChromeInited = false;
       }
       if (page === 'critical-violations') {
         return checkPreset ? '#critical-violations/' + encodeURIComponent(checkPreset) : '#critical-violations';
+      }
+      if (page === 'fleet-reports') {
+        const tab = fleetReportTab || 'inactive-users';
+        return tab === 'inactive-users' ? '#fleet-reports' : '#fleet-reports/' + tab;
+      }
+      const legacyTab = LEGACY_FLEET_REPORT_PAGES[page];
+      if (legacyTab) {
+        return legacyTab === 'inactive-users' ? '#fleet-reports' : '#fleet-reports/' + legacyTab;
       }
       if (page === 'hosts') return '#hosts';
       return '#' + page;
@@ -156,6 +164,14 @@ let policiesChromeInited = false;
           page: 'guc-drift',
           gucTarget: gucDriftParts[1] ? decodeURIComponent(gucDriftParts[1]) : '',
         };
+      }
+      const fleetReportsParts = raw.match(/^fleet-reports(?:\/([^/]+))?$/);
+      if (fleetReportsParts) {
+        const tab = fleetReportsParts[1] || 'inactive-users';
+        return { page: 'fleet-reports', fleetReportTab: tab };
+      }
+      if (LEGACY_FLEET_REPORT_PAGES[raw]) {
+        return { page: 'fleet-reports', fleetReportTab: LEGACY_FLEET_REPORT_PAGES[raw] };
       }
       return { page: raw };
     }
@@ -326,9 +342,9 @@ let policiesChromeInited = false;
       if (calloutEl) {
         let reportLink = '';
         if (cat.id === 'inactive-users') {
-          reportLink = ' · <span class="link" data-goto="inactive-users-report">Open fleet inactive users report →</span>';
+          reportLink = ' · <span class="link" data-goto="fleet-reports" data-fleet-report="inactive-users">Open inactive users →</span>';
         } else if (cat.id === 'common-users') {
-          reportLink = ' · <span class="link" data-goto="common-users-report">Open fleet common users report →</span>';
+          reportLink = ' · <span class="link" data-goto="fleet-reports" data-fleet-report="common-users">Open common users →</span>';
         }
         calloutEl.innerHTML =
           '<strong>' + cat.title + ':</strong> <span class="badge ' + levelBadge + '">' + levelLabel + '</span> · ' + cat.menu + reportLink;
@@ -376,6 +392,11 @@ let policiesChromeInited = false;
       const prevPageId = activePageId;
       let pageId = id;
 
+      const legacyFleetTab = LEGACY_FLEET_REPORT_PAGES[pageId];
+      if (legacyFleetTab) {
+        return showPage('fleet-reports', hostName, Object.assign({}, opts, { fleetReportTab: legacyFleetTab }));
+      }
+
       await ensurePageHtml(pageId, PAGE_ASSET);
 
       if (pageId === 'html-report' || pageId === 'host-detail') {
@@ -416,6 +437,7 @@ let policiesChromeInited = false;
 
       const meta = pages[pageId] || pages['strategic-dashboard'];
       let title = meta.title;
+      let logInsightsTabLabel = '';
       const resolvedHost = pageId === 'host-detail' ? (hostName || defaultHostName()) : hostName;
       if (pageId === 'host-detail') {
         title = resolvedHost;
@@ -432,7 +454,9 @@ let policiesChromeInited = false;
         renderFleetCategory(opts.fleetCat);
       }
       const crumbEl = document.getElementById('breadcrumb');
-      if (crumbEl) crumbEl.innerHTML = '<strong>' + title + '</strong> / ' + meta.crumb;
+      if (crumbEl && pageId !== 'fleet-reports') {
+        crumbEl.innerHTML = '<strong>' + title + '</strong> / ' + meta.crumb;
+      }
 
       if (pageId === 'strategic-dashboard') {
         ensureStrategicDashboardInit();
@@ -480,13 +504,33 @@ let policiesChromeInited = false;
         const { initLogReadinessPage } = await import('../pages/log-readiness.js');
         void initLogReadinessPage();
       }
-      if (pageId === 'inactive-users-report' && pageId !== prevPageId) {
-        const { initInactiveUsersReportPage } = await import('../pages/inactive-users-report.js');
-        void initInactiveUsersReportPage();
-      }
-      if (pageId === 'common-users-report' && pageId !== prevPageId) {
-        const { initCommonUsersReportPage } = await import('../pages/common-users-report.js');
-        void initCommonUsersReportPage();
+      if (pageId === 'fleet-reports') {
+        const { initFleetReportsPage, fleetReportTabMeta, normalizeFleetReportTab } = await import('../pages/fleet-reports.js');
+        const tab = normalizeFleetReportTab(opts.fleetReportTab);
+        const tabMeta = fleetReportTabMeta(tab);
+        logInsightsTabLabel = tabMeta.label;
+        title = 'Log Insights';
+        const crumbElFleet = document.getElementById('breadcrumb');
+        if (crumbElFleet) {
+          crumbElFleet.innerHTML = '<strong>Log Insights</strong> / ' + tabMeta.label;
+        }
+        void initFleetReportsPage({
+          tab,
+          force: pageId !== prevPageId || !!opts.forceFleetReport,
+          onTabChange: (nextTab) => {
+            const nextMeta = fleetReportTabMeta(nextTab);
+            const crumb = document.getElementById('breadcrumb');
+            if (crumb) {
+              crumb.innerHTML = '<strong>Log Insights</strong> / ' + nextMeta.label;
+            }
+            const announcer = document.getElementById('route-announcer');
+            if (announcer) {
+              announcer.textContent = 'Log Insights / ' + nextMeta.label;
+            }
+            if (opts.skipHash) return;
+            setRouteHash(buildRouteHash('fleet-reports', resolvedHost, opts.section, opts.fleetCat, opts.hostsMode, opts.checkPreset, opts.database, nextTab));
+          },
+        });
       }
       if (pageId === 'policies') {
         ensurePoliciesChromeInit();
@@ -504,10 +548,17 @@ let policiesChromeInited = false;
       activePageId = pageId;
 
       const announcer = document.getElementById('route-announcer');
-      if (announcer) announcer.textContent = title + ' — ' + meta.crumb;
+      if (announcer) {
+        if (pageId === 'fleet-reports') {
+          announcer.textContent = 'Log Insights / ' + logInsightsTabLabel;
+        } else {
+          announcer.textContent = title + ' — ' + meta.crumb;
+        }
+      }
 
       if (!opts.skipHash) {
-        const nextHash = buildRouteHash(pageId, resolvedHost, opts.section, opts.fleetCat, opts.hostsMode, opts.checkPreset, opts.database);
+        const fleetTab = pageId === 'fleet-reports' ? (opts.fleetReportTab || 'inactive-users') : undefined;
+        const nextHash = buildRouteHash(pageId, resolvedHost, opts.section, opts.fleetCat, opts.hostsMode, opts.checkPreset, opts.database, fleetTab);
         setRouteHash(nextHash);
       }
 
@@ -544,6 +595,7 @@ let policiesChromeInited = false;
         checkPreset: route.checkPreset,
         database: route.database,
         section: route.section,
+        fleetReportTab: route.fleetReportTab,
       });
       if (route.section) {
         requestAnimationFrame(() => scrollToHostSection(route.section));
@@ -587,6 +639,11 @@ let policiesChromeInited = false;
       }
       if (page === 'hosts') {
         void showPage('hosts', undefined);
+        return;
+      }
+      if (page === 'fleet-reports' || LEGACY_FLEET_REPORT_PAGES[page]) {
+        const tab = goto.dataset.fleetReport || LEGACY_FLEET_REPORT_PAGES[page] || 'inactive-users';
+        void showPage('fleet-reports', undefined, { fleetReportTab: tab });
         return;
       }
       void showPage(page, goto.dataset.hostInstance || goto.dataset.host || undefined, {

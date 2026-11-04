@@ -17,6 +17,7 @@ type PiiScannerInput struct {
 	Schema        string `toml:"schema"`
 	ExcludeTables string `toml:"exclude_tables"`
 	IncludeTables string `toml:"include_tables"`
+	Region        string `toml:"region"`
 }
 
 // PiiScannerOverrides supplies CLI flag values that override TOML when non-empty.
@@ -26,12 +27,13 @@ type PiiScannerOverrides struct {
 	Schema        string
 	ExcludeTables string
 	IncludeTables string
+	Region        string
 	PrintAll      bool
 	SpacyOnly     bool
 	PrintSummary  bool
 }
 
-func (in PiiScannerInput) merged(ov PiiScannerOverrides) (runOption, database, schema, exclude, include string) {
+func (in PiiScannerInput) merged(ov PiiScannerOverrides) (runOption, database, schema, exclude, include, region string) {
 	runOption = strings.TrimSpace(in.RunOption)
 	if s := strings.TrimSpace(ov.RunOption); s != "" {
 		runOption = s
@@ -62,6 +64,11 @@ func (in PiiScannerInput) merged(ov PiiScannerOverrides) (runOption, database, s
 	if s := strings.TrimSpace(ov.IncludeTables); s != "" {
 		include = s
 	}
+
+	region = strings.TrimSpace(in.Region)
+	if s := strings.TrimSpace(ov.Region); s != "" {
+		region = s
+	}
 	return
 }
 
@@ -73,7 +80,7 @@ func (c *Config) BuildPiiScannerConfig(pg *postgresdb.Postgres, ov PiiScannerOve
 	if c == nil {
 		return nil, fmt.Errorf("config is nil")
 	}
-	runOption, database, schema, exclude, include := c.PiiScanner.merged(ov)
-	return piiscanner.NewConfig(pg, runOption, exclude, include, database, schema,
+	runOption, database, schema, exclude, include, region := c.PiiScanner.merged(ov)
+	return piiscanner.NewConfigWithRegion(pg, runOption, exclude, include, database, schema, region,
 		ov.PrintAll, ov.SpacyOnly, ov.PrintSummary)
 }

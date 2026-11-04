@@ -11,6 +11,8 @@ permissions:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/klouddb/dpdpa_pii_db_scanner
     steps:
       -
         name: Checkout
@@ -24,7 +26,7 @@ jobs:
         name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21.1
+          go-version-file: go.mod
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -34,3 +36,4 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOPRIVATE: github.com/klouddb/dpdpa_pii_db_scanner

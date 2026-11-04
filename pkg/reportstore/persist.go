@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -122,6 +123,9 @@ func Persist(ctx context.Context, db *sql.DB, fileData map[string]interface{}, m
 	if err != nil {
 		return "", fmt.Errorf("insert run: %w", err)
 	}
+	if err := UpdateLogParserStateFromReport(ctx, db, tid, host, fileData, finished); err != nil {
+		return id, fmt.Errorf("logparser aggregation: %w", err)
+	}
 	return id, nil
 }
 
@@ -131,7 +135,7 @@ func execInsertInTx(ctx context.Context, db *sql.DB, query string, args ...inter
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+	if _, err := tx.ExecContext(ctx, rebindSQL(db, query), args...); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -230,4 +234,28 @@ func countPassFailFromResult(raw interface{}) (pass, fail int) {
 		}
 	}
 	return pass, fail
+}
+
+// rebindSQL converts SQLite-style ? placeholders to $1,$2,... for Postgres.
+// SQLite and other drivers are left unchanged so existing flows stay the same.
+func rebindSQL(_ *sql.DB, query string) string {
+	if !UsePostgresPlaceholders {
+		return query
+	}
+	return rebindPostgresPlaceholders(query)
+}
+
+func rebindPostgresPlaceholders(query string) string {
+	var b strings.Builder
+	n := 1
+	for i := 0; i < len(query); i++ {
+		if query[i] == '?' {
+			b.WriteByte('$')
+			b.WriteString(strconv.Itoa(n))
+			n++
+		} else {
+			b.WriteByte(query[i])
+		}
+	}
+	return b.String()
 }

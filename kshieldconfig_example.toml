@@ -37,6 +37,7 @@
 # schema = "public"
 # exclude_tables = ""
 # include_tables = ""
+# region = ""          # empty = legacy entities (updated credit-card only); "india" = DPDPA / dpdpa_pii_db_scanner logic
 
 
 # [backup_compliance]

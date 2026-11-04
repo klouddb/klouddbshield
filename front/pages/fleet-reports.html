@@ -1,0 +1,340 @@
+<section id="page-fleet-reports" class="page">
+          <header class="fleet-reports-hero">
+            <div class="fleet-reports-hero__text">
+              <h1>Log Insights</h1>
+              <p class="subtitle" id="fleet-reports-lead">Log parser and users-report findings aggregated across collectors</p>
+            </div>
+          </header>
+
+          <nav class="fleet-reports-tabs" role="tablist" aria-label="Log Insights views">
+            <button type="button" role="tab" class="fleet-reports-tab is-active" data-report-pane="inactive-users" aria-selected="true" id="fleet-reports-tab-inactive-users">
+              <span class="fleet-reports-tab__label">Inactive Users</span>
+            </button>
+            <button type="button" role="tab" class="fleet-reports-tab" data-report-pane="common-users" aria-selected="false" tabindex="-1" id="fleet-reports-tab-common-users">
+              <span class="fleet-reports-tab__label">Common Users</span>
+            </button>
+            <button type="button" role="tab" class="fleet-reports-tab" data-report-pane="unique-ip" aria-selected="false" tabindex="-1" id="fleet-reports-tab-unique-ip">
+              <span class="fleet-reports-tab__label">Unique IPs</span>
+            </button>
+            <button type="button" role="tab" class="fleet-reports-tab" data-report-pane="unused-lines" aria-selected="false" tabindex="-1" id="fleet-reports-tab-unused-lines">
+              <span class="fleet-reports-tab__label">Unused HBA Lines</span>
+            </button>
+            <button type="button" role="tab" class="fleet-reports-tab fleet-reports-tab--critical" data-report-pane="password-leak" aria-selected="false" tabindex="-1" id="fleet-reports-tab-password-leak">
+              <span class="fleet-reports-tab__label">Password Leaks</span>
+            </button>
+          </nav>
+
+          <div class="fleet-reports-panes">
+            <div class="fleet-report-pane is-active" data-report-pane="inactive-users" role="tabpanel" aria-labelledby="fleet-reports-tab-inactive-users">
+              <p class="fleet-report-pane-subtitle"><span id="inactive-users-hint">—</span></p>
+              <div class="stats user-report-stats">
+                <div class="stat-card user-report-stat-card user-report-stat-card--users">
+                  <div class="stat-label">Inactive Users</div>
+                  <div class="stat-value" id="inactive-users-stat-users">—</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--hosts">
+                  <div class="stat-label">Affected Hosts</div>
+                  <div class="stat-value" id="inactive-users-stat-hosts">—</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--source">
+                  <div class="stat-label">Data Source</div>
+                  <div class="stat-value user-report-stat-source">Log Parser</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--range">
+                  <div class="stat-label">Inactive &gt; 30 / 90 / 180 days</div>
+                  <div class="stat-value user-report-stat-source" id="inactive-users-stat-buckets" style="font-size:14px;line-height:1.35;">—</div>
+                </div>
+              </div>
+              <div class="report-block user-report-panel">
+                <div class="report-block-header user-report-panel-header">
+                  <div class="user-report-panel-intro">
+                    <h2>Inactive Accounts</h2>
+                    <p>Aggregated <code>inactive_since</code> across daily scans · scan-only rows still show log filter range · ≥30 days eligible for drop review</p>
+                  </div>
+                  <div class="user-report-toolbar" id="inactive-users-toolbar">
+                    <div class="user-report-bucket-filters" id="inactive-users-bucket-filters" role="group" aria-label="Filter by inactivity">
+                      <button type="button" class="user-report-bucket-pill is-active" data-bucket="all" aria-pressed="true">
+                        <span class="user-report-bucket-pill__label">All</span>
+                        <span class="user-report-bucket-pill__count" data-bucket-count="all">—</span>
+                      </button>
+                      <button type="button" class="user-report-bucket-pill" data-bucket="gt30" aria-pressed="false">
+                        <span class="user-report-bucket-pill__label">&gt; 30 days</span>
+                        <span class="user-report-bucket-pill__count" data-bucket-count="gt30">—</span>
+                      </button>
+                      <button type="button" class="user-report-bucket-pill" data-bucket="gt90" aria-pressed="false">
+                        <span class="user-report-bucket-pill__label">&gt; 90 days</span>
+                        <span class="user-report-bucket-pill__count" data-bucket-count="gt90">—</span>
+                      </button>
+                      <button type="button" class="user-report-bucket-pill" data-bucket="gt180" aria-pressed="false">
+                        <span class="user-report-bucket-pill__label">&gt; 180 days</span>
+                        <span class="user-report-bucket-pill__count" data-bucket-count="gt180">—</span>
+                      </button>
+                      <button type="button" class="user-report-bucket-pill user-report-bucket-pill--review" data-bucket="eligible" aria-pressed="false">
+                        <span class="user-report-bucket-pill__label">Eligible for review</span>
+                        <span class="user-report-bucket-pill__count" data-bucket-count="eligible">—</span>
+                      </button>
+                    </div>
+                    <label class="user-report-search user-report-search--toolbar">
+                      <span class="user-report-search-label">Search</span>
+                      <input type="search" id="inactive-users-search" placeholder="User or host…" autocomplete="off" />
+                    </label>
+                  </div>
+                </div>
+                <div class="report-block-body user-report-body">
+                  <div class="user-report-table-wrap">
+                    <table class="user-report-table">
+                      <thead>
+                        <tr>
+                          <th class="user-report-col-user">User</th>
+                          <th class="user-report-col-host">Host</th>
+                          <th class="user-report-col-databases">Databases</th>
+                          <th class="user-report-col-range">Inactive since / log range</th>
+                          <th class="user-report-col-status">Status</th>
+                          <th class="user-report-col-action"></th>
+                        </tr>
+                      </thead>
+                      <tbody id="inactive-users-tbody">
+                        <tr><td colspan="6" class="user-report-empty">Loading inactive users…</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="table-pagination user-report-pagination" id="inactive-users-pagination" hidden></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="fleet-report-pane" data-report-pane="common-users" role="tabpanel" aria-labelledby="fleet-reports-tab-common-users" hidden>
+              <p class="fleet-report-pane-subtitle"><span id="common-users-hint">—</span></p>
+              <div class="stats user-report-stats">
+                <div class="stat-card user-report-stat-card user-report-stat-card--users">
+                  <div class="stat-label">Login Roles</div>
+                  <div class="stat-value" id="common-users-stat-users">—</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--hosts">
+                  <div class="stat-label">Monitored Hosts</div>
+                  <div class="stat-value" id="common-users-stat-hosts">—</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--source">
+                  <div class="stat-label">Data Source</div>
+                  <div class="stat-value user-report-stat-source">CIS Users Report</div>
+                </div>
+              </div>
+              <div class="report-block user-report-panel">
+                <div class="report-block-header user-report-panel-header">
+                  <div>
+                    <h2>Login-Capable Roles</h2>
+                    <p>Human and service accounts that can open a database session</p>
+                  </div>
+                  <label class="user-report-search">
+                    <span class="user-report-search-label">Search</span>
+                    <input type="search" id="common-users-search" placeholder="User or host…" autocomplete="off" />
+                  </label>
+                </div>
+                <div class="report-block-body user-report-body">
+                  <div class="user-report-table-wrap">
+                    <table class="user-report-table">
+                      <thead>
+                        <tr>
+                          <th class="user-report-col-user">User</th>
+                          <th class="user-report-col-host">Host</th>
+                          <th class="user-report-col-databases">Databases</th>
+                          <th class="user-report-col-action"></th>
+                        </tr>
+                      </thead>
+                      <tbody id="common-users-tbody">
+                        <tr><td colspan="4" class="user-report-empty">Loading common users…</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="table-pagination user-report-pagination" id="common-users-pagination" hidden></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="fleet-report-pane" data-report-pane="unique-ip" role="tabpanel" aria-labelledby="fleet-reports-tab-unique-ip" hidden>
+              <p class="fleet-report-pane-subtitle"><span id="unique-ip-hint">—</span></p>
+              <div class="stats user-report-stats">
+                <div class="stat-card user-report-stat-card user-report-stat-card--users">
+                  <div class="stat-label">Unique IPs</div>
+                  <div class="stat-value" id="unique-ip-stat-ips">—</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--hosts">
+                  <div class="stat-label">Affected Hosts</div>
+                  <div class="stat-value" id="unique-ip-stat-hosts">—</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--source">
+                  <div class="stat-label">Data Source</div>
+                  <div class="stat-value user-report-stat-source">Log Parser</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--range">
+                  <div class="stat-label">Aggregated IPs (fleet)</div>
+                  <div class="stat-value user-report-stat-source" id="unique-ip-stat-aggregated" style="font-size:14px;line-height:1.35;">—</div>
+                </div>
+              </div>
+              <div class="report-block user-report-panel">
+                <div class="report-block-header user-report-panel-header">
+                  <div>
+                    <h2>Client IP Addresses</h2>
+                    <p>IPs accumulate in <code>logparser_client_ips</code> (<code>first_seen</code>) · new IPs add on each scan · old IPs are not removed · scan-only rows show log filter range</p>
+                  </div>
+                  <label class="user-report-search">
+                    <span class="user-report-search-label">Search</span>
+                    <input type="search" id="unique-ip-search" placeholder="IP or host…" autocomplete="off" />
+                  </label>
+                </div>
+                <div class="report-block-body user-report-body">
+                  <div class="user-report-table-wrap">
+                    <table class="user-report-table">
+                      <thead>
+                        <tr>
+                          <th class="user-report-col-user">IP Address</th>
+                          <th class="user-report-col-host">Host</th>
+                          <th class="user-report-col-databases">Databases</th>
+                          <th class="user-report-col-range">First seen / log range</th>
+                          <th class="user-report-col-action"></th>
+                        </tr>
+                      </thead>
+                      <tbody id="unique-ip-tbody">
+                        <tr><td colspan="5" class="user-report-empty">Loading unique IPs…</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="table-pagination user-report-pagination" id="unique-ip-pagination" hidden></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="fleet-report-pane" data-report-pane="unused-lines" role="tabpanel" aria-labelledby="fleet-reports-tab-unused-lines" hidden>
+              <p class="fleet-report-pane-subtitle"><span id="unused-lines-hint">—</span></p>
+              <div class="stats user-report-stats">
+                <div class="stat-card user-report-stat-card user-report-stat-card--users">
+                  <div class="stat-label">Unused Lines</div>
+                  <div class="stat-value" id="unused-lines-stat-lines">—</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--hosts">
+                  <div class="stat-label">Affected Hosts</div>
+                  <div class="stat-value" id="unused-lines-stat-hosts">—</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--source">
+                  <div class="stat-label">Data Source</div>
+                  <div class="stat-value user-report-stat-source">Log Parser</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--range">
+                  <div class="stat-label">Unused &gt; 30 / 90 / 180 days</div>
+                  <div class="stat-value user-report-stat-source" id="unused-lines-stat-buckets" style="font-size:14px;line-height:1.35;">—</div>
+                </div>
+              </div>
+              <div class="report-block user-report-panel">
+                <div class="report-block-header user-report-panel-header">
+                  <div class="user-report-panel-intro">
+                    <h2>Unused HBA Rules</h2>
+                    <p>Aggregated <code>unused_since</code> across daily scans · scan-only rows still show log filter range · ≥30 days eligible for removal review</p>
+                  </div>
+                  <div class="user-report-toolbar" id="unused-lines-toolbar">
+                    <div class="user-report-bucket-filters" id="unused-lines-bucket-filters" role="group" aria-label="Filter by unused duration">
+                      <button type="button" class="user-report-bucket-pill is-active" data-bucket="all" aria-pressed="true">
+                        <span class="user-report-bucket-pill__label">All</span>
+                        <span class="user-report-bucket-pill__count" data-bucket-count="all">—</span>
+                      </button>
+                      <button type="button" class="user-report-bucket-pill" data-bucket="gt30" aria-pressed="false">
+                        <span class="user-report-bucket-pill__label">&gt; 30 days</span>
+                        <span class="user-report-bucket-pill__count" data-bucket-count="gt30">—</span>
+                      </button>
+                      <button type="button" class="user-report-bucket-pill" data-bucket="gt90" aria-pressed="false">
+                        <span class="user-report-bucket-pill__label">&gt; 90 days</span>
+                        <span class="user-report-bucket-pill__count" data-bucket-count="gt90">—</span>
+                      </button>
+                      <button type="button" class="user-report-bucket-pill" data-bucket="gt180" aria-pressed="false">
+                        <span class="user-report-bucket-pill__label">&gt; 180 days</span>
+                        <span class="user-report-bucket-pill__count" data-bucket-count="gt180">—</span>
+                      </button>
+                      <button type="button" class="user-report-bucket-pill user-report-bucket-pill--review" data-bucket="eligible" aria-pressed="false">
+                        <span class="user-report-bucket-pill__label">Eligible for review</span>
+                        <span class="user-report-bucket-pill__count" data-bucket-count="eligible">—</span>
+                      </button>
+                    </div>
+                    <label class="user-report-search user-report-search--toolbar">
+                      <span class="user-report-search-label">Search</span>
+                      <input type="search" id="unused-lines-search" placeholder="Line text or host…" autocomplete="off" />
+                    </label>
+                  </div>
+                </div>
+                <div class="report-block-body user-report-body">
+                  <div class="user-report-table-wrap">
+                    <table class="user-report-table">
+                      <thead>
+                        <tr>
+                          <th class="user-report-col-lineno">Line #</th>
+                          <th class="user-report-col-line">HBA Line</th>
+                          <th class="user-report-col-host">Host</th>
+                          <th class="user-report-col-databases">Databases</th>
+                          <th class="user-report-col-range">Unused since / log range</th>
+                          <th class="user-report-col-status">Status</th>
+                          <th class="user-report-col-action"></th>
+                        </tr>
+                      </thead>
+                      <tbody id="unused-lines-tbody">
+                        <tr><td colspan="7" class="user-report-empty">Loading unused HBA lines…</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="table-pagination user-report-pagination" id="unused-lines-pagination" hidden></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="fleet-report-pane" data-report-pane="password-leak" role="tabpanel" aria-labelledby="fleet-reports-tab-password-leak" hidden>
+              <p class="fleet-report-pane-subtitle"><span id="password-leak-hint">—</span></p>
+              <div class="stats user-report-stats">
+                <div class="stat-card user-report-stat-card user-report-stat-card--users">
+                  <div class="stat-label">Leaked Passwords</div>
+                  <div class="stat-value" id="password-leak-stat-leaks">—</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--hosts">
+                  <div class="stat-label">Affected Hosts</div>
+                  <div class="stat-value" id="password-leak-stat-hosts">—</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--source">
+                  <div class="stat-label">Data Source</div>
+                  <div class="stat-value user-report-stat-source">Log Parser</div>
+                </div>
+                <div class="stat-card user-report-stat-card user-report-stat-card--range">
+                  <div class="stat-label">Log Filter Range</div>
+                  <div class="stat-value user-report-stat-source" id="password-leak-stat-range" style="font-size:14px;line-height:1.35;">—</div>
+                </div>
+              </div>
+              <div class="report-block user-report-panel">
+                <div class="report-block-header user-report-panel-header">
+                  <div>
+                    <h2>Leaked Password Findings</h2>
+                    <p>Plaintext passwords found in SQL logged to pg_log · requires log parser <code>password_leak_scanner</code> scan · time range is begin/end log filter</p>
+                  </div>
+                  <label class="user-report-search">
+                    <span class="user-report-search-label">Search</span>
+                    <input type="search" id="password-leak-search" placeholder="Password, query, or host…" autocomplete="off" />
+                  </label>
+                </div>
+                <div class="report-block-body user-report-body">
+                  <div class="user-report-table-wrap">
+                    <table class="user-report-table">
+                      <thead>
+                        <tr>
+                          <th class="user-report-col-user">Password</th>
+                          <th class="user-report-col-line">Query</th>
+                          <th class="user-report-col-host">Host</th>
+                          <th class="user-report-col-databases">Databases</th>
+                          <th class="user-report-col-range">Log filter range</th>
+                          <th class="user-report-col-action"></th>
+                        </tr>
+                      </thead>
+                      <tbody id="password-leak-tbody">
+                        <tr><td colspan="6" class="user-report-empty">Loading password leak findings…</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="table-pagination user-report-pagination" id="password-leak-pagination" hidden></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>

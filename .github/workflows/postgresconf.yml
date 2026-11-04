@@ -11,6 +11,8 @@ jobs:
   postgresconf:
     name: "Postgres version : ${{ matrix.postgres_version }}, Testcase : ${{ matrix.testcases }}" 
     runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/klouddb/dpdpa_pii_db_scanner
     strategy:
       matrix:
         postgres_version: [13,14,15,16]

@@ -291,7 +291,7 @@ func GetBackupHistory(backupPath string) ([]time.Time, error) {
 	for i := 0; i < len(backupPath); i++ {
 		if backupPath[i] == '%' {
 			patternBuilder.WriteString("*")
-			regBuilder.WriteString(fmt.Sprintf("(%s)", mapForPrefix[string(backupPath[i:i+2])].Regex))
+			fmt.Fprintf(&regBuilder, "(%s)", mapForPrefix[string(backupPath[i:i+2])].Regex)
 			ind = append(ind, string(backupPath[i:i+2]))
 			i += 1
 		} else {

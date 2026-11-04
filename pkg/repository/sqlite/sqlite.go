@@ -47,6 +47,7 @@ func Open(ctx context.Context, path string) (*Repository, error) {
 	db.SetMaxOpenConns(32)
 	db.SetMaxIdleConns(8)
 	reportstore.RunsTable = "scan_results"
+	reportstore.UsePostgresPlaceholders = false
 	repo := &Repository{db: db}
 	if err := repo.EnsureSchema(ctx); err != nil {
 		db.Close()
@@ -58,6 +59,7 @@ func Open(ctx context.Context, path string) (*Repository, error) {
 // FromDB wraps an existing SQLite connection (tests).
 func FromDB(db *sql.DB) *Repository {
 	reportstore.RunsTable = "scan_results"
+	reportstore.UsePostgresPlaceholders = false
 	return &Repository{db: db}
 }
 
@@ -449,4 +451,16 @@ ON collector_logs(node_id, created_at DESC);
 func ensureCollectorSchema(ctx context.Context, db *sql.DB) error {
 	_, err := db.ExecContext(ctx, collectorSchemaSQL)
 	return err
+}
+
+func (r *Repository) ListLogParserInactiveUsers(ctx context.Context) ([]reportstore.LogParserInactiveUserState, error) {
+	return reportstore.ListLogParserInactiveUsers(ctx, r.db)
+}
+
+func (r *Repository) ListLogParserClientIPs(ctx context.Context) ([]reportstore.LogParserClientIPState, error) {
+	return reportstore.ListLogParserClientIPs(ctx, r.db)
+}
+
+func (r *Repository) ListLogParserUnusedHBALines(ctx context.Context) ([]reportstore.LogParserUnusedHBAState, error) {
+	return reportstore.ListLogParserUnusedHBALines(ctx, r.db)
 }

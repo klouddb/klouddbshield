@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
@@ -46,6 +45,10 @@ type Config struct {
 	Crons []Cron `toml:"crons"`
 
 	RunCrons bool `toml:"-"`
+
+	// LogToFile writes terminal output to /var/log/klouddbshield/ciscollector_output_*.log
+	// instead of stdout. Defaults to true for --setup-cron, false otherwise.
+	LogToFile bool `toml:"-"`
 
 	Email *AuthConfig `toml:"email"`
 
@@ -89,11 +92,12 @@ func NewPiiInteractiveMode(pgConfig *postgresdb.Postgres, printAll, spacyOnly, s
 
 	readDatabase := strings.TrimSpace(ReadInput("Please enter database name", pgConfig.DBName))
 	readSchema := strings.TrimSpace(ReadInput("Please enter schema name", "public"))
+	readRegion := strings.TrimSpace(ReadInput("Please enter pii region (india or empty)", ""))
 
 	fmt.Println()
 
-	return piiscanner.NewConfig(pgConfig, readOption, readExcludeTable,
-		readIncludeTable, readDatabase, readSchema, printAll, spacyOnly, summary)
+	return piiscanner.NewConfigWithRegion(pgConfig, readOption, readExcludeTable,
+		readIncludeTable, readDatabase, readSchema, readRegion, printAll, spacyOnly, summary)
 }
 
 type AuthConfig struct {
@@ -172,13 +176,17 @@ func NewLogParser(logParser string, beginTime, endTime, prefix, logfile, hbaConf
 		}
 	}
 
-	// Get the list of files that match the pattern.
-	files, err := filepath.Glob(logfile)
+	// List matching log files via Glob, then drop those older than begin.
+	files, skippedBeforeBegin, err := listLogFiles(logfile, begin)
 	if err != nil {
 		return nil, fmt.Errorf("error while validating log file name %s (%v)", logfile, err)
 	}
 
 	if len(files) == 0 {
+		if !begin.IsZero() && skippedBeforeBegin > 0 {
+			return nil, fmt.Errorf("no log files left after filtering by begin time %s (matched %d file(s) older than begin for pattern %s)",
+				begin.Format("2006-01-02 15:04:05"), skippedBeforeBegin, logfile)
+		}
 		return nil, fmt.Errorf("no file found for given pattern %s", logfile)
 	}
 
@@ -357,7 +365,7 @@ func NewConfig() (*Config, error) {
 	flag.BoolVar(&help, "help", help, "Print help")
 	flag.BoolVar(&help, "h", help, "Print help")
 
-	var piiscannerRunOption, excludeTable, includeTable, database, schema string
+	var piiscannerRunOption, excludeTable, includeTable, database, schema, piiRegion string
 	var printAllResults, spacyOnly, printSummaryOnly bool
 	var piiScanner bool
 	flag.BoolVar(&piiScanner, "piiscanner", false, "Run pii scanner (uses [piiscanner] from kshieldconfig.toml)")
@@ -366,6 +374,7 @@ func NewConfig() (*Config, error) {
 	flag.StringVar(&includeTable, "include-table", "", "Include table for pii scanner")
 	flag.StringVar(&database, "database", "", "Database name for pii scanner")
 	flag.StringVar(&schema, "schema", "public", "Schema name for pii scanner")
+	flag.StringVar(&piiRegion, "pii-region", "", "PII region pack: empty=legacy entities (updated credit-card only), india=DPDPA package")
 	var targetHost, targetPort string
 	flag.StringVar(&targetHost, "target-host", "", "Postgres host for PII scan (overrides [postgres])")
 	flag.StringVar(&targetPort, "target-port", "", "Postgres port for PII scan (matches cron postgres block)")
@@ -405,7 +414,17 @@ func NewConfig() (*Config, error) {
 	var persistJSON bool
 	flag.BoolVar(&persistJSON, "json", false, "Persist scan report to ~/.klouddb SQLite for dashboard")
 
+	var logToFile bool
+	flag.BoolVar(&logToFile, "log-to-file", false, "Write terminal output to /var/log/klouddbshield/ciscollector_output_<time>.log instead of the terminal (default true with --setup-cron; use --log-to-file=false to keep cron output on the terminal)")
+
 	flag.Parse()
+
+	logToFileSet := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "log-to-file" {
+			logToFileSet = true
+		}
+	})
 
 	if cpuLimit != 0 {
 		runtime.GOMAXPROCS(cpuLimit)
@@ -418,6 +437,10 @@ func NewConfig() (*Config, error) {
 		}
 
 		c.RunCrons = true
+		c.LogToFile = true
+		if logToFileSet {
+			c.LogToFile = logToFile
+		}
 		return c, nil
 	}
 
@@ -460,6 +483,7 @@ func NewConfig() (*Config, error) {
 
 	c.App.PrintProcessTime = printProcessTime
 	c.OutputType = outputType
+	c.LogToFile = logToFile
 
 	var piiConfig *piiscanner.Config
 	if piiScanner || (spacyOnly && !run) {
@@ -475,6 +499,7 @@ func NewConfig() (*Config, error) {
 			Schema:        schema,
 			ExcludeTables: excludeTable,
 			IncludeTables: includeTable,
+			Region:        piiRegion,
 			PrintAll:      printAllResults,
 			SpacyOnly:     spacyOnly,
 			PrintSummary:  printSummaryOnly,

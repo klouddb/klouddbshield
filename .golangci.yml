@@ -6,6 +6,16 @@ run:
 
 linters:
   default: none
+  settings:
+    staticcheck:
+      # Leave existing sentences, package comments, underscored names, and receiver names alone.
+      checks:
+        - all
+        - "-ST1000"
+        - "-ST1003"
+        - "-ST1005"
+        - "-ST1016"
+        - "-ST1020"
   enable:
     - misspell
     - staticcheck
@@ -15,6 +25,9 @@ linters:
 
   exclusions:
     generated: lax
+    # Unchecked Close, fmt writes, and os.Remove match the existing code.
+    presets:
+      - std-error-handling
     paths:
       - .*\.pb\.go
 

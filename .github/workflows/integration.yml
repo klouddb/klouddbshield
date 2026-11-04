@@ -10,6 +10,8 @@ permissions:
 jobs:
   integration:
     runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/klouddb/dpdpa_pii_db_scanner
     strategy:
       matrix:
         log_prefix:
